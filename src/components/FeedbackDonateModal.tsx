@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Bug, Heart, Lightbulb, Copy, Check, X, ExternalLink, Mail } from 'lucide-react';
+import { Bug, Heart, Lightbulb, Copy, Check, X, ExternalLink, Mail, Send } from 'lucide-react';
 import { open as openExternal } from '@tauri-apps/plugin-shell';
 import {
   generatePixQrDataUrl,
@@ -7,6 +7,8 @@ import {
   PAYPAL_EMAIL,
   PIX_KEY,
 } from '../utils/pixDonate';
+
+const FEEDBACK_ENDPOINT = 'https://forjatex.com.br/wp-json/forjatex/v1/feedback';
 
 interface FeedbackDonateModalProps {
   open: boolean;
@@ -25,6 +27,9 @@ export const FeedbackDonateModal: React.FC<FeedbackDonateModalProps> = ({
   const [kind, setKind] = useState<'feature' | 'bug'>('feature');
   const [title, setTitle] = useState('');
   const [details, setDetails] = useState('');
+  const [contact, setContact] = useState('');
+  const [sending, setSending] = useState(false);
+  const [sendStatus, setSendStatus] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [copyTag, setCopyTag] = useState<string | null>(null);
   const [pixQrUrl, setPixQrUrl] = useState('');
@@ -61,8 +66,41 @@ export const FeedbackDonateModal: React.FC<FeedbackDonateModalProps> = ({
       details,
     ].join('\n');
 
-  const handleCopyReport = async (e: React.FormEvent) => {
+  const handleDirectSend = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!title.trim() || !details.trim()) return;
+    setSending(true);
+    setSendStatus(null);
+    try {
+      const res = await fetch(FEEDBACK_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          app: 'ForjaTeX IDE',
+          version: '1.3.0',
+          kind,
+          title: title.trim(),
+          details: details.trim(),
+          compiler: compilerSummary,
+          contact: contact.trim(),
+          locale: navigator.language || 'pt-BR',
+          client_ts: new Date().toISOString(),
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setSendStatus('Enviado com sucesso para forjatex.com.br! Obrigado.');
+      setTitle('');
+      setDetails('');
+    } catch (err) {
+      setSendStatus(
+        `Não foi possível enviar direto (${String(err)}). Use "Enviar no GitHub" ou "E-mail".`
+      );
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleCopyReport = async () => {
     try {
       await navigator.clipboard.writeText(buildReportPayload());
       setCopied(true);
@@ -117,9 +155,9 @@ export const FeedbackDonateModal: React.FC<FeedbackDonateModalProps> = ({
 
         <div className="tf-modal-body">
           {tab === 'feedback' ? (
-            <form onSubmit={handleCopyReport} className="tf-feedback-form">
+            <form onSubmit={handleDirectSend} className="tf-feedback-form">
               <p className="tf-section-desc">
-                O ForjaTeX é 100% gratuito. Envie sugestões de novos recursos ou reporte erros encontrados.
+                O ForjaTeX é 100% gratuito. Envie sugestões ou erros diretamente para <strong>forjatex.com.br</strong> (apenas o texto digitado abaixo é enviado).
               </p>
 
               <div className="tf-kind-toggle">
@@ -165,14 +203,38 @@ export const FeedbackDonateModal: React.FC<FeedbackDonateModalProps> = ({
                 />
               </label>
 
+              <label className="tf-full-label">
+                <span>Seu e-mail (opcional, para retorno)</span>
+                <input
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={contact}
+                  onChange={(e) => setContact(e.target.value)}
+                />
+              </label>
+
+              {sendStatus && (
+                <div className="text-xs text-sky-400 bg-sky-950/40 border border-sky-500/30 rounded px-2.5 py-1.5">
+                  {sendStatus}
+                </div>
+              )}
+
               <div className="flex flex-wrap items-center gap-2">
                 <button
-                  type="button"
+                  type="submit"
                   className="tf-btn-primary"
+                  disabled={sending}
+                >
+                  <Send size={14} />
+                  <span>{sending ? 'Enviando...' : 'Enviar para forjatex.com.br'}</span>
+                </button>
+                <button
+                  type="button"
+                  className="tf-btn-secondary"
                   onClick={handleOpenGitHubIssue}
                 >
                   <ExternalLink size={14} />
-                  <span>Enviar no GitHub</span>
+                  <span>GitHub</span>
                 </button>
                 <button
                   type="button"
@@ -180,11 +242,11 @@ export const FeedbackDonateModal: React.FC<FeedbackDonateModalProps> = ({
                   onClick={handleOpenEmail}
                 >
                   <Mail size={14} />
-                  <span>Enviar por E-mail</span>
+                  <span>E-mail</span>
                 </button>
-                <button type="submit" className="tf-btn-small">
+                <button type="button" className="tf-btn-small" onClick={handleCopyReport}>
                   {copied ? <Check size={14} /> : <Copy size={14} />}
-                  <span>{copied ? 'Copiado!' : 'Copiar Relatório'}</span>
+                  <span>{copied ? 'Copiado!' : 'Copiar'}</span>
                 </button>
               </div>
             </form>

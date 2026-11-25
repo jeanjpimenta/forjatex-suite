@@ -143,6 +143,9 @@ export default function App() {
   const [fbKind, setFbKind] = useState<'feature' | 'bug'>('feature');
   const [fbTitle, setFbTitle] = useState('');
   const [fbDetails, setFbDetails] = useState('');
+  const [fbContact, setFbContact] = useState('');
+  const [fbSending, setFbSending] = useState(false);
+  const [fbStatus, setFbStatus] = useState<string | null>(null);
   const [pixQrUrl, setPixQrUrl] = useState('');
   const [pixBrCode, setPixBrCode] = useState('');
   const [copyTag, setCopyTag] = useState<string | null>(null);
@@ -1327,10 +1330,52 @@ export default function App() {
                   onChange={(e) => setFbDetails(e.target.value)}
                   className="ft-textarea"
                 />
+                <input
+                  type="email"
+                  placeholder="E-mail opcional (para retorno)..."
+                  value={fbContact}
+                  onChange={(e) => setFbContact(e.target.value)}
+                />
+                {fbStatus && <div className="ft-hint">{fbStatus}</div>}
                 <div className="ft-btn-row">
                   <button
                     type="button"
                     className="ft-btn primary"
+                    disabled={fbSending || !fbTitle.trim() || !fbDetails.trim()}
+                    onClick={async () => {
+                      setFbSending(true);
+                      setFbStatus(null);
+                      try {
+                        const r = await fetch('https://forjatex.com.br/wp-json/forjatex/v1/feedback', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            app: 'ForjaTikZ',
+                            version: '1.1.0',
+                            kind: fbKind,
+                            title: fbTitle.trim(),
+                            details: fbDetails.trim(),
+                            contact: fbContact.trim(),
+                            locale,
+                            client_ts: new Date().toISOString(),
+                          }),
+                        });
+                        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                        setFbStatus('Enviado para forjatex.com.br! Obrigado.');
+                        setFbTitle('');
+                        setFbDetails('');
+                      } catch (e) {
+                        setFbStatus(`Erro ao enviar (${String(e)}). Use GitHub ou E-mail.`);
+                      } finally {
+                        setFbSending(false);
+                      }
+                    }}
+                  >
+                    {fbSending ? 'Enviando...' : 'Enviar (Site)'}
+                  </button>
+                  <button
+                    type="button"
+                    className="ft-btn"
                     onClick={() => {
                       const body = `[${fbKind === 'bug' ? 'BUG' : 'FEATURE'}] ${fbTitle}\nApp: ForjaTikZ 1.1.0\n---\n${fbDetails}`;
                       const p = new URLSearchParams({
@@ -1341,7 +1386,7 @@ export default function App() {
                       openExternal(`https://github.com/jeanjpimenta/forjatex-suite/issues/new?${p.toString()}`);
                     }}
                   >
-                    Enviar no GitHub
+                    GitHub
                   </button>
                   <button
                     type="button"
