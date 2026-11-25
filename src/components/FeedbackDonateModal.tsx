@@ -265,7 +265,14 @@ export const FeedbackDonateModal: React.FC<FeedbackDonateModalProps> = ({
                 </div>
               </div>
               <div className="text-[11px] text-slate-400 mt-2">
-                Desenvolvido por{' '}
+                <button
+                  type="button"
+                  className="tf-link-btn"
+                  onClick={() => openExternal('https://forjatex.com.br')}
+                >
+                  forjatex.com.br
+                </button>{' '}
+                · Por{' '}
                 <button
                   type="button"
                   className="tf-link-btn"

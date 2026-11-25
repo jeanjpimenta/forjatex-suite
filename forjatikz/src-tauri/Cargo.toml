@@ -4,6 +4,8 @@ version = "1.1.0"
 description = "ForjaTikZ — Editor Visual de Diagramas TikZ e Gráficos PGFPlots"
 authors = ["Jean Pimenta <jean.pimenta@protonmail.com>", "Arkhé Code"]
 license = "GPL-3.0-or-later"
+homepage = "https://forjatex.com.br"
+repository = "https://github.com/jeanjpimenta/forjatex-suite"
 edition = "2024"
 rust-version = "1.90"
 

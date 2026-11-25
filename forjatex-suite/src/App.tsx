@@ -710,13 +710,22 @@ export default function App() {
               ARKHÉ CODE <ArrowUpRight size={10} />
             </button>
           </span>
-          <button
-            type="button"
-            className="ac-link-upper"
-            onClick={() => open(GITHUB_REPO_URL)}
-          >
-            GITHUB.COM/JEANJPIMENTA/FORJATEX-SUITE <ArrowUpRight size={11} />
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              className="ac-link-upper"
+              onClick={() => open('https://forjatex.com.br')}
+            >
+              FORJATEX.COM.BR <ArrowUpRight size={11} />
+            </button>
+            <button
+              type="button"
+              className="ac-link-upper"
+              onClick={() => open(GITHUB_REPO_URL)}
+            >
+              GITHUB <ArrowUpRight size={11} />
+            </button>
+          </div>
         </div>
       </footer>
 

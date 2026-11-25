@@ -1247,7 +1247,15 @@ export default function App() {
                 </div>
               </div>
               <div className="ft-hint" style={{ textAlign: 'center', marginTop: 8 }}>
-                Por{' '}
+                <button
+                  type="button"
+                  className="ft-btn"
+                  style={{ padding: '2px 6px', fontSize: 11 }}
+                  onClick={() => openExternal('https://forjatex.com.br')}
+                >
+                  forjatex.com.br
+                </button>{' '}
+                · Por{' '}
                 <button
                   type="button"
                   className="ft-btn"

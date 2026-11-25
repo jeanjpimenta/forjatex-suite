@@ -4,7 +4,8 @@ version = "1.3.0"
 description = "ForjaTeX — Cross-platform LaTeX IDE"
 authors = ["Jean Pimenta <jean.pimenta@protonmail.com>", "Arkhé Code"]
 license = "GPL-3.0-or-later"
-repository = ""
+repository = "https://github.com/jeanjpimenta/forjatex-suite"
+homepage = "https://forjatex.com.br"
 edition = "2024"
 rust-version = "1.90"
 

@@ -6,6 +6,7 @@
     <em>A free, modular ecosystem for scientific writing in LaTeX</em>
   </p>
   <p>
+    <a href="https://forjatex.com.br">Site Oficial (forjatex.com.br)</a> •
     <a href="#-português-brasil">Português (BR)</a> •
     <a href="#-english">English</a> •
     <a href="https://github.com/jeanjpimenta/forjatex-suite/releases">Downloads (Releases)</a> •
