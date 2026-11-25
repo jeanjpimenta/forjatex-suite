@@ -1,68 +1,68 @@
 \documentclass[11pt,a4paper]{article}
-\usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
 \usepackage[english]{babel}
-\usepackage[margin=2.5cm]{geometry}
-\usepackage{xcolor}
-\usepackage{hyperref}
-
-\definecolor{fjblue}{HTML}{0284C7}
-\definecolor{fjdark}{HTML}{0F172A}
+\usepackage{forjatex-manual}
 
 \hypersetup{
   colorlinks=true,
   linkcolor=fjblue,
   urlcolor=fjblue,
-  pdftitle={User Manual — ForjaTeX App Suite},
+  pdftitle={User Manual - ForjaTeX App Suite},
   pdfauthor={Jean Pimenta / Arkhé Code}
 }
 
-\title{\textbf{\color{fjdark}User Manual — ForjaTeX App Suite}\\
-\large Central Hub and Updater for \LaTeX{} Applications (GNU GPL v3.0)}
-\author{Jean Pimenta $\cdot$ Arkhé Code\\
-\href{https://forjatex.com.br}{forjatex.com.br} $\cdot$ \href{https://github.com/jeanjpimenta/forjatex-suite}{GitHub}}
-\date{Version 1.2.1}
-
 \begin{document}
-\maketitle
-\tableofcontents
-\newpage
+
+\ForjaHeader{../../forjatex-suite/src-tauri/icons/128x128@2x.png}
+  {ForjaTeX App Suite Ecosystem $\cdot$ GNU GPL v3.0}
+  {User Manual --- ForjaTeX App Suite}
+  {Central Hub, Installer and Updater for \LaTeX{} Applications}
+  {Version 1.2.1}
+  {Jean Pimenta $\cdot$ \href{https://forjatex.com.br}{\color{fjsky}forjatex.com.br} $\cdot$ \href{https://github.com/jeanjpimenta/forjatex-suite}{\color{fjsky}GitHub}}
+
+\ForjaTOC{Table of Contents}
+
+\begin{fjcallout}[Cross-Platform Hub (Windows \& Linux)]
+\textbf{ForjaTeX App Suite} automatically detects your operating system and selects native \textbf{.MSI / .EXE} installers on Windows or \textbf{.DEB / .AppImage} packages on Linux.
+\end{fjcallout}
 
 \section{What is ForjaTeX App Suite}
-\textbf{ForjaTeX App Suite} is the lightweight central launcher for the ForjaTeX ecosystem. It detects installed applications on your machine, launches them in one click, and downloads updates directly from \textbf{GitHub Releases}.
+\textbf{ForjaTeX App Suite} is the lightweight central launcher for the ForjaTeX ecosystem. It detects installed applications on your machine, launches them in one click, and downloads updates directly from \textbf{GitHub Releases} without requiring accounts or subscriptions.
 
 \section{Installing, Launching, and Updating Apps}
 \begin{enumerate}
   \item Each card displays the current or latest version, dedicated app icon, summary, and primary action button (\textbf{OPEN}, \textbf{INSTALL}, or \textbf{UPDATE}).
-  \item Use the \textbf{INSTALLER} selector in the toolbar to choose between \textbf{.MSI (Default)} — installed via \texttt{msiexec /passive} — and \textbf{.EXE (NSIS)}.
+  \item Use the \textbf{INSTALLER} selector in the toolbar to pick the best format for your system:
+  \begin{itemize}
+    \item \textbf{Windows:} \textbf{.MSI (Default)} via \code{msiexec /passive} or \textbf{.EXE (NSIS)}.
+    \item \textbf{Linux:} \textbf{.DEB (Ubuntu/Debian)} via \code{pkexec dpkg -i} or portable \textbf{.AppImage} installed to \code{\~/.local/bin}.
+  \end{itemize}
   \item While downloading, a live progress bar shows megabytes downloaded out of total size and completion percentage.
   \item Use the \textbf{...} menu on any card to reinstall or view release notes.
 \end{enumerate}
 
 \section{Suite Self-Update}
-When a newer version of \textbf{ForjaTeX App Suite} is published in \texttt{suite-manifest.json}, a top banner displays \textbf{UPDATE \& RESTART}. Clicking it downloads the new installer, updates silently, and relaunches the Suite automatically.
+When a newer version of \textbf{ForjaTeX App Suite} is published in \code{suite-manifest.json}, a top banner displays \textbf{UPDATE \& RESTART}. Clicking it downloads the new installer, updates silently, and relaunches the Suite automatically.
 
 \section{Language, Theme, and Support}
 \begin{itemize}
   \item \textbf{Language:} Automatically detected from your OS and switchable anytime between \textbf{PT-BR} and \textbf{EN} in the top bar.
   \item \textbf{Theme:} Toggle Light/Dark mode via the Sun/Moon button.
-  \item \textbf{Support \& Feedback:} Click \textbf{SUPPORT} to donate via Pix/PayPal or send feature requests and bug reports directly to \texttt{forjatex.com.br}.
+  \item \textbf{Support \& Feedback:} Click \textbf{SUPPORT} to donate via Pix/PayPal or send feature requests and bug reports directly to \code{forjatex.com.br}.
 \end{itemize}
 
 \section{Glossary}
 \begin{description}
-  \item[Manifest JSON (\texttt{suite-manifest.json})] Metadata file hosted on GitHub Releases listing the latest versions and installer URLs.
-  \item[MSI (Windows Installer)] Standard Microsoft installer format executed via \texttt{msiexec}.
-  \item[NSIS (.exe)] Lightweight per-user installer (\texttt{\%LOCALAPPDATA\%}).
+  \item[Manifest JSON (\code{suite-manifest.json})] Metadata file hosted on GitHub Releases listing the latest versions and installer URLs for Windows and Linux.
+  \item[MSI / NSIS (.exe)] Standard Windows installer formats (\code{msiexec} and per-user NSIS).
+  \item[DEB / AppImage] Native Debian/Ubuntu package format (\code{.deb}) and universal portable Linux executable (\code{.AppImage}).
 \end{description}
 
 \section{Version History (Changelog)}
 \begin{itemize}
-  \item \textbf{v1.2.1:} Default \texttt{.msi} (\texttt{msiexec /passive}) support with \texttt{.MSI / .EXE} selector, automatic PT-BR/EN language switching, direct feedback API to \texttt{forjatex.com.br}, and official website links.
+  \item \textbf{v1.2.1:} Default \code{.msi} (\code{msiexec /passive}) support with \code{.MSI / .EXE} selector, full Linux \code{.DEB / .AppImage} detection and installation, automatic PT-BR/EN language switching, and direct feedback API to \code{forjatex.com.br}.
   \item \textbf{v1.2.0:} ArtCraft-inspired uniform grid layout, real installed version detection, live MB download progress bar, and Suite self-update.
   \item \textbf{v1.1.0:} Uniform card grid with custom app icons and Pix/PayPal donation modal.
   \item \textbf{v1.0.0:} Initial release of the Suite hub and GitHub Releases updater.
 \end{itemize}
 
 \end{document}
-

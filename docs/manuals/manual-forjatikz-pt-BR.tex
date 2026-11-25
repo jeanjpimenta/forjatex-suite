@@ -1,70 +1,65 @@
 \documentclass[11pt,a4paper]{article}
-\usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
-\usepackage[brazil]{babel}
-\usepackage[margin=2.5cm]{geometry}
-\usepackage{xcolor}
-\usepackage{hyperref}
-
-\definecolor{fjblue}{HTML}{0284C7}
-\definecolor{fjdark}{HTML}{0F172A}
+\usepackage{forjatex-manual}
 
 \hypersetup{
   colorlinks=true,
   linkcolor=fjblue,
   urlcolor=fjblue,
-  pdftitle={Manual do Usuário — ForjaTikZ},
+  pdftitle={Manual do Usuário - ForjaTikZ},
   pdfauthor={Jean Pimenta / Arkhé Code}
 }
 
-\title{\textbf{\color{fjdark}Manual do Usuário — ForjaTikZ}\\
-\large Studio Visual de Diagramas TikZ e Gráficos PGFPlots (GNU GPL v3.0)}
-\author{Jean Pimenta $\cdot$ Arkhé Code\\
-\href{https://forjatex.com.br}{forjatex.com.br} $\cdot$ \href{https://github.com/jeanjpimenta/forjatex-suite}{GitHub}}
-\date{Versão 1.1.0}
-
 \begin{document}
-\maketitle
-\tableofcontents
-\newpage
+
+\ForjaHeader{../../forjatikz/src-tauri/icons/128x128@2x.png}
+  {Ecossistema ForjaTeX App Suite $\cdot$ GNU GPL v3.0}
+  {Manual do Usuário --- ForjaTikZ}
+  {Studio Visual de Diagramas TikZ e Gráficos Científicos PGFPlots}
+  {Versão 1.1.0}
+  {Jean Pimenta $\cdot$ \href{https://forjatex.com.br}{\color{fjsky}forjatex.com.br} $\cdot$ \href{https://github.com/jeanjpimenta/forjatex-suite}{\color{fjsky}GitHub}}
+
+\ForjaTOC{Sumário}
+
+\begin{fjcallout}[Parceiro Visual do ForjaTeX IDE]
+O \textbf{ForjaTikZ} gera código \LaTeX{} limpo e padrão (\code{tikz} e \code{pgfplots}) pronto para colar no \textbf{ForjaTeX IDE} ou validar localmente com \code{pdflatex}. Disponível para Windows e Linux.
+\end{fjcallout}
 
 \section{Introdução}
 O \textbf{ForjaTikZ} é um aplicativo visual complementar do \textbf{ForjaTeX App Suite} projetado para criar diagramas \textbf{TikZ} e gráficos matemáticos \textbf{PGFPlots} sem precisar memorizar toda a sintaxe do \LaTeX{}.
 
 \section{Modo 1: Gráficos (PGFPlots)}
 \begin{enumerate}
-  \item \textbf{Tipo de Gráfico:} escolha entre \textbf{Funções $f(x)$}, \textbf{Pontos / CSV} (com suporte a barras de erro), \textbf{Barras (\texttt{ybar})} ou \textbf{Superfície 3D (\texttt{\textbackslash addplot3})}.
-  \item \textbf{Configuração dos Eixos:} defina título, rótulos X e Y, limites (\texttt{xmin}, \texttt{xmax}, \texttt{ymin}, \texttt{ymax}), escala (\texttt{linear}, \texttt{semilogx}, \texttt{semilogy}, \texttt{loglog}) e grade.
-  \item \textbf{Fórmulas Matemáticas:} escreva expressões em função de \texttt{x} (ex.: \texttt{0.2*x\^{}2}, \texttt{sin(x)}, \texttt{exp(-x\^{}2)}). Use os botões de atalho para inserir fórmulas prontas. Com a opção \textbf{Usar Radianos} ativada (\texttt{trig format plots=rad}), \texttt{sin(x)} funciona diretamente em radianos.
-  \item \textbf{Dados e Barras:} no modo \textbf{Pontos / CSV}, insira um ponto por linha como \texttt{x, y} ou \texttt{x, y, erro}. No modo \textbf{Barras}, insira \texttt{Categoria=Valor} (ex.: \texttt{Jan=15}).
+  \item \textbf{Tipo de Gráfico:} escolha entre \textbf{Funções $f(x)$}, \textbf{Pontos / CSV} (com suporte a barras de erro), \textbf{Barras (\code{ybar})} ou \textbf{Superfície 3D (\code{\textbackslash addplot3})}.
+  \item \textbf{Configuração dos Eixos:} defina título, rótulos X e Y, limites (\code{xmin}, \code{xmax}, \code{ymin}, \code{ymax}), escala (\code{linear}, \code{semilogx}, \code{semilogy}, \code{loglog}) e grade.
+  \item \textbf{Fórmulas Matemáticas:} escreva expressões em função de \code{x} (ex.: \code{0.2*x\^{}2}, \code{sin(x)}, \code{exp(-x\^{}2)}). Use os botões de atalho para inserir fórmulas prontas. Com a opção \textbf{Usar Radianos} ativada (\code{trig format plots=rad}), \code{sin(x)} funciona diretamente em radianos.
+  \item \textbf{Dados e Barras:} no modo \textbf{Pontos / CSV}, insira um ponto por linha como \code{x, y} ou \code{x, y, erro}. No modo \textbf{Barras}, insira \code{Categoria=Valor} (ex.: \code{Jan=15}).
 \end{enumerate}
 
 \section{Modo 2: Diagramas (TikZ)}
 \begin{itemize}
-  \item \textbf{Formas (\texttt{shapes.geometric}):} adicione Círculos, Caixas, Losangos (decisão) e Elipses e arraste-os na grade com ajuste automático (\textit{snap}).
-  \item \textbf{Conexões:} selecione um nó, clique em \textbf{Conectar Nó Selecionado} e clique no nó de destino. Edite rótulos e curvatura (\texttt{bend left} / \texttt{bend right}).
-  \item \textbf{Modelos Prontos CTAN:} gere em 1 clique exemplos iniciais de \texttt{tikz-cd} (diagramas comutativos), \texttt{automata} (máquinas de estado) e \texttt{circuitikz} (circuitos).
+  \item \textbf{Formas (\code{shapes.geometric}):} adicione Círculos, Caixas, Losangos (decisão) e Elipses e arraste-os na grade com ajuste automático (\textit{snap}).
+  \item \textbf{Conexões:} selecione um nó, clique em \textbf{Conectar Nó Selecionado} e clique no nó de destino. Edite rótulos e curvatura (\code{bend left} / \code{bend right}).
+  \item \textbf{Modelos Prontos CTAN:} gere em 1 clique exemplos iniciais de \code{tikz-cd} (diagramas comutativos), \code{automata} (máquinas de estado) e \code{circuitikz} (circuitos).
 \end{itemize}
 
 \section{Exportação e Validação}
 \begin{itemize}
-  \item \textbf{Copiar Código:} copia o bloco \texttt{\textbackslash begin\{tikzpicture\}...\textbackslash end\{tikzpicture\}} para colar no seu documento no \textbf{ForjaTeX IDE}.
-  \item \textbf{Exportar .tex:} salva o snippet em um arquivo \texttt{.tex}.
-  \item \textbf{Testar LaTeX:} executa o \texttt{pdflatex} localmente (se instalado) para validar se o código compila sem erros.
+  \item \textbf{Copiar Código:} copia o bloco \code{\textbackslash begin\{tikzpicture\}...\textbackslash end\{tikzpicture\}} para colar no seu documento no \textbf{ForjaTeX IDE}.
+  \item \textbf{Exportar .tex:} salva o snippet em um arquivo \code{.tex}.
+  \item \textbf{Testar LaTeX:} executa o \code{pdflatex} localmente (se instalado) para validar se o código compila sem erros.
 \end{itemize}
 
 \section{Glossário}
 \begin{description}
   \item[TikZ / PGF] Linguagem vetorial nativa do \LaTeX{} para criação de diagramas e ilustrações técnicas.
   \item[PGFPlots] Pacote construído sobre TikZ especializado em gráficos científicos 2D e 3D.
-  \item[\texttt{trig format plots=rad}] Opção do PGFPlots que faz funções trigonométricas aceitarem radianos em vez de graus.
+  \item[\code{trig format plots=rad}] Opção do PGFPlots que faz funções trigonométricas aceitarem radianos em vez de graus.
 \end{description}
 
 \section{Histórico de Versões (Changelog)}
 \begin{itemize}
-  \item \textbf{v1.1.0:} Barra lateral corrigida, PGFPlots completo (Funções, Pontos/CSV + Barras de Erro, Barras, 3D, Log/Semilog), formas adicionais TikZ, modelos CTAN, seletor PT-BR/EN automático e envio de feedback para \texttt{forjatex.com.br}.
+  \item \textbf{v1.1.0:} Barra lateral corrigida, PGFPlots completo (Funções, Pontos/CSV + Barras de Erro, Barras, 3D, Log/Semilog), formas adicionais TikZ, modelos CTAN, seletor PT-BR/EN automático, suporte a Linux (\code{.deb}/\code{.AppImage}) e envio de feedback para \code{forjatex.com.br}.
   \item \textbf{v1.0.0:} Lançamento inicial com canvas TikZ básico e gerador de funções PGFPlots.
 \end{itemize}
 
 \end{document}
-

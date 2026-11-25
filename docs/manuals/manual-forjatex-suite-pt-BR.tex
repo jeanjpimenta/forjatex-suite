@@ -1,32 +1,28 @@
 \documentclass[11pt,a4paper]{article}
-\usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
-\usepackage[brazil]{babel}
-\usepackage[margin=2.5cm]{geometry}
-\usepackage{xcolor}
-\usepackage{hyperref}
-
-\definecolor{fjblue}{HTML}{0284C7}
-\definecolor{fjdark}{HTML}{0F172A}
+\usepackage{forjatex-manual}
 
 \hypersetup{
   colorlinks=true,
   linkcolor=fjblue,
   urlcolor=fjblue,
-  pdftitle={Manual do Usuário — ForjaTeX App Suite},
+  pdftitle={Manual do Usuário - ForjaTeX App Suite},
   pdfauthor={Jean Pimenta / Arkhé Code}
 }
 
-\title{\textbf{\color{fjdark}Manual do Usuário — ForjaTeX App Suite}\\
-\large Hub Central e Atualizador de Aplicativos \LaTeX{} (GNU GPL v3.0)}
-\author{Jean Pimenta $\cdot$ Arkhé Code\\
-\href{https://forjatex.com.br}{forjatex.com.br} $\cdot$ \href{https://github.com/jeanjpimenta/forjatex-suite}{GitHub}}
-\date{Versão 1.2.1}
-
 \begin{document}
-\maketitle
-\tableofcontents
-\newpage
+
+\ForjaHeader{../../forjatex-suite/src-tauri/icons/128x128@2x.png}
+  {Ecossistema ForjaTeX App Suite $\cdot$ GNU GPL v3.0}
+  {Manual do Usuário --- ForjaTeX App Suite}
+  {Hub Central, Instalador e Atualizador de Aplicativos \LaTeX{}}
+  {Versão 1.2.1}
+  {Jean Pimenta $\cdot$ \href{https://forjatex.com.br}{\color{fjsky}forjatex.com.br} $\cdot$ \href{https://github.com/jeanjpimenta/forjatex-suite}{\color{fjsky}GitHub}}
+
+\ForjaTOC{Sumário}
+
+\begin{fjcallout}[Hub Multiplataforma (Windows \& Linux)]
+O \textbf{ForjaTeX App Suite} detecta automaticamente o seu sistema operacional e seleciona instaladores nativos \textbf{.MSI / .EXE} no Windows ou pacotes \textbf{.DEB / .AppImage} no Linux.
+\end{fjcallout}
 
 \section{O que é o ForjaTeX App Suite}
 O \textbf{ForjaTeX App Suite} é o hub central leve do ecossistema ForjaTeX. Ele identifica os aplicativos instalados no seu computador, permite abri-los em um clique e baixa atualizações diretamente do \textbf{GitHub Releases} sem necessidade de assinatura paga ou conta.
@@ -34,35 +30,38 @@ O \textbf{ForjaTeX App Suite} é o hub central leve do ecossistema ForjaTeX. Ele
 \section{Instalando, Abrindo e Atualizando Aplicativos}
 \begin{enumerate}
   \item Na grade principal, cada card exibe a versão instalada ou disponível, o ícone do aplicativo, descrição e botão principal (\textbf{ABRIR}, \textbf{INSTALAR} ou \textbf{ATUALIZAR}).
-  \item No seletor \textbf{INSTALADOR} no topo, escolha entre \textbf{.MSI (Padrão)} — executado via \texttt{msiexec /passive} — ou \textbf{.EXE (NSIS)}.
+  \item No seletor \textbf{INSTALADOR} no topo, escolha o formato ideal para o seu sistema:
+  \begin{itemize}
+    \item \textbf{Windows:} \textbf{.MSI (Padrão)} via \code{msiexec /passive} ou \textbf{.EXE (NSIS)}.
+    \item \textbf{Linux:} \textbf{.DEB (Ubuntu/Debian)} via \code{pkexec dpkg -i} ou \textbf{.AppImage} portátil salvo em \code{\~/.local/bin}.
+  \end{itemize}
   \item Ao clicar em \textbf{INSTALAR} ou \textbf{ATUALIZAR}, a barra de progresso exibe em tempo real os megabytes baixados e a porcentagem concluída.
   \item Use o botão \textbf{...} em cada card para reinstalar manualmente ou consultar as novidades da versão.
 \end{enumerate}
 
 \section{Auto-atualização do Próprio Suite}
-Quando uma nova versão do \textbf{ForjaTeX App Suite} estiver disponível no manifesto (\texttt{suite-manifest.json}), uma faixa superior exibirá o botão \textbf{ATUALIZAR E REINICIAR}. Ao clicar, o Suite baixa o novo instalador, aplica a atualização e reabre automaticamente.
+Quando uma nova versão do \textbf{ForjaTeX App Suite} estiver disponível no manifesto (\code{suite-manifest.json}), uma faixa superior exibirá o botão \textbf{ATUALIZAR E REINICIAR}. Ao clicar, o Suite baixa o novo instalador, aplica a atualização e reabre automaticamente.
 
 \section{Idioma, Tema e Suporte}
 \begin{itemize}
   \item \textbf{Idioma:} detectado automaticamente pelo sistema e alternável entre \textbf{PT-BR} e \textbf{EN} no topo da janela.
   \item \textbf{Tema:} alterne entre Claro e Escuro pelo ícone de Lua/Sol.
-  \item \textbf{Apoiar \& Pedidos:} clique em \textbf{APOIAR} para acessar Pix (QR Code), PayPal ou enviar sugestões/bugs diretamente para \texttt{forjatex.com.br}.
+  \item \textbf{Apoiar \& Pedidos:} clique em \textbf{APOIAR} para acessar Pix (QR Code), PayPal ou enviar sugestões/bugs diretamente para \code{forjatex.com.br}.
 \end{itemize}
 
 \section{Glossário}
 \begin{description}
-  \item[Manifesto JSON (\texttt{suite-manifest.json})] Arquivo publicado no GitHub Releases que informa as versões mais recentes e URLs dos instaladores da suíte.
-  \item[MSI (Windows Installer)] Formato padrão corporativo da Microsoft instalado via \texttt{msiexec}.
-  \item[NSIS (.exe)] Instalador leve por usuário (\texttt{\%LOCALAPPDATA\%}).
+  \item[Manifesto JSON (\code{suite-manifest.json})] Arquivo publicado no GitHub Releases que informa as versões mais recentes e URLs dos instaladores Windows e Linux da suíte.
+  \item[MSI / NSIS (.exe)] Formatos padrão de instalação no Windows (\code{msiexec} e instalador NSIS por usuário).
+  \item[DEB / AppImage] Pacote nativo para Debian/Ubuntu (\code{.deb}) e executável universal portátil para Linux (\code{.AppImage}).
 \end{description}
 
 \section{Histórico de Versões (Changelog)}
 \begin{itemize}
-  \item \textbf{v1.2.1:} Suporte padrão a instaladores \texttt{.msi} (\texttt{msiexec /passive}) com seletor \texttt{.MSI / .EXE}, tradução PT-BR/EN automática, envio direto de feedback para \texttt{forjatex.com.br} e links oficiais.
+  \item \textbf{v1.2.1:} Suporte padrão a \code{.msi} (\code{msiexec /passive}) com seletor \code{.MSI / .EXE}, suporte completo a Linux (\code{.DEB / .AppImage}), tradução PT-BR/EN automática e envio direto de feedback para \code{forjatex.com.br}.
   \item \textbf{v1.2.0:} Layout uniforme estilo ArtCraft (área fixa ao maximizar, efeito hover), detecção real de versão instalada, barra de progresso em MB e auto-atualização (\textbf{ATUALIZAR E REINICIAR}).
   \item \textbf{v1.1.0:} Interface em grade uniforme com ícones dedicados e modal de doação Pix/PayPal.
   \item \textbf{v1.0.0:} Lançamento inicial do hub launcher e integrador com GitHub Releases.
 \end{itemize}
 
 \end{document}
-

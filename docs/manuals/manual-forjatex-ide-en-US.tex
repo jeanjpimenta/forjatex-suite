@@ -1,90 +1,90 @@
 \documentclass[11pt,a4paper]{article}
-\usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
 \usepackage[english]{babel}
-\usepackage[margin=2.5cm]{geometry}
-\usepackage{xcolor}
-\usepackage{booktabs}
-\usepackage{hyperref}
-
-\definecolor{fjblue}{HTML}{0284C7}
-\definecolor{fjdark}{HTML}{0F172A}
+\usepackage{forjatex-manual}
 
 \hypersetup{
   colorlinks=true,
   linkcolor=fjblue,
   urlcolor=fjblue,
-  pdftitle={User Manual — ForjaTeX IDE},
+  pdftitle={User Manual - ForjaTeX IDE},
   pdfauthor={Jean Pimenta / Arkhé Code}
 }
 
-\title{\textbf{\color{fjdark}User Manual — ForjaTeX IDE}\\
-\large ForjaTeX App Suite Ecosystem (GNU GPL v3.0)}
-\author{Jean Pimenta $\cdot$ Arkhé Code\\
-\href{https://forjatex.com.br}{forjatex.com.br} $\cdot$ \href{https://github.com/jeanjpimenta/forjatex-suite}{GitHub}}
-\date{Version 1.3.0}
-
 \begin{document}
-\maketitle
-\tableofcontents
-\newpage
+
+\ForjaHeader{../../src-tauri/icons/128x128@2x.png}
+  {ForjaTeX App Suite Ecosystem $\cdot$ GNU GPL v3.0}
+  {User Manual --- ForjaTeX IDE}
+  {Offline-First Desktop \LaTeX{} IDE built with Tauri v2, Rust, React \& Monaco}
+  {Version 1.3.0}
+  {Jean Pimenta $\cdot$ \href{https://forjatex.com.br}{\color{fjsky}forjatex.com.br} $\cdot$ \href{https://github.com/jeanjpimenta/forjatex-suite}{\color{fjsky}GitHub}}
+
+\ForjaTOC{Table of Contents}
+
+\begin{fjcallout}[Before You Begin]
+\textbf{ForjaTeX IDE} compiles your documents locally using your own \TeX{} distribution (\textbf{MiKTeX}, \textbf{TeX Live}, or \textbf{Tectonic}), keeping your drafts 100\% private and available offline.
+\end{fjcallout}
 
 \section{Introduction and Requirements}
-\textbf{ForjaTeX IDE} is a free, open-source (GNU GPL v3.0), offline-first desktop \LaTeX{} IDE built with Tauri v2, Rust, React, and Monaco Editor.
+\textbf{ForjaTeX IDE} is a free, open-source (\textbf{GNU GPL v3.0}), offline-first desktop \LaTeX{} IDE designed for academic papers, theses, books, and technical reports.
 
 \subsection{System Requirements}
-\begin{itemize}
-  \item Windows (64-bit) or source build for Linux/macOS.
-  \item A local \TeX{} distribution installed on your machine: \textbf{MiKTeX}, \textbf{TeX Live}, or \textbf{Tectonic}.
-\end{itemize}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Component} & \textbf{Supported Environment} \\
+\midrule
+Operating System & Windows 10/11 (64-bit: \code{.msi} / \code{.exe}) \& Linux (\code{.deb} / \code{.AppImage}) \\
+\TeX{} Distribution & Local \textbf{MiKTeX}, \textbf{TeX Live}, or \textbf{Tectonic} \\
+Optional Tools & \textbf{Git} (built-in integration), \textbf{Ollama} or API key for BYOK AI \\
+\bottomrule
+\end{tabular}
 
 \section{Getting Started and Compilation}
 \begin{enumerate}
   \item Click \textbf{Open Folder}, \textbf{New Project} (to start from ABNT, Article, or Beamer templates), or \textbf{Overleaf .zip} to import an exported Overleaf archive.
-  \item In the left Explorer, right-click any \texttt{.tex} file and choose \textbf{Set as main file} if your root document is not \texttt{main.tex}.
-  \item Pick an engine (\texttt{pdflatex}, \texttt{xelatex}, \texttt{lualatex}, or \texttt{latexmk}) and click \textbf{Compile}.
-  \item \textbf{Per-Project Sequential Quick Build:} Right-click the \textbf{Compile} button to assign a custom multi-step sequence (e.g., \texttt{pdflatex $\to$ bibtex $\to$ pdflatex $\times 2$}) saved per project.
+  \item In the left Explorer, right-click any \code{.tex} file and choose \textbf{Set as main file} if your root document is not \code{main.tex}.
+  \item Pick an engine (\code{pdflatex}, \code{xelatex}, \code{lualatex}, or \code{latexmk}) and click \textbf{Compile}.
+  \item \textbf{Per-Project Sequential Quick Build:} Right-click the \textbf{Compile} button to assign a custom multi-step sequence (e.g., \code{pdflatex -> bibtex -> pdflatex x2}) saved individually per project.
 \end{enumerate}
 
 \section{Editor, SyncTeX, and Live Previews}
 \begin{itemize}
-  \item \textbf{Smart Autocompletion:} Type \texttt{\textbackslash cite\{} for bibliography keys, \texttt{\textbackslash ref\{} for project labels, and \texttt{:} for custom User Tags.
-  \item \textbf{Hover Equation Preview:} Hover over \texttt{\$...\$\,} or \texttt{\$\$...\$\$\,} expressions to see a live KaTeX formula preview.
+  \item \textbf{Smart Autocompletion:} Type \code{\textbackslash cite\{} for bibliography keys, \code{\textbackslash ref\{} for project labels, and \code{:} for custom User Tags.
+  \item \textbf{Hover Equation Preview:} Hover over \code{\$...\$} or \code{\$\$...\$\$} expressions to see a live KaTeX formula preview.
   \item \textbf{Bidirectional SyncTeX:} Single-click in the PDF to highlight the source file in Explorer; double-click to jump to the exact line.
-  \item \textbf{LaTeX-Aware Spell \& Grammar Checker:} Checks natural-language prose in PT-BR or English while ignoring commands, math, and comments, offering one-click Quick Fixes (\texttt{Ctrl+.}).
+  \item \textbf{LaTeX-Aware Spell \& Grammar Checker:} Checks natural-language prose in PT-BR or English while ignoring commands, math, and comments, offering one-click Quick Fixes (\code{Ctrl+.}).
 \end{itemize}
 
 \section{Built-in Visual Wizards}
 \begin{itemize}
-  \item \textbf{Table Studio:} Visual editor supporting \texttt{booktabs} and \texttt{tabularray}, cell merging, and CSV/Excel paste.
-  \item \textbf{Matrix \& Preamble Wizard:} Supports \texttt{amsmath} (\texttt{pmatrix}, \texttt{bmatrix}, \texttt{cases}) and \texttt{nicematrix} with live KaTeX preview.
-  \item \textbf{System Font Wizard:} Detects installed TTF/OTF system fonts or copies local font files for \texttt{fontspec} (XeLaTeX/LuaLaTeX).
+  \item \textbf{Table Studio:} Visual editor supporting \code{booktabs} and \code{tabularray}, cell merging, and CSV/Excel paste.
+  \item \textbf{Matrix \& Preamble Wizard:} Supports \code{amsmath} (\code{pmatrix}, \code{bmatrix}, \code{cases}) and \code{nicematrix} with live KaTeX preview.
+  \item \textbf{System Font Wizard:} Detects installed TTF/OTF system fonts (Windows \& Linux \code{fc-list}) or copies local font files for \code{fontspec} (XeLaTeX/LuaLaTeX).
   \item \textbf{Image Wizard \& Offline Quick Reference:} Guided figure insertion and categorized/tagged snippet library.
 \end{itemize}
 
 \section{Settings, Git, and AI}
 \begin{itemize}
-  \item \textbf{Compiler \& Project:} Custom MiKTeX/TeX Live/Tectonic paths, isolated \texttt{build/} directory, and auto-save intervals.
-  \item \textbf{Editor \& Automation:} Switch between Dark and Soft Ice Light themes, change language (\textbf{PT-BR} / \textbf{EN}), and manage Quick Build profiles.
-  \item \textbf{Built-in Git:} Configure \texttt{user.name}, \texttt{user.email}, Personal Access Token (GitHub/GitLab), generate a \LaTeX{} \texttt{.gitignore}, Clone, Commit, Pull, and Push.
+  \item \textbf{Compiler \& Project:} Custom MiKTeX/TeX Live/Tectonic paths, isolated \code{build/} directory, and auto-save intervals.
+  \item \textbf{Editor \& Automation:} Switch between Dark and Soft Ice Light themes, change language (\textbf{PT-BR} / \textbf{EN}), open this PDF manual anytime, and manage Quick Build profiles.
+  \item \textbf{Built-in Git:} Configure \code{user.name}, \code{user.email}, Personal Access Token (GitHub/GitLab), generate a \LaTeX{} \code{.gitignore}, Clone, Commit, Pull, and Push.
   \item \textbf{AI Assistant (BYOK):} Available as a tab next to \textbf{PDF Preview} using your own API key (Gemini, OpenAI, Claude, or local Ollama).
 \end{itemize}
 
 \section{Glossary}
 \begin{description}
-  \item[SyncTeX] Bidirectional synchronization between \texttt{.tex} source lines and positions in the compiled PDF.
-  \item[Sequential Quick Build] Chained execution of build steps (such as \texttt{pdflatex} and \texttt{bibtex}) to resolve citations and tables of contents.
+  \item[SyncTeX] Bidirectional synchronization between \code{.tex} source lines and positions in the compiled PDF.
+  \item[Sequential Quick Build] Chained execution of build steps (such as \code{pdflatex} and \code{bibtex}) to resolve citations and tables of contents.
   \item[LaTeX-Aware] A checker that understands \LaTeX{} markup so commands and math are not flagged as spelling errors.
   \item[BYOK (Bring Your Own Key)] Architecture where users supply their own AI provider key stored locally.
 \end{description}
 
 \section{Version History (Changelog)}
 \begin{itemize}
-  \item \textbf{v1.3.0:} Community i18n system (PT-BR and English) with OS auto-detection, complete GitHub/GitLab workflow (PAT, Clone, \texttt{.gitignore}), React marker ruler tooltip, and direct feedback submission to \texttt{forjatex.com.br}.
+  \item \textbf{v1.3.0:} Community i18n system (PT-BR and English) with OS auto-detection, complete GitHub/GitLab workflow (PAT, Clone, \code{.gitignore}), React marker ruler tooltip, Linux (\code{.deb}/\code{.AppImage}) CI \& release support, and direct feedback submission to \code{forjatex.com.br}.
   \item \textbf{v1.2.0:} AI panel moved to a tab alongside PDF Preview and dedicated Git settings tab.
   \item \textbf{v1.1.0:} Advanced Matrix preview, real DOM KaTeX hover popup, categorized/tagged Quick Reference, LaTeX-aware spellcheck, and initial Git panel.
-  \item \textbf{v1.0.0:} Soft Ice Light theme, per-project multi-profile Quick Build, and one-click missing \texttt{.sty} package installer.
+  \item \textbf{v1.0.0:} Soft Ice Light theme, per-project multi-profile Quick Build, and one-click missing \code{.sty} package installer.
 \end{itemize}
 
 \end{document}
-

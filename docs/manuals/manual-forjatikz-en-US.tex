@@ -1,70 +1,66 @@
 \documentclass[11pt,a4paper]{article}
-\usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
 \usepackage[english]{babel}
-\usepackage[margin=2.5cm]{geometry}
-\usepackage{xcolor}
-\usepackage{hyperref}
-
-\definecolor{fjblue}{HTML}{0284C7}
-\definecolor{fjdark}{HTML}{0F172A}
+\usepackage{forjatex-manual}
 
 \hypersetup{
   colorlinks=true,
   linkcolor=fjblue,
   urlcolor=fjblue,
-  pdftitle={User Manual — ForjaTikZ},
+  pdftitle={User Manual - ForjaTikZ},
   pdfauthor={Jean Pimenta / Arkhé Code}
 }
 
-\title{\textbf{\color{fjdark}User Manual — ForjaTikZ}\\
-\large Visual Studio for TikZ Diagrams and PGFPlots Charts (GNU GPL v3.0)}
-\author{Jean Pimenta $\cdot$ Arkhé Code\\
-\href{https://forjatex.com.br}{forjatex.com.br} $\cdot$ \href{https://github.com/jeanjpimenta/forjatex-suite}{GitHub}}
-\date{Version 1.1.0}
-
 \begin{document}
-\maketitle
-\tableofcontents
-\newpage
+
+\ForjaHeader{../../forjatikz/src-tauri/icons/128x128@2x.png}
+  {ForjaTeX App Suite Ecosystem $\cdot$ GNU GPL v3.0}
+  {User Manual --- ForjaTikZ}
+  {Visual Studio for TikZ Diagrams and PGFPlots Scientific Charts}
+  {Version 1.1.0}
+  {Jean Pimenta $\cdot$ \href{https://forjatex.com.br}{\color{fjsky}forjatex.com.br} $\cdot$ \href{https://github.com/jeanjpimenta/forjatex-suite}{\color{fjsky}GitHub}}
+
+\ForjaTOC{Table of Contents}
+
+\begin{fjcallout}[Visual Companion to ForjaTeX IDE]
+\textbf{ForjaTikZ} generates clean, standard \LaTeX{} (\code{tikz} and \code{pgfplots}) code that you can copy directly into \textbf{ForjaTeX IDE} or validate locally with \code{pdflatex}. Available for Windows and Linux.
+\end{fjcallout}
 
 \section{Introduction}
 \textbf{ForjaTikZ} is a visual companion app in the \textbf{ForjaTeX App Suite} designed to build \textbf{TikZ} diagrams and \textbf{PGFPlots} scientific charts without memorizing raw \LaTeX{} syntax.
 
 \section{Mode 1: Charts (PGFPlots)}
 \begin{enumerate}
-  \item \textbf{Chart Type:} Pick \textbf{Functions $f(x)$}, \textbf{Points / CSV} (with optional error bars), \textbf{Bar Chart (\texttt{ybar})}, or \textbf{3D Surface (\texttt{\textbackslash addplot3})}.
-  \item \textbf{Axis Configuration:} Set title, X/Y labels, axis bounds (\texttt{xmin}, \texttt{xmax}, \texttt{ymin}, \texttt{ymax}), scale (\texttt{linear}, \texttt{semilogx}, \texttt{semilogy}, \texttt{loglog}), and grid mode.
-  \item \textbf{Math Formulas:} Write expressions in \texttt{x} (e.g., \texttt{0.2*x\^{}2}, \texttt{sin(x)}, \texttt{exp(-x\^{}2)}). Use one-click preset buttons for common formulas. With \textbf{Use Radians} enabled (\texttt{trig format plots=rad}), \texttt{sin(x)} evaluates directly in radians.
-  \item \textbf{Data \& Bar Charts:} In \textbf{Points / CSV}, enter one point per line as \texttt{x, y} or \texttt{x, y, error}. In \textbf{Bar Chart}, enter \texttt{Category=Value} (e.g., \texttt{Jan=15}).
+  \item \textbf{Chart Type:} Pick \textbf{Functions $f(x)$}, \textbf{Points / CSV} (with optional error bars), \textbf{Bar Chart (\code{ybar})}, or \textbf{3D Surface (\code{\textbackslash addplot3})}.
+  \item \textbf{Axis Configuration:} Set title, X/Y labels, axis bounds (\code{xmin}, \code{xmax}, \code{ymin}, \code{ymax}), scale (\code{linear}, \code{semilogx}, \code{semilogy}, \code{loglog}), and grid mode.
+  \item \textbf{Math Formulas:} Write expressions in \code{x} (e.g., \code{0.2*x\^{}2}, \code{sin(x)}, \code{exp(-x\^{}2)}). Use one-click preset buttons for common formulas. With \textbf{Use Radians} enabled (\code{trig format plots=rad}), \code{sin(x)} evaluates directly in radians.
+  \item \textbf{Data \& Bar Charts:} In \textbf{Points / CSV}, enter one point per line as \code{x, y} or \code{x, y, error}. In \textbf{Bar Chart}, enter \code{Category=Value} (e.g., \code{Jan=15}).
 \end{enumerate}
 
 \section{Mode 2: Diagrams (TikZ)}
 \begin{itemize}
-  \item \textbf{Shapes (\texttt{shapes.geometric}):} Add Circles, Boxes, Diamonds, and Ellipses and drag them on the snap-to-grid canvas.
-  \item \textbf{Connections:} Select a node, click \textbf{Connect Selected Node}, then click the target node. Customize edge labels and curvature (\texttt{bend left} / \texttt{bend right}).
-  \item \textbf{CTAN Templates:} Insert starter code for \texttt{tikz-cd} (commutative diagrams), \texttt{automata} (state machines), and \texttt{circuitikz} (circuits).
+  \item \textbf{Shapes (\code{shapes.geometric}):} Add Circles, Boxes, Diamonds, and Ellipses and drag them on the snap-to-grid canvas.
+  \item \textbf{Connections:} Select a node, click \textbf{Connect Selected Node}, then click the target node. Customize edge labels and curvature (\code{bend left} / \code{bend right}).
+  \item \textbf{CTAN Templates:} Insert starter code for \code{tikz-cd} (commutative diagrams), \code{automata} (state machines), and \code{circuitikz} (circuits).
 \end{itemize}
 
 \section{Export and Validation}
 \begin{itemize}
-  \item \textbf{Copy Code:} Copies the generated \texttt{\textbackslash begin\{tikzpicture\}...\textbackslash end\{tikzpicture\}} block to paste into \textbf{ForjaTeX IDE}.
-  \item \textbf{Export .tex:} Saves the snippet to a \texttt{.tex} file.
-  \item \textbf{Test LaTeX:} Runs local \texttt{pdflatex} (if installed) to verify that the generated TikZ/PGF code compiles cleanly.
+  \item \textbf{Copy Code:} Copies the generated \code{\textbackslash begin\{tikzpicture\}...\textbackslash end\{tikzpicture\}} block to paste into \textbf{ForjaTeX IDE}.
+  \item \textbf{Export .tex:} Saves the snippet to a \code{.tex} file.
+  \item \textbf{Test LaTeX:} Runs local \code{pdflatex} (if installed) to verify that the generated TikZ/PGF code compiles cleanly.
 \end{itemize}
 
 \section{Glossary}
 \begin{description}
   \item[TikZ / PGF] Native \LaTeX{} vector graphics language for diagrams and technical illustrations.
   \item[PGFPlots] Package built on top of TikZ for publication-ready 2D and 3D plots.
-  \item[\texttt{trig format plots=rad}] PGFPlots option that interprets trigonometric arguments in radians instead of degrees.
+  \item[\code{trig format plots=rad}] PGFPlots option that interprets trigonometric arguments in radians instead of degrees.
 \end{description}
 
 \section{Version History (Changelog)}
 \begin{itemize}
-  \item \textbf{v1.1.0:} Fixed sidebar layout, full PGFPlots support (Functions, Points/CSV + Error Bars, Bar Charts, 3D Surface, Log/Semilog), extra TikZ shapes, CTAN templates, automatic PT-BR/EN switcher, and direct feedback submission to \texttt{forjatex.com.br}.
+  \item \textbf{v1.1.0:} Fixed sidebar layout, full PGFPlots support (Functions, Points/CSV + Error Bars, Bar Charts, 3D Surface, Log/Semilog), extra TikZ shapes, CTAN templates, automatic PT-BR/EN switcher, Linux (\code{.deb}/\code{.AppImage}) support, and direct feedback submission to \code{forjatex.com.br}.
   \item \textbf{v1.0.0:} Initial release with basic TikZ canvas and PGFPlots function plotter.
 \end{itemize}
 
 \end{document}
-
