@@ -2,6 +2,7 @@
   --bg: #f3f4f6;
   --surface: #ffffff;
   --surface-tint: #eef6f0;
+  --surface-hover: #f8fafc;
   --banner-bg: #eef4ff;
   --border: #d8dee6;
   --text: #111827;
@@ -15,6 +16,7 @@
   --bg: #0b111e;
   --surface: #111a2c;
   --surface-tint: #102420;
+  --surface-hover: #17233b;
   --banner-bg: #13223b;
   --border: #24334f;
   --text: #e2e8f0;
@@ -44,12 +46,32 @@ body {
 
 .ac-topbar {
   height: 44px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: center;
+}
+
+.ac-topbar-inner,
+.ac-footer-inner {
+  width: 100%;
+  max-width: 1120px;
+  padding: 0 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
+}
+
+.ac-container {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  background: var(--bg);
 }
 
 .ac-brand {
@@ -105,6 +127,20 @@ body {
   border-color: var(--border);
 }
 
+.ac-donate-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border: 1px solid #f43f5e;
+  background: rgba(244, 63, 94, 0.08);
+  color: #e11d48;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
 .ac-banner {
   display: flex;
   align-items: center;
@@ -114,6 +150,10 @@ body {
   background: var(--banner-bg);
   border-bottom: 1px solid var(--border);
   font-size: 12px;
+}
+
+.ac-banner.info {
+  background: var(--surface);
 }
 
 .ac-banner-left {
@@ -273,23 +313,19 @@ body {
 .ac-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  flex: 1;
+  align-content: start;
   background: var(--border);
   gap: 1px;
+  border-bottom: 1px solid var(--border);
 }
 
 .ac-list {
   display: grid;
   grid-template-columns: 1fr;
-  flex: 1;
+  align-content: start;
   background: var(--border);
   gap: 1px;
-}
-
-@media (max-width: 920px) {
-  .ac-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  border-bottom: 1px solid var(--border);
 }
 
 .ac-card {
@@ -297,8 +333,17 @@ body {
   padding: 16px 18px;
   display: flex;
   flex-direction: column;
-  min-height: 235px;
-  height: 100%;
+  height: 245px;
+  transition: background-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+}
+
+.ac-card:hover {
+  background: var(--surface-hover);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.ac-card:hover .ac-app-icon {
+  transform: scale(1.05);
 }
 
 .ac-card.installed {
@@ -314,7 +359,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .ac-version {
@@ -323,11 +368,16 @@ body {
   font-weight: 700;
 }
 
+.ac-upd-chip {
+  color: var(--accent);
+  font-weight: 800;
+}
+
 .ac-card-head {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .ac-app-icon {
@@ -337,6 +387,7 @@ body {
   object-fit: cover;
   border: 1px solid var(--border);
   flex-shrink: 0;
+  transition: transform 0.16s ease;
 }
 
 .ac-card-titles {
@@ -384,8 +435,32 @@ body {
 .ac-updated {
   font-size: 11px;
   color: var(--muted);
-  margin-top: 8px;
-  margin-bottom: 14px;
+  margin-top: 6px;
+}
+
+.ac-progress-wrap {
+  margin-top: 6px;
+}
+
+.ac-progress-text {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 3px;
+}
+
+.ac-progress-track {
+  height: 4px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.ac-progress-bar {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.15s ease;
 }
 
 .ac-card-actions {
@@ -405,6 +480,12 @@ body {
   font-weight: 700;
   letter-spacing: 0.08em;
   cursor: pointer;
+}
+
+.ac-action-main.update {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
 }
 
 .ac-action-main:hover:not(:disabled) {
@@ -436,7 +517,7 @@ body {
   position: absolute;
   right: 0;
   bottom: 36px;
-  width: 210px;
+  width: 220px;
   background: var(--surface);
   border: 1px solid var(--border);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.16);
@@ -460,40 +541,15 @@ body {
 }
 
 .ac-footer {
+  height: 36px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 16px;
+  justify-content: center;
   background: var(--surface);
   border-top: 1px solid var(--border);
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.06em;
   color: var(--muted);
-}
-
-.spin {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.ac-donate-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 10px;
-  border: 1px solid #f43f5e;
-  background: rgba(244, 63, 94, 0.08);
-  color: #e11d48;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  cursor: pointer;
 }
 
 .ac-modal-backdrop {
@@ -566,4 +622,14 @@ body {
   gap: 6px;
   width: 100%;
   margin-top: auto;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }

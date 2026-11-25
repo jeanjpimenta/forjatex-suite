@@ -1,8 +1,11 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use serde::Serialize;
+use std::fs::File;
+use std::io::{Read, Write};
 use std::path::Path;
 use std::process::Command;
+use tauri::{AppHandle, Emitter};
 
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
@@ -22,20 +25,67 @@ struct InstalledAppInfo {
     version: Option<String>,
 }
 
-fn find_windows_app(display_names: &[&str], exe_names: &[&str]) -> (bool, Option<String>, Option<String>) {
+#[derive(Clone, Serialize)]
+struct DownloadProgressPayload {
+    id: String,
+    downloaded: u64,
+    total: u64,
+}
+
+fn read_exe_version(exe_path: &Path) -> Option<String> {
+    #[cfg(target_os = "windows")]
+    {
+        let p = exe_path.to_string_lossy().replace('\'', "''");
+        let out = silent_command("powershell")
+            .args([
+                "-NoProfile",
+                "-Command",
+                &format!("(Get-Item '{}').VersionInfo.ProductVersion", p),
+            ])
+            .output()
+            .ok()?;
+        if out.status.success() {
+            let v = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            if !v.is_empty() {
+                // Trim optional 4th .0 segment if Windows returns 1.3.0.0
+                let parts: Vec<&str> = v.split('.').collect();
+                if parts.len() == 4 && parts[3] == "0" {
+                    return Some(format!("{}.{}.{}", parts[0], parts[1], parts[2]));
+                }
+                return Some(v);
+            }
+        }
+    }
+    let _ = exe_path;
+    None
+}
+
+fn find_windows_app(
+    display_names: &[&str],
+    exe_names: &[&str],
+) -> (bool, Option<String>, Option<String>) {
     #[cfg(target_os = "windows")]
     {
         let local_app_data = std::env::var("LOCALAPPDATA").unwrap_or_default();
-        let program_files = std::env::var("ProgramFiles").unwrap_or_else(|_| "C:\\Program Files".to_string());
+        let program_files =
+            std::env::var("ProgramFiles").unwrap_or_else(|_| "C:\\Program Files".to_string());
         for folder in display_names {
             for exe in exe_names {
                 let p1 = Path::new(&local_app_data).join(folder).join(exe);
                 if p1.exists() {
-                    return (true, Some(p1.to_string_lossy().to_string()), None);
+                    return (
+                        true,
+                        Some(p1.to_string_lossy().to_string()),
+                        read_exe_version(&p1),
+                    );
                 }
                 let p2 = Path::new(&program_files).join(folder).join(exe);
                 if p2.exists() {
-                    return (true, Some(p2.to_string_lossy().to_string()), None);
+                    return (
+                        true,
+                        Some(p2.to_string_lossy().to_string()),
+                        read_exe_version(&p2),
+                    );
                 }
             }
         }
@@ -81,66 +131,103 @@ fn launch_app(exe_path: String) -> Result<(), String> {
 
 #[tauri::command]
 fn fetch_manifest_json(url: String) -> Result<String, String> {
-    #[cfg(target_os = "windows")]
-    {
-        let script = format!(
-            "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; $wc = New-Object System.Net.WebClient; $wc.Encoding = [System.Text.Encoding]::UTF8; $wc.Headers.Add('User-Agent', 'ForjaTeX-Suite'); $wc.DownloadString('{}').TrimStart([char]0xFEFF)",
-            url.replace('\'', "''")
-        );
-        let out = silent_command("powershell")
-            .args(["-NoProfile", "-Command", &script])
-            .output()
-            .map_err(|e| format!("Falha ao buscar manifesto: {}", e))?;
-        if out.status.success() {
-            Ok(String::from_utf8_lossy(&out.stdout).trim().to_string())
-        } else {
-            Err(String::from_utf8_lossy(&out.stderr).to_string())
-        }
-    }
-    #[cfg(not(target_os = "windows"))]
-    {
-        let out = Command::new("curl")
-            .args(["-fsSL", &url])
-            .output()
-            .map_err(|e| format!("Falha ao buscar manifesto: {}", e))?;
-        if out.status.success() {
-            Ok(String::from_utf8_lossy(&out.stdout).to_string())
-        } else {
-            Err(String::from_utf8_lossy(&out.stderr).to_string())
-        }
-    }
+    let resp = ureq::get(&url)
+        .set("User-Agent", "ForjaTeX-Suite/1.2")
+        .call()
+        .map_err(|e| format!("Falha ao consultar manifesto: {}", e))?;
+    let body = resp
+        .into_string()
+        .map_err(|e| format!("Falha ao ler manifesto: {}", e))?;
+    Ok(body.trim_start_matches('\u{FEFF}').trim().to_string())
 }
 
 #[tauri::command]
-fn download_and_run_installer(url: String, file_name: String) -> Result<String, String> {
+async fn download_and_run_installer(
+    app: AppHandle,
+    id: String,
+    url: String,
+    file_name: String,
+    silent: bool,
+    self_update: bool,
+) -> Result<String, String> {
     let temp_dir = std::env::temp_dir().join("forjatex-suite");
     std::fs::create_dir_all(&temp_dir).map_err(|e| e.to_string())?;
     let dest = temp_dir.join(&file_name);
-    let dest_str = dest.to_string_lossy().to_string();
 
-    #[cfg(target_os = "windows")]
-    {
-        let script = format!(
-            "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri '{}' -OutFile '{}' -UseBasicParsing",
-            url.replace('\'', "''"),
-            dest_str.replace('\'', "''")
-        );
-        let out = silent_command("powershell")
-            .args(["-NoProfile", "-Command", &script])
-            .output()
+    let app_clone = app.clone();
+    let id_clone = id.clone();
+    let dest_clone = dest.clone();
+
+    tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
+        let resp = ureq::get(&url)
+            .set("User-Agent", "ForjaTeX-Suite/1.2")
+            .call()
             .map_err(|e| format!("Falha ao baixar instalador: {}", e))?;
-        if !out.status.success() {
-            return Err(String::from_utf8_lossy(&out.stderr).to_string());
+
+        let total: u64 = resp
+            .header("Content-Length")
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(0);
+
+        let mut reader = resp.into_reader();
+        let mut file = File::create(&dest_clone).map_err(|e| e.to_string())?;
+        let mut buf = [0u8; 32768];
+        let mut downloaded: u64 = 0;
+
+        loop {
+            let n = reader.read(&mut buf).map_err(|e| e.to_string())?;
+            if n == 0 {
+                break;
+            }
+            file.write_all(&buf[..n]).map_err(|e| e.to_string())?;
+            downloaded += n as u64;
+            let _ = app_clone.emit(
+                "download-progress",
+                DownloadProgressPayload {
+                    id: id_clone.clone(),
+                    downloaded,
+                    total,
+                },
+            );
         }
+        Ok(())
+    })
+    .await
+    .map_err(|e| e.to_string())??;
+
+    if self_update {
+        let current_exe = std::env::current_exe().map_err(|e| e.to_string())?;
+        let installer_str = dest.to_string_lossy().to_string();
+        let current_str = current_exe.to_string_lossy().to_string();
+        silent_command("cmd")
+            .args([
+                "/C",
+                &format!(
+                    "timeout /t 1 /nobreak >nul & \"{}\" /S & start \"\" \"{}\"",
+                    installer_str, current_str
+                ),
+            ])
+            .spawn()
+            .map_err(|e| format!("Falha ao iniciar atualização do Suite: {}", e))?;
+        app.exit(0);
+        return Ok("Reiniciando para aplicar atualização...".to_string());
+    }
+
+    if silent && file_name.to_lowercase().ends_with(".exe") {
+        let status = Command::new(&dest)
+            .arg("/S")
+            .status()
+            .map_err(|e| format!("Falha ao executar instalador silencioso: {}", e))?;
+        if status.success() {
+            Ok(format!("{} atualizado/instalado com sucesso!", id))
+        } else {
+            Err("Instalador retornou erro.".to_string())
+        }
+    } else {
         Command::new(&dest)
             .spawn()
             .map_err(|e| format!("Falha ao iniciar instalador: {}", e))?;
         Ok(format!("Instalador iniciado: {}", file_name))
-    }
-    #[cfg(not(target_os = "windows"))]
-    {
-        let _ = (url, file_name, dest_str);
-        Err("Download automático suportado apenas no Windows nesta versão.".to_string())
     }
 }
 
@@ -157,4 +244,3 @@ fn main() {
         .run(tauri::generate_context!())
         .expect("error while running ForjaTeX Suite");
 }
-

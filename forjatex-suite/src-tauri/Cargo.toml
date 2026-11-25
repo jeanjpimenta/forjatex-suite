@@ -1,6 +1,6 @@
 [package]
 name = "forjatex-suite"
-version = "1.1.0"
+version = "1.2.0"
 description = "ForjaTeX App Suite — Hub e Atualizador de Aplicativos TeX/LaTeX"
 authors = ["ForjaTeX Contributors"]
 license = "MIT"
@@ -16,4 +16,4 @@ serde = { version = "1.0", features = ["derive"] }
 tauri = { version = "2.12.7", features = [] }
 tauri-plugin-dialog = "2"
 tauri-plugin-shell = "2"
-
+ureq = "2.12"

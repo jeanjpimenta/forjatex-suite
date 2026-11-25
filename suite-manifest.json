@@ -1,5 +1,10 @@
 {
   "updatedAt": "2026-11-25T00:00:00Z",
+  "suite": {
+    "latestVersion": "1.2.0",
+    "installerFile": "ForjaTeX.Suite_1.2.0_x64-setup.exe",
+    "installerUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTeX.Suite_1.2.0_x64-setup.exe"
+  },
   "apps": [
     {
       "id": "forjatex",
@@ -19,4 +24,3 @@
     }
   ]
 }
-
