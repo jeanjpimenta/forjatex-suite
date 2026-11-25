@@ -1,0 +1,19 @@
+[package]
+name = "forjatex-suite"
+version = "1.0.0"
+description = "ForjaTeX App Suite — Hub e Atualizador de Aplicativos TeX/LaTeX"
+authors = ["ForjaTeX Contributors"]
+license = "MIT"
+edition = "2024"
+rust-version = "1.90"
+
+[build-dependencies]
+tauri-build = { version = "2.7.6", features = [] }
+
+[dependencies]
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+tauri = { version = "2.12.7", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-shell = "2"
+

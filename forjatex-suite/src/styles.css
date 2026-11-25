@@ -1,0 +1,265 @@
+:root {
+  --bg: #0b111e;
+  --surface: #111a2c;
+  --panel: #162238;
+  --border: #24334f;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --accent: #38bdf8;
+}
+
+:root[data-theme='light'] {
+  --bg: #edf1f7;
+  --surface: #e4e9f1;
+  --panel: #f5f8fc;
+  --border: #cbd5e1;
+  --text: #0f172a;
+  --muted: #475569;
+  --accent: #0284c7;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.suite-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 26px;
+  gap: 16px;
+}
+
+.suite-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.suite-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.suite-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.suite-brand h1 {
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.suite-brand span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.suite-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.suite-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.suite-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.suite-btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.suite-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.suite-config-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 9px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+}
+
+.suite-config-bar label {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.suite-config-bar input {
+  padding: 7px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+}
+
+.suite-status-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  font-size: 12px;
+}
+
+.suite-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 14px;
+  flex: 1;
+}
+
+.suite-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 11px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+}
+
+.suite-card.soon {
+  opacity: 0.72;
+}
+
+.suite-card-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.suite-card-badge {
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  border: 2px solid;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.suite-card-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.suite-card-title h2 {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.suite-tagline {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.suite-pill {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.suite-pill.ok {
+  border-color: #10b981;
+  color: #10b981;
+}
+
+.suite-desc {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.suite-changelog {
+  font-size: 11px;
+  color: var(--muted);
+  background: var(--surface);
+  padding: 6px 8px;
+  border-radius: 6px;
+}
+
+.suite-card-footer {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.suite-installed-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #10b981;
+  margin-left: auto;
+}
+
+.suite-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--muted);
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
