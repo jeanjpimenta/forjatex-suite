@@ -32,40 +32,57 @@ struct DownloadProgressPayload {
     total: u64,
 }
 
+#[cfg(target_os = "windows")]
 fn read_exe_version(exe_path: &Path) -> Option<String> {
-    #[cfg(target_os = "windows")]
-    {
-        let p = exe_path.to_string_lossy().replace('\'', "''");
-        let out = silent_command("powershell")
-            .args([
-                "-NoProfile",
-                "-Command",
-                &format!("(Get-Item '{}').VersionInfo.ProductVersion", p),
-            ])
-            .output()
-            .ok()?;
-        if out.status.success() {
-            let v = String::from_utf8_lossy(&out.stdout).trim().to_string();
-            if !v.is_empty() {
-                // Trim optional 4th .0 segment if Windows returns 1.3.0.0
-                let parts: Vec<&str> = v.split('.').collect();
-                if parts.len() == 4 && parts[3] == "0" {
-                    return Some(format!("{}.{}.{}", parts[0], parts[1], parts[2]));
-                }
-                return Some(v);
+    let p = exe_path.to_string_lossy().replace('\'', "''");
+    let out = silent_command("powershell")
+        .args([
+            "-NoProfile",
+            "-Command",
+            &format!("(Get-Item '{}').VersionInfo.ProductVersion", p),
+        ])
+        .output()
+        .ok()?;
+    if out.status.success() {
+        let v = String::from_utf8_lossy(&out.stdout).trim().to_string();
+        if !v.is_empty() {
+            let parts: Vec<&str> = v.split('.').collect();
+            if parts.len() == 4 && parts[3] == "0" {
+                return Some(format!("{}.{}.{}", parts[0], parts[1], parts[2]));
             }
+            return Some(v);
         }
     }
-    let _ = exe_path;
     None
 }
 
-fn find_windows_app(
+#[cfg(target_os = "linux")]
+fn read_linux_pkg_version(pkg_names: &[&str]) -> Option<String> {
+    for pkg in pkg_names {
+        if let Ok(out) = Command::new("dpkg-query")
+            .args(["-W", "-f=${Version}", pkg])
+            .output()
+        {
+            if out.status.success() {
+                let raw = String::from_utf8_lossy(&out.stdout).trim().to_string();
+                if !raw.is_empty() {
+                    let clean = raw.split('-').next().unwrap_or(&raw).to_string();
+                    return Some(clean);
+                }
+            }
+        }
+    }
+    None
+}
+
+fn find_installed_app(
     display_names: &[&str],
     exe_names: &[&str],
+    linux_bins: &[&str],
 ) -> (bool, Option<String>, Option<String>) {
     #[cfg(target_os = "windows")]
     {
+        let _ = linux_bins;
         let local_app_data = std::env::var("LOCALAPPDATA").unwrap_or_default();
         let program_files =
             std::env::var("ProgramFiles").unwrap_or_else(|_| "C:\\Program Files".to_string());
@@ -90,24 +107,54 @@ fn find_windows_app(
             }
         }
     }
-    let _ = (display_names, exe_names);
+
+    #[cfg(target_os = "linux")]
+    {
+        let _ = (display_names, exe_names);
+        let home = std::env::var("HOME").unwrap_or_default();
+        let candidates = [
+            "/usr/bin".to_string(),
+            "/usr/local/bin".to_string(),
+            format!("{}/.local/bin", home),
+        ];
+        for dir in &candidates {
+            for bin in linux_bins {
+                let p = Path::new(dir).join(bin);
+                if p.exists() {
+                    return (
+                        true,
+                        Some(p.to_string_lossy().to_string()),
+                        read_linux_pkg_version(linux_bins),
+                    );
+                }
+                let appimg = Path::new(dir).join(format!("{}.AppImage", bin));
+                if appimg.exists() {
+                    return (true, Some(appimg.to_string_lossy().to_string()), None);
+                }
+            }
+        }
+    }
+
+    #[cfg(not(any(target_os = "windows", target_os = "linux")))]
+    let _ = (display_names, exe_names, linux_bins);
+
     (false, None, None)
 }
 
 #[tauri::command]
 fn check_installed_apps() -> Vec<InstalledAppInfo> {
     let specs = [
-        ("forjatex", vec!["ForjaTeX"], vec!["forjatex.exe", "ForjaTeX.exe"]),
-        ("forjatikz", vec!["ForjaTikZ"], vec!["forjatikz.exe", "ForjaTikZ.exe"]),
-        ("forjasnap", vec!["ForjaSnap"], vec!["forjasnap.exe"]),
-        ("forjabib", vec!["ForjaBib"], vec!["forjabib.exe"]),
-        ("forjadiff", vec!["ForjaDiff"], vec!["forjadiff.exe"]),
+        ("forjatex", vec!["ForjaTeX"], vec!["forjatex.exe", "ForjaTeX.exe"], vec!["forjatex"]),
+        ("forjatikz", vec!["ForjaTikZ"], vec!["forjatikz.exe", "ForjaTikZ.exe"], vec!["forjatikz"]),
+        ("forjasnap", vec!["ForjaSnap"], vec!["forjasnap.exe"], vec!["forjasnap"]),
+        ("forjabib", vec!["ForjaBib"], vec!["forjabib.exe"], vec!["forjabib"]),
+        ("forjadiff", vec!["ForjaDiff"], vec!["forjadiff.exe"], vec!["forjadiff"]),
     ];
 
     specs
         .iter()
-        .map(|(id, dirs, exes)| {
-            let (installed, exe_path, version) = find_windows_app(dirs, exes);
+        .map(|(id, dirs, exes, linux_bins)| {
+            let (installed, exe_path, version) = find_installed_app(dirs, exes, linux_bins);
             InstalledAppInfo {
                 id: id.to_string(),
                 installed,
@@ -132,7 +179,7 @@ fn launch_app(exe_path: String) -> Result<(), String> {
 #[tauri::command]
 fn fetch_manifest_json(url: String) -> Result<String, String> {
     let resp = ureq::get(&url)
-        .set("User-Agent", "ForjaTeX-Suite/1.2")
+        .set("User-Agent", "ForjaTeX-Suite/1.3")
         .call()
         .map_err(|e| format!("Falha ao consultar manifesto: {}", e))?;
     let body = resp
@@ -160,7 +207,7 @@ async fn download_and_run_installer(
 
     tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
         let resp = ureq::get(&url)
-            .set("User-Agent", "ForjaTeX-Suite/1.2")
+            .set("User-Agent", "ForjaTeX-Suite/1.3")
             .call()
             .map_err(|e| format!("Falha ao baixar instalador: {}", e))?;
 
@@ -195,58 +242,109 @@ async fn download_and_run_installer(
     .await
     .map_err(|e| e.to_string())??;
 
-    if self_update {
-        let current_exe = std::env::current_exe().map_err(|e| e.to_string())?;
-        let installer_str = dest.to_string_lossy().to_string();
-        let current_str = current_exe.to_string_lossy().to_string();
-        let install_cmd = if file_name.to_lowercase().ends_with(".msi") {
-            format!("msiexec /i \"{}\" /passive", installer_str)
+    #[cfg(target_os = "windows")]
+    {
+        if self_update {
+            let current_exe = std::env::current_exe().map_err(|e| e.to_string())?;
+            let installer_str = dest.to_string_lossy().to_string();
+            let current_str = current_exe.to_string_lossy().to_string();
+            let install_cmd = if file_name.to_lowercase().ends_with(".msi") {
+                format!("msiexec /i \"{}\" /passive", installer_str)
+            } else {
+                format!("\"{}\" /S", installer_str)
+            };
+            silent_command("cmd")
+                .args([
+                    "/C",
+                    &format!(
+                        "timeout /t 1 /nobreak >nul & {} & start \"\" \"{}\"",
+                        install_cmd, current_str
+                    ),
+                ])
+                .spawn()
+                .map_err(|e| format!("Falha ao iniciar atualização do Suite: {}", e))?;
+            app.exit(0);
+            return Ok("Reiniciando para aplicar atualização...".to_string());
+        }
+
+        if file_name.to_lowercase().ends_with(".msi") {
+            let mut args = vec!["/i", dest.to_str().unwrap_or_default()];
+            if silent {
+                args.push("/passive");
+            }
+            let status = Command::new("msiexec")
+                .args(&args)
+                .status()
+                .map_err(|e| format!("Falha ao executar msiexec: {}", e))?;
+            if status.success() {
+                Ok(format!("{} instalado/atualizado via MSI!", id))
+            } else {
+                Err("Instalador MSI cancelado ou retornou erro.".to_string())
+            }
+        } else if silent && file_name.to_lowercase().ends_with(".exe") {
+            let status = Command::new(&dest)
+                .arg("/S")
+                .status()
+                .map_err(|e| format!("Falha ao executar instalador silencioso: {}", e))?;
+            if status.success() {
+                Ok(format!("{} atualizado/instalado com sucesso!", id))
+            } else {
+                Err("Instalador retornou erro.".to_string())
+            }
         } else {
-            format!("\"{}\" /S", installer_str)
-        };
-        silent_command("cmd")
-            .args([
-                "/C",
-                &format!(
-                    "timeout /t 1 /nobreak >nul & {} & start \"\" \"{}\"",
-                    install_cmd, current_str
-                ),
-            ])
-            .spawn()
-            .map_err(|e| format!("Falha ao iniciar atualização do Suite: {}", e))?;
-        app.exit(0);
-        return Ok("Reiniciando para aplicar atualização...".to_string());
+            Command::new(&dest)
+                .spawn()
+                .map_err(|e| format!("Falha ao iniciar instalador: {}", e))?;
+            Ok(format!("Instalador iniciado: {}", file_name))
+        }
     }
 
-    if file_name.to_lowercase().ends_with(".msi") {
-        let mut args = vec!["/i", dest.to_str().unwrap_or_default()];
-        if silent {
-            args.push("/passive");
-        }
-        let status = Command::new("msiexec")
-            .args(&args)
-            .status()
-            .map_err(|e| format!("Falha ao executar msiexec: {}", e))?;
-        if status.success() {
-            Ok(format!("{} instalado/atualizado via MSI!", id))
+    #[cfg(target_os = "linux")]
+    {
+        let lower = file_name.to_lowercase();
+        if lower.ends_with(".deb") {
+            let status = Command::new("pkexec")
+                .args(["dpkg", "-i", dest.to_str().unwrap_or_default()])
+                .status()
+                .map_err(|e| format!("Falha ao executar pkexec dpkg: {}", e))?;
+            if status.success() {
+                if self_update {
+                    if let Ok(exe) = std::env::current_exe() {
+                        let _ = Command::new(exe).spawn();
+                    }
+                    app.exit(0);
+                }
+                Ok(format!("{} instalado via .deb!", id))
+            } else {
+                Err("Instalação .deb cancelada ou falhou.".to_string())
+            }
+        } else if lower.ends_with(".appimage") {
+            use std::os::unix::fs::PermissionsExt;
+            let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".to_string());
+            let bin_dir = Path::new(&home).join(".local/bin");
+            std::fs::create_dir_all(&bin_dir).map_err(|e| e.to_string())?;
+            let target_bin = bin_dir.join(format!("{}.AppImage", id));
+            std::fs::copy(&dest, &target_bin).map_err(|e| e.to_string())?;
+            let mut perms = std::fs::metadata(&target_bin)
+                .map_err(|e| e.to_string())?
+                .permissions();
+            perms.set_mode(0o755);
+            std::fs::set_permissions(&target_bin, perms).map_err(|e| e.to_string())?;
+            if self_update {
+                let _ = Command::new(&target_bin).spawn();
+                app.exit(0);
+            }
+            Ok(format!("{} instalado em ~/.local/bin!", id))
         } else {
-            Err("Instalador MSI cancelado ou retornou erro.".to_string())
+            let _ = (silent, self_update);
+            Err("Formato de instalador não suportado no Linux.".to_string())
         }
-    } else if silent && file_name.to_lowercase().ends_with(".exe") {
-        let status = Command::new(&dest)
-            .arg("/S")
-            .status()
-            .map_err(|e| format!("Falha ao executar instalador silencioso: {}", e))?;
-        if status.success() {
-            Ok(format!("{} atualizado/instalado com sucesso!", id))
-        } else {
-            Err("Instalador retornou erro.".to_string())
-        }
-    } else {
-        Command::new(&dest)
-            .spawn()
-            .map_err(|e| format!("Falha ao iniciar instalador: {}", e))?;
-        Ok(format!("Instalador iniciado: {}", file_name))
+    }
+
+    #[cfg(not(any(target_os = "windows", target_os = "linux")))]
+    {
+        let _ = (app, id, file_name, silent, self_update, dest);
+        Err("Sistema operacional ainda não suportado para instalação automática.".to_string())
     }
 }
 

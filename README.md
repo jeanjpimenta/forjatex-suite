@@ -59,11 +59,23 @@ Quer ajudar a traduzir o **ForjaTeX** para Espanhol, Francês, Alemão ou outro 
 | **ForjaDiff** | Visual revision comparator powered by `latexdiff`. | Coming soon |
 
 ### Download
-Grab the latest Windows `.exe` (NSIS) and `.msi` installers from [**GitHub Releases**](https://github.com/jeanjpimenta/forjatex-suite/releases).
+Grab the latest **Windows** (`.exe` / `.msi`) and **Linux** (`.deb` / `.AppImage`) installers from [**GitHub Releases**](https://github.com/jeanjpimenta/forjatex-suite/releases).
 
 > **Prerequisite for local LaTeX compilation:** install **MiKTeX**, **TeX Live**, or **Tectonic**.
 >
-> **Note on Code Signing:** current installers do **not yet have a digital code-signing certificate**, as this is an early-stage independent project. Because of this, Windows SmartScreen may show a warning on first launch (click *More info → Run anyway*). Official code signing is planned as soon as possible.
+> **Note on Code Signing (Windows):** current Windows installers do **not yet have a digital code-signing certificate**, as this is an early-stage independent project. Because of this, Windows SmartScreen may show a warning on first launch (click *More info → Run anyway*). Official code signing is planned as soon as possible.
+
+### Estrutura do Repositório / Repository Structure
+
+| Path | Description |
+| --- | --- |
+| `src/` & `src-tauri/` | **ForjaTeX IDE** — Desktop LaTeX IDE (React + TypeScript + Tauri v2 / Rust). |
+| `forjatex-suite/` | **ForjaTeX App Suite** — Cross-platform launcher, installer & updater (Windows `.msi`/`.exe` & Linux `.deb`/`.AppImage`). |
+| `forjatikz/` | **ForjaTikZ** — Visual TikZ & PGFPlots diagram studio (Windows & Linux). |
+| `docs/manuals/` | Official bilingual user manuals (`PT-BR` & `EN-US`) in Markdown and PDF, bundled inside each app. |
+| `docs/GUIA-GITHUB-RELEASES.md` | Maintainer guide for versioning, tags, and automated GitHub Releases. |
+| `.github/workflows/` | `ci-verify.yml` (cross-platform build check on every push) & `release-suite.yml` (Windows + Linux release builds). |
+| `suite-manifest.json` | Live release manifest consumed by **ForjaTeX App Suite** on Windows and Linux. |
 
 ### Community Translations
 Want to help translate **ForjaTeX** into Spanish, French, German, or another language? Check [src/i18n/README.md](src/i18n/README.md) — translations use simple JSON files!

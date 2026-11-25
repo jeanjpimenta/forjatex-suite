@@ -24,68 +24,205 @@ jobs:
       - name: Setup Rust stable
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Build ForjaTeX IDE
+      - name: Build ForjaTeX IDE (Windows)
         run: |
           npm ci
           npx tauri build --bundles msi,nsis
 
-      - name: Build ForjaTeX App Suite
+      - name: Build ForjaTeX App Suite (Windows)
         working-directory: forjatex-suite
         run: |
           npm install
           npx tauri build --bundles msi,nsis
 
-      - name: Build ForjaTikZ
+      - name: Build ForjaTikZ (Windows)
         working-directory: forjatikz
         run: |
           npm install
           npx tauri build --bundles msi,nsis
 
-      - name: Generate suite-manifest.json
+      - name: Collect Windows bundles
         shell: pwsh
         run: |
-          $repo = "${{ github.repository }}"
-          $tag = "${{ github.ref_name }}"
-          if (-not $tag -or $tag -eq "main") { $tag = "v1.0.0" }
-          $manifest = @{
-            updatedAt = (Get-Date).ToString("o")
-            suite = @{
-              latestVersion = "1.2.1"
-              installerFile = "ForjaTeX.Suite_1.2.1_x64_en-US.msi"
-              installerUrl = "https://github.com/$repo/releases/latest/download/ForjaTeX.Suite_1.2.1_x64_en-US.msi"
-              msiFile = "ForjaTeX.Suite_1.2.1_x64_en-US.msi"
-              msiUrl = "https://github.com/$repo/releases/latest/download/ForjaTeX.Suite_1.2.1_x64_en-US.msi"
-              exeFile = "ForjaTeX.Suite_1.2.1_x64-setup.exe"
-              exeUrl = "https://github.com/$repo/releases/latest/download/ForjaTeX.Suite_1.2.1_x64-setup.exe"
-            }
-            apps = @(
-              @{
-                id = "forjatex"
-                name = "ForjaTeX IDE"
-                latestVersion = "1.3.0"
-                installerFile = "ForjaTeX_1.3.0_x64_en-US.msi"
-                installerUrl = "https://github.com/$repo/releases/latest/download/ForjaTeX_1.3.0_x64_en-US.msi"
-                msiFile = "ForjaTeX_1.3.0_x64_en-US.msi"
-                msiUrl = "https://github.com/$repo/releases/latest/download/ForjaTeX_1.3.0_x64_en-US.msi"
-                exeFile = "ForjaTeX_1.3.0_x64-setup.exe"
-                exeUrl = "https://github.com/$repo/releases/latest/download/ForjaTeX_1.3.0_x64-setup.exe"
-                changelog = "Atualização via GitHub Releases ($tag)"
+          New-Item -ItemType Directory -Force -Path dist-windows/forjatex, dist-windows/suite, dist-windows/forjatikz | Out-Null
+          Copy-Item src-tauri/target/release/bundle/msi/*.msi dist-windows/forjatex/ -ErrorAction SilentlyContinue
+          Copy-Item src-tauri/target/release/bundle/nsis/*.exe dist-windows/forjatex/ -ErrorAction SilentlyContinue
+          Copy-Item forjatex-suite/src-tauri/target/release/bundle/msi/*.msi dist-windows/suite/ -ErrorAction SilentlyContinue
+          Copy-Item forjatex-suite/src-tauri/target/release/bundle/nsis/*.exe dist-windows/suite/ -ErrorAction SilentlyContinue
+          Copy-Item forjatikz/src-tauri/target/release/bundle/msi/*.msi dist-windows/forjatikz/ -ErrorAction SilentlyContinue
+          Copy-Item forjatikz/src-tauri/target/release/bundle/nsis/*.exe dist-windows/forjatikz/ -ErrorAction SilentlyContinue
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-bundles
+          path: dist-windows/
+
+  build-linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Linux Tauri system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build ForjaTeX IDE (Linux)
+        run: |
+          npm ci
+          npx tauri build --bundles deb,appimage
+
+      - name: Build ForjaTeX App Suite (Linux)
+        working-directory: forjatex-suite
+        run: |
+          npm install
+          npx tauri build --bundles deb,appimage
+
+      - name: Build ForjaTikZ (Linux)
+        working-directory: forjatikz
+        run: |
+          npm install
+          npx tauri build --bundles deb,appimage
+
+      - name: Collect Linux bundles
+        run: |
+          mkdir -p dist-linux/forjatex dist-linux/suite dist-linux/forjatikz
+          cp src-tauri/target/release/bundle/deb/*.deb dist-linux/forjatex/ 2>/dev/null || true
+          cp src-tauri/target/release/bundle/appimage/*.AppImage dist-linux/forjatex/ 2>/dev/null || true
+          cp forjatex-suite/src-tauri/target/release/bundle/deb/*.deb dist-linux/suite/ 2>/dev/null || true
+          cp forjatex-suite/src-tauri/target/release/bundle/appimage/*.AppImage dist-linux/suite/ 2>/dev/null || true
+          cp forjatikz/src-tauri/target/release/bundle/deb/*.deb dist-linux/forjatikz/ 2>/dev/null || true
+          cp forjatikz/src-tauri/target/release/bundle/appimage/*.AppImage dist-linux/forjatikz/ 2>/dev/null || true
+          ls -la dist-linux/forjatex dist-linux/suite dist-linux/forjatikz
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-bundles
+          path: dist-linux/
+
+  publish-release:
+    needs: [build-windows, build-linux]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Windows bundles
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-bundles
+          path: release-assets
+
+      - name: Download Linux bundles
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-bundles
+          path: release-assets
+
+      - name: Generate suite-manifest.json and flatten assets
+        run: |
+          python3 - << 'EOF'
+          import json, os, shutil
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          repo = os.environ.get("GITHUB_REPOSITORY", "jeanjpimenta/forjatex-suite")
+          tag = os.environ.get("GITHUB_REF_NAME", "v1.2.8")
+          base = f"https://github.com/{repo}/releases/latest/download"
+
+          def pick(folder: str, ext: str) -> str:
+              p = Path("release-assets") / folder
+              if not p.exists():
+                  return ""
+              for f in sorted(p.iterdir()):
+                  if f.name.endswith(ext):
+                      return f.name
+              return ""
+
+          def url(name: str) -> str:
+              return f"{base}/{name}" if name else ""
+
+          manifest = {
+              "updatedAt": datetime.now(timezone.utc).isoformat(),
+              "suite": {
+                  "latestVersion": "1.2.1",
+                  "installerFile": pick("suite", ".msi"),
+                  "installerUrl": url(pick("suite", ".msi")),
+                  "msiFile": pick("suite", ".msi"),
+                  "msiUrl": url(pick("suite", ".msi")),
+                  "exeFile": pick("suite", ".exe"),
+                  "exeUrl": url(pick("suite", ".exe")),
+                  "debFile": pick("suite", ".deb"),
+                  "debUrl": url(pick("suite", ".deb")),
+                  "appImageFile": pick("suite", ".AppImage"),
+                  "appImageUrl": url(pick("suite", ".AppImage")),
               },
-              @{
-                id = "forjatikz"
-                name = "ForjaTikZ"
-                latestVersion = "1.1.0"
-                installerFile = "ForjaTikZ_1.1.0_x64_en-US.msi"
-                installerUrl = "https://github.com/$repo/releases/latest/download/ForjaTikZ_1.1.0_x64_en-US.msi"
-                msiFile = "ForjaTikZ_1.1.0_x64_en-US.msi"
-                msiUrl = "https://github.com/$repo/releases/latest/download/ForjaTikZ_1.1.0_x64_en-US.msi"
-                exeFile = "ForjaTikZ_1.1.0_x64-setup.exe"
-                exeUrl = "https://github.com/$repo/releases/latest/download/ForjaTikZ_1.1.0_x64-setup.exe"
-                changelog = "Studio Visual TikZ & PGFPlots ($tag)"
-              }
-            )
+              "apps": [
+                  {
+                      "id": "forjatex",
+                      "name": "ForjaTeX IDE",
+                      "latestVersion": "1.3.0",
+                      "installerFile": pick("forjatex", ".msi"),
+                      "installerUrl": url(pick("forjatex", ".msi")),
+                      "msiFile": pick("forjatex", ".msi"),
+                      "msiUrl": url(pick("forjatex", ".msi")),
+                      "exeFile": pick("forjatex", ".exe"),
+                      "exeUrl": url(pick("forjatex", ".exe")),
+                      "debFile": pick("forjatex", ".deb"),
+                      "debUrl": url(pick("forjatex", ".deb")),
+                      "appImageFile": pick("forjatex", ".AppImage"),
+                      "appImageUrl": url(pick("forjatex", ".AppImage")),
+                      "changelog": f"Atualização Windows + Linux via GitHub Releases ({tag})",
+                  },
+                  {
+                      "id": "forjatikz",
+                      "name": "ForjaTikZ",
+                      "latestVersion": "1.1.0",
+                      "installerFile": pick("forjatikz", ".msi"),
+                      "installerUrl": url(pick("forjatikz", ".msi")),
+                      "msiFile": pick("forjatikz", ".msi"),
+                      "msiUrl": url(pick("forjatikz", ".msi")),
+                      "exeFile": pick("forjatikz", ".exe"),
+                      "exeUrl": url(pick("forjatikz", ".exe")),
+                      "debFile": pick("forjatikz", ".deb"),
+                      "debUrl": url(pick("forjatikz", ".deb")),
+                      "appImageFile": pick("forjatikz", ".AppImage"),
+                      "appImageUrl": url(pick("forjatikz", ".AppImage")),
+                      "changelog": f"Studio Visual TikZ & PGFPlots Windows + Linux ({tag})",
+                  },
+              ],
           }
-          [System.IO.File]::WriteAllText("$PWD\suite-manifest.json", ($manifest | ConvertTo-Json -Depth 4), (New-Object System.Text.UTF8Encoding($false)))
+
+          Path("suite-manifest.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
+
+          flat = Path("release-upload")
+          flat.mkdir(exist_ok=True)
+          for f in Path("release-assets").rglob("*"):
+              if f.is_file():
+                  shutil.copy2(f, flat / f.name)
+          EOF
+          ls -la release-upload
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
@@ -93,10 +230,4 @@ jobs:
           files: |
             suite-manifest.json
             docs/manuals/*.pdf
-            src-tauri/target/release/bundle/nsis/*.exe
-            src-tauri/target/release/bundle/msi/*.msi
-            forjatex-suite/src-tauri/target/release/bundle/nsis/*.exe
-            forjatex-suite/src-tauri/target/release/bundle/msi/*.msi
-            forjatikz/src-tauri/target/release/bundle/nsis/*.exe
-            forjatikz/src-tauri/target/release/bundle/msi/*.msi
-
+            release-upload/*

@@ -7,7 +7,11 @@
     "msiFile": "ForjaTeX.Suite_1.2.1_x64_en-US.msi",
     "msiUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTeX.Suite_1.2.1_x64_en-US.msi",
     "exeFile": "ForjaTeX.Suite_1.2.1_x64-setup.exe",
-    "exeUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTeX.Suite_1.2.1_x64-setup.exe"
+    "exeUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTeX.Suite_1.2.1_x64-setup.exe",
+    "debFile": "forjatex-suite_1.2.1_amd64.deb",
+    "debUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/forjatex-suite_1.2.1_amd64.deb",
+    "appImageFile": "ForjaTeX.Suite_1.2.1_amd64.AppImage",
+    "appImageUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTeX.Suite_1.2.1_amd64.AppImage"
   },
   "apps": [
     {
@@ -20,7 +24,11 @@
       "msiUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTeX_1.3.0_x64_en-US.msi",
       "exeFile": "ForjaTeX_1.3.0_x64-setup.exe",
       "exeUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTeX_1.3.0_x64-setup.exe",
-      "changelog": "v1.3.0: Tradução PT-BR/EN comunitária, GitHub completo e Tooltip na régua."
+      "debFile": "forjatex_1.3.0_amd64.deb",
+      "debUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/forjatex_1.3.0_amd64.deb",
+      "appImageFile": "ForjaTeX_1.3.0_amd64.AppImage",
+      "appImageUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTeX_1.3.0_amd64.AppImage",
+      "changelog": "v1.3.0: Tradução PT-BR/EN comunitária, GitHub completo, Tooltip e suporte Linux."
     },
     {
       "id": "forjatikz",
@@ -32,7 +40,11 @@
       "msiUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTikZ_1.1.0_x64_en-US.msi",
       "exeFile": "ForjaTikZ_1.1.0_x64-setup.exe",
       "exeUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTikZ_1.1.0_x64-setup.exe",
-      "changelog": "v1.1.0: PGFPlots completo (Funções, Pontos/CSV, Barras, 3D, Log) + Modelos TikZ CTAN."
+      "debFile": "forjatikz_1.1.0_amd64.deb",
+      "debUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/forjatikz_1.1.0_amd64.deb",
+      "appImageFile": "ForjaTikZ_1.1.0_amd64.AppImage",
+      "appImageUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTikZ_1.1.0_amd64.AppImage",
+      "changelog": "v1.1.0: PGFPlots completo (Funções, Pontos/CSV, Barras, 3D, Log) + Modelos TikZ CTAN + Linux."
     }
   ]
 }

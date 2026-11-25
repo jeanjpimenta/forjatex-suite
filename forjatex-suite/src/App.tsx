@@ -51,6 +51,10 @@ interface SuiteSelfInfo {
   msiFile?: string;
   exeUrl?: string;
   exeFile?: string;
+  debUrl?: string;
+  debFile?: string;
+  appImageUrl?: string;
+  appImageFile?: string;
 }
 
 interface SuiteAppEntry {
@@ -68,6 +72,10 @@ interface SuiteAppEntry {
   msiFile?: string;
   exeUrl?: string;
   exeFile?: string;
+  debUrl?: string;
+  debFile?: string;
+  appImageUrl?: string;
+  appImageFile?: string;
   changelog: string;
   comingSoon?: boolean;
 }
@@ -92,6 +100,12 @@ const DEFAULT_APPS: SuiteAppEntry[] = [
     exeUrl:
       'https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTeX_1.3.0_x64-setup.exe',
     exeFile: 'ForjaTeX_1.3.0_x64-setup.exe',
+    debUrl:
+      'https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTeX_1.3.0_amd64.deb',
+    debFile: 'ForjaTeX_1.3.0_amd64.deb',
+    appImageUrl:
+      'https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTeX_1.3.0_amd64.AppImage',
+    appImageFile: 'ForjaTeX_1.3.0_amd64.AppImage',
     changelog: 'v1.3.0: i18n comunitário (PT-BR/EN), Git completo com PAT/Clone e Tooltip na régua.',
   },
   {
@@ -108,11 +122,17 @@ const DEFAULT_APPS: SuiteAppEntry[] = [
       'https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTikZ_1.0.0_x64_en-US.msi',
     installerFile: 'ForjaTikZ_1.0.0_x64_en-US.msi',
     msiUrl:
-      'https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTikZ_1.0.0_x64_en-US.msi',
-    msiFile: 'ForjaTikZ_1.0.0_x64_en-US.msi',
+      'https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTikZ_1.1.0_x64_en-US.msi',
+    msiFile: 'ForjaTikZ_1.1.0_x64_en-US.msi',
     exeUrl:
-      'https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTikZ_1.0.0_x64-setup.exe',
-    exeFile: 'ForjaTikZ_1.0.0_x64-setup.exe',
+      'https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTikZ_1.1.0_x64-setup.exe',
+    exeFile: 'ForjaTikZ_1.1.0_x64-setup.exe',
+    debUrl:
+      'https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTikZ_1.1.0_amd64.deb',
+    debFile: 'ForjaTikZ_1.1.0_amd64.deb',
+    appImageUrl:
+      'https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTikZ_1.1.0_amd64.AppImage',
+    appImageFile: 'ForjaTikZ_1.1.0_amd64.AppImage',
     changelog: 'v1.0.0: Canvas interativo TikZ + Gerador PGFPlots + Validação via pdflatex.',
   },
   {
@@ -196,9 +216,11 @@ export default function App() {
       'https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/suite-manifest.json'
   );
   const [search, setSearch] = useState('');
+  const isLinux = typeof navigator !== 'undefined' && /linux/i.test(navigator.userAgent);
   const [sortBy, setSortBy] = useState<'name' | 'status'>('name');
-  const [installerFormat, setInstallerFormat] = useState<'msi' | 'exe'>(() => {
+  const [installerFormat, setInstallerFormat] = useState<'msi' | 'exe' | 'deb' | 'appimage'>(() => {
     const saved = localStorage.getItem('forjatex_suite_installer_fmt_v1');
+    if (isLinux) return saved === 'appimage' ? 'appimage' : 'deb';
     return saved === 'exe' ? 'exe' : 'msi';
   });
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -302,7 +324,17 @@ export default function App() {
     msiFile?: string;
     exeUrl?: string;
     exeFile?: string;
+    debUrl?: string;
+    debFile?: string;
+    appImageUrl?: string;
+    appImageFile?: string;
   }) => {
+    if (installerFormat === 'deb' && item.debUrl && item.debFile) {
+      return { url: item.debUrl, fileName: item.debFile };
+    }
+    if (installerFormat === 'appimage' && item.appImageUrl && item.appImageFile) {
+      return { url: item.appImageUrl, fileName: item.appImageFile };
+    }
     if (installerFormat === 'msi' && item.msiUrl && item.msiFile) {
       return { url: item.msiUrl, fileName: item.msiFile };
     }
@@ -533,14 +565,23 @@ export default function App() {
               className="ac-select"
               value={installerFormat}
               onChange={(e) => {
-                const fmt = e.target.value as 'msi' | 'exe';
+                const fmt = e.target.value as 'msi' | 'exe' | 'deb' | 'appimage';
                 setInstallerFormat(fmt);
                 localStorage.setItem('forjatex_suite_installer_fmt_v1', fmt);
               }}
               title="Escolha o formato padrão dos instaladores baixados pelo Suite"
             >
-              <option value="msi">.MSI</option>
-              <option value="exe">.EXE (NSIS)</option>
+              {isLinux ? (
+                <>
+                  <option value="deb">.DEB (Ubuntu/Debian)</option>
+                  <option value="appimage">.AppImage</option>
+                </>
+              ) : (
+                <>
+                  <option value="msi">.MSI</option>
+                  <option value="exe">.EXE (NSIS)</option>
+                </>
+              )}
             </select>
             <span className="ac-sort-label">{t('sort')}</span>
             <select
