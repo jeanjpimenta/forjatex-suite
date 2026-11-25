@@ -27,3 +27,8 @@ dist-ssr
 target/
 *.msi
 *.exe
+
+# Local IDE workspace, internal research notes and draft logos
+*.code-workspace
+research/
+assets/logos/
