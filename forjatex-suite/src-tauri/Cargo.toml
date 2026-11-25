@@ -1,6 +1,6 @@
 [package]
 name = "forjatex-suite"
-version = "1.2.0"
+version = "1.2.1"
 description = "ForjaTeX App Suite — Hub e Atualizador de Aplicativos TeX/LaTeX"
 authors = ["ForjaTeX Contributors"]
 license = "MIT"

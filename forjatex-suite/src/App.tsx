@@ -41,6 +41,10 @@ interface SuiteSelfInfo {
   latestVersion: string;
   installerUrl: string;
   installerFile: string;
+  msiUrl?: string;
+  msiFile?: string;
+  exeUrl?: string;
+  exeFile?: string;
 }
 
 interface SuiteAppEntry {
@@ -54,6 +58,10 @@ interface SuiteAppEntry {
   accentColor: string;
   installerUrl: string;
   installerFile: string;
+  msiUrl?: string;
+  msiFile?: string;
+  exeUrl?: string;
+  exeFile?: string;
   changelog: string;
   comingSoon?: boolean;
 }
@@ -70,8 +78,14 @@ const DEFAULT_APPS: SuiteAppEntry[] = [
     iconUrl: '/forjatex-icon.png',
     accentColor: '#0284C7',
     installerUrl:
+      'https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTeX_1.3.0_x64_en-US.msi',
+    installerFile: 'ForjaTeX_1.3.0_x64_en-US.msi',
+    msiUrl:
+      'https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTeX_1.3.0_x64_en-US.msi',
+    msiFile: 'ForjaTeX_1.3.0_x64_en-US.msi',
+    exeUrl:
       'https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTeX_1.3.0_x64-setup.exe',
-    installerFile: 'ForjaTeX_1.3.0_x64-setup.exe',
+    exeFile: 'ForjaTeX_1.3.0_x64-setup.exe',
     changelog: 'v1.3.0: i18n comunitário (PT-BR/EN), Git completo com PAT/Clone e Tooltip na régua.',
   },
   {
@@ -85,8 +99,14 @@ const DEFAULT_APPS: SuiteAppEntry[] = [
     iconUrl: '/forjatikz-icon.png',
     accentColor: '#D97706',
     installerUrl:
+      'https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTikZ_1.0.0_x64_en-US.msi',
+    installerFile: 'ForjaTikZ_1.0.0_x64_en-US.msi',
+    msiUrl:
+      'https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTikZ_1.0.0_x64_en-US.msi',
+    msiFile: 'ForjaTikZ_1.0.0_x64_en-US.msi',
+    exeUrl:
       'https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTikZ_1.0.0_x64-setup.exe',
-    installerFile: 'ForjaTikZ_1.0.0_x64-setup.exe',
+    exeFile: 'ForjaTikZ_1.0.0_x64-setup.exe',
     changelog: 'v1.0.0: Canvas interativo TikZ + Gerador PGFPlots + Validação via pdflatex.',
   },
   {
@@ -169,6 +189,10 @@ export default function App() {
   );
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'status'>('name');
+  const [installerFormat, setInstallerFormat] = useState<'msi' | 'exe'>(() => {
+    const saved = localStorage.getItem('forjatex_suite_installer_fmt_v1');
+    return saved === 'exe' ? 'exe' : 'msi';
+  });
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showConfig, setShowConfig] = useState(false);
   const [donateOpen, setDonateOpen] = useState(false);
@@ -256,14 +280,32 @@ export default function App() {
     }
   };
 
+  const resolvePackage = (item: {
+    installerUrl: string;
+    installerFile: string;
+    msiUrl?: string;
+    msiFile?: string;
+    exeUrl?: string;
+    exeFile?: string;
+  }) => {
+    if (installerFormat === 'msi' && item.msiUrl && item.msiFile) {
+      return { url: item.msiUrl, fileName: item.msiFile };
+    }
+    if (installerFormat === 'exe' && item.exeUrl && item.exeFile) {
+      return { url: item.exeUrl, fileName: item.exeFile };
+    }
+    return { url: item.installerUrl, fileName: item.installerFile };
+  };
+
   const handleInstallOrUpdate = async (app: SuiteAppEntry, silent = true) => {
-    if (!app.installerUrl || !app.installerFile) return;
+    const pkg = resolvePackage(app);
+    if (!pkg.url || !pkg.fileName) return;
     setBusyId(app.id);
     try {
       const msg = await invoke<string>('download_and_run_installer', {
         id: app.id,
-        url: app.installerUrl,
-        fileName: app.installerFile,
+        url: pkg.url,
+        fileName: pkg.fileName,
         silent,
         selfUpdate: false,
       });
@@ -283,12 +325,13 @@ export default function App() {
 
   const handleSelfUpdate = async () => {
     if (!suiteRemote) return;
+    const pkg = resolvePackage(suiteRemote);
     setBusyId('suite-self');
     try {
       await invoke<string>('download_and_run_installer', {
         id: 'suite-self',
-        url: suiteRemote.installerUrl,
-        fileName: suiteRemote.installerFile,
+        url: pkg.url,
+        fileName: pkg.fileName,
         silent: true,
         selfUpdate: true,
       });
@@ -443,6 +486,20 @@ export default function App() {
           </button>
 
           <div className="ac-toolbar-right">
+            <span className="ac-sort-label">INSTALADOR</span>
+            <select
+              className="ac-select"
+              value={installerFormat}
+              onChange={(e) => {
+                const fmt = e.target.value as 'msi' | 'exe';
+                setInstallerFormat(fmt);
+                localStorage.setItem('forjatex_suite_installer_fmt_v1', fmt);
+              }}
+              title="Escolha o formato padrão dos instaladores baixados pelo Suite"
+            >
+              <option value="msi">.MSI (Padrão)</option>
+              <option value="exe">.EXE (NSIS)</option>
+            </select>
             <span className="ac-sort-label">ORDENAR</span>
             <select
               className="ac-select"

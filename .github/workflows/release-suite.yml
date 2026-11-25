@@ -50,25 +50,37 @@ jobs:
           $manifest = @{
             updatedAt = (Get-Date).ToString("o")
             suite = @{
-              latestVersion = "1.2.0"
-              installerFile = "ForjaTeX.Suite_1.2.0_x64-setup.exe"
-              installerUrl = "https://github.com/$repo/releases/latest/download/ForjaTeX.Suite_1.2.0_x64-setup.exe"
+              latestVersion = "1.2.1"
+              installerFile = "ForjaTeX.Suite_1.2.1_x64_en-US.msi"
+              installerUrl = "https://github.com/$repo/releases/latest/download/ForjaTeX.Suite_1.2.1_x64_en-US.msi"
+              msiFile = "ForjaTeX.Suite_1.2.1_x64_en-US.msi"
+              msiUrl = "https://github.com/$repo/releases/latest/download/ForjaTeX.Suite_1.2.1_x64_en-US.msi"
+              exeFile = "ForjaTeX.Suite_1.2.1_x64-setup.exe"
+              exeUrl = "https://github.com/$repo/releases/latest/download/ForjaTeX.Suite_1.2.1_x64-setup.exe"
             }
             apps = @(
               @{
                 id = "forjatex"
                 name = "ForjaTeX IDE"
                 latestVersion = "1.3.0"
-                installerFile = "ForjaTeX_1.3.0_x64-setup.exe"
-                installerUrl = "https://github.com/$repo/releases/latest/download/ForjaTeX_1.3.0_x64-setup.exe"
+                installerFile = "ForjaTeX_1.3.0_x64_en-US.msi"
+                installerUrl = "https://github.com/$repo/releases/latest/download/ForjaTeX_1.3.0_x64_en-US.msi"
+                msiFile = "ForjaTeX_1.3.0_x64_en-US.msi"
+                msiUrl = "https://github.com/$repo/releases/latest/download/ForjaTeX_1.3.0_x64_en-US.msi"
+                exeFile = "ForjaTeX_1.3.0_x64-setup.exe"
+                exeUrl = "https://github.com/$repo/releases/latest/download/ForjaTeX_1.3.0_x64-setup.exe"
                 changelog = "Atualização via GitHub Releases ($tag)"
               },
               @{
                 id = "forjatikz"
                 name = "ForjaTikZ"
                 latestVersion = "1.0.0"
-                installerFile = "ForjaTikZ_1.0.0_x64-setup.exe"
-                installerUrl = "https://github.com/$repo/releases/latest/download/ForjaTikZ_1.0.0_x64-setup.exe"
+                installerFile = "ForjaTikZ_1.0.0_x64_en-US.msi"
+                installerUrl = "https://github.com/$repo/releases/latest/download/ForjaTikZ_1.0.0_x64_en-US.msi"
+                msiFile = "ForjaTikZ_1.0.0_x64_en-US.msi"
+                msiUrl = "https://github.com/$repo/releases/latest/download/ForjaTikZ_1.0.0_x64_en-US.msi"
+                exeFile = "ForjaTikZ_1.0.0_x64-setup.exe"
+                exeUrl = "https://github.com/$repo/releases/latest/download/ForjaTikZ_1.0.0_x64-setup.exe"
                 changelog = "Studio Visual TikZ & PGFPlots ($tag)"
               }
             )

@@ -199,12 +199,17 @@ async fn download_and_run_installer(
         let current_exe = std::env::current_exe().map_err(|e| e.to_string())?;
         let installer_str = dest.to_string_lossy().to_string();
         let current_str = current_exe.to_string_lossy().to_string();
+        let install_cmd = if file_name.to_lowercase().ends_with(".msi") {
+            format!("msiexec /i \"{}\" /passive", installer_str)
+        } else {
+            format!("\"{}\" /S", installer_str)
+        };
         silent_command("cmd")
             .args([
                 "/C",
                 &format!(
-                    "timeout /t 1 /nobreak >nul & \"{}\" /S & start \"\" \"{}\"",
-                    installer_str, current_str
+                    "timeout /t 1 /nobreak >nul & {} & start \"\" \"{}\"",
+                    install_cmd, current_str
                 ),
             ])
             .spawn()
@@ -213,7 +218,21 @@ async fn download_and_run_installer(
         return Ok("Reiniciando para aplicar atualização...".to_string());
     }
 
-    if silent && file_name.to_lowercase().ends_with(".exe") {
+    if file_name.to_lowercase().ends_with(".msi") {
+        let mut args = vec!["/i", dest.to_str().unwrap_or_default()];
+        if silent {
+            args.push("/passive");
+        }
+        let status = Command::new("msiexec")
+            .args(&args)
+            .status()
+            .map_err(|e| format!("Falha ao executar msiexec: {}", e))?;
+        if status.success() {
+            Ok(format!("{} instalado/atualizado via MSI!", id))
+        } else {
+            Err("Instalador MSI cancelado ou retornou erro.".to_string())
+        }
+    } else if silent && file_name.to_lowercase().ends_with(".exe") {
         let status = Command::new(&dest)
             .arg("/S")
             .status()
