@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Bug, Heart, Lightbulb, Copy, Check, X, ExternalLink } from 'lucide-react';
+import { Bug, Heart, Lightbulb, Copy, Check, X, ExternalLink, Mail } from 'lucide-react';
 import { open as openExternal } from '@tauri-apps/plugin-shell';
 import {
   generatePixQrDataUrl,
@@ -52,23 +52,42 @@ export const FeedbackDonateModal: React.FC<FeedbackDonateModalProps> = ({
     }
   };
 
-  const handleCopyReport = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const payload = [
+  const buildReportPayload = () =>
+    [
       `[${kind === 'bug' ? 'BUG REPORT' : 'PEDIDO DE RECURSO'}] ${title}`,
-      `Versão: ForjaTeX 1.3.0`,
+      `Aplicativo: ForjaTeX IDE 1.3.0`,
       `Compilador: ${compilerSummary}`,
       `---`,
       details,
     ].join('\n');
 
+  const handleCopyReport = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
-      await navigator.clipboard.writeText(payload);
+      await navigator.clipboard.writeText(buildReportPayload());
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     } catch {
       // ignore
     }
+  };
+
+  const handleOpenGitHubIssue = () => {
+    const issueTitle = `[${kind === 'bug' ? 'Bug' : 'Feature'}][ForjaTeX IDE] ${title || 'Sem título'}`;
+    const body = buildReportPayload();
+    const params = new URLSearchParams({
+      title: issueTitle,
+      body,
+      labels: kind === 'bug' ? 'bug' : 'enhancement',
+    });
+    openExternal(`https://github.com/jeanjpimenta/forjatex-suite/issues/new?${params.toString()}`);
+  };
+
+  const handleOpenEmail = () => {
+    const subject = `[ForjaTeX IDE][${kind === 'bug' ? 'Bug' : 'Sugestão'}] ${title || 'Relatório'}`;
+    const body = buildReportPayload();
+    const params = new URLSearchParams({ subject, body });
+    openExternal(`mailto:jean.pimenta@protonmail.com?${params.toString()}`);
   };
 
   return (
@@ -146,10 +165,28 @@ export const FeedbackDonateModal: React.FC<FeedbackDonateModalProps> = ({
                 />
               </label>
 
-              <button type="submit" className="tf-btn-primary">
-                {copied ? <Check size={14} /> : <Copy size={14} />}
-                <span>{copied ? 'Relatório copiado! Cole no canal de suporte.' : 'Gerar e Copiar Relatório'}</span>
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  className="tf-btn-primary"
+                  onClick={handleOpenGitHubIssue}
+                >
+                  <ExternalLink size={14} />
+                  <span>Enviar no GitHub</span>
+                </button>
+                <button
+                  type="button"
+                  className="tf-btn-secondary"
+                  onClick={handleOpenEmail}
+                >
+                  <Mail size={14} />
+                  <span>Enviar por E-mail</span>
+                </button>
+                <button type="submit" className="tf-btn-small">
+                  {copied ? <Check size={14} /> : <Copy size={14} />}
+                  <span>{copied ? 'Copiado!' : 'Copiar Relatório'}</span>
+                </button>
+              </div>
             </form>
           ) : (
             <div className="tf-donate-box">

@@ -196,6 +196,10 @@ export default function App() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showConfig, setShowConfig] = useState(false);
   const [donateOpen, setDonateOpen] = useState(false);
+  const [donateTab, setDonateTab] = useState<'donate' | 'feedback'>('donate');
+  const [fbKind, setFbKind] = useState<'feature' | 'bug'>('feature');
+  const [fbTitle, setFbTitle] = useState('');
+  const [fbDetails, setFbDetails] = useState('');
   const [pixQrUrl, setPixQrUrl] = useState('');
   const [pixBrCode, setPixBrCode] = useState('');
   const [copyTag, setCopyTag] = useState<string | null>(null);
@@ -703,71 +707,164 @@ export default function App() {
         <div className="ac-modal-backdrop" onClick={() => setDonateOpen(false)}>
           <div className="ac-modal" onClick={(e) => e.stopPropagation()}>
             <div className="ac-modal-head">
-              <strong>Apoiar o ForjaTeX App Suite</strong>
+              <div className="ac-modal-tabs">
+                <button
+                  type="button"
+                  className={donateTab === 'donate' ? 'active' : ''}
+                  onClick={() => setDonateTab('donate')}
+                >
+                  Apoiar (Pix / PayPal)
+                </button>
+                <button
+                  type="button"
+                  className={donateTab === 'feedback' ? 'active' : ''}
+                  onClick={() => setDonateTab('feedback')}
+                >
+                  Pedidos &amp; Bugs
+                </button>
+              </div>
               <button type="button" className="ac-icon-btn" onClick={() => setDonateOpen(false)}>
                 <X size={14} />
               </button>
             </div>
             <div className="ac-modal-body">
-              <div className="ac-donate-grid">
-                <div className="ac-donate-box">
-                  <strong>Pix (Chave Aleatória)</strong>
-                  {pixQrUrl && <img src={pixQrUrl} alt="QR Code Pix" className="ac-qr" />}
-                  <code>{PIX_KEY}</code>
-                  <span className="ac-donate-desc">Descrição: DoacaoFjTexSuite</span>
-                  <div className="ac-donate-btns">
-                    <button
-                      type="button"
-                      className="ac-action-main"
-                      onClick={async () => {
-                        await navigator.clipboard.writeText(PIX_KEY);
-                        setCopyTag('key');
-                        setTimeout(() => setCopyTag(null), 2000);
-                      }}
-                    >
-                      {copyTag === 'key' ? <Check size={12} /> : <Copy size={12} />} CHAVE
-                    </button>
-                    {pixBrCode && (
+              {donateTab === 'donate' ? (
+                <div className="ac-donate-grid">
+                  <div className="ac-donate-box">
+                    <strong>Pix (Chave Aleatória)</strong>
+                    {pixQrUrl && <img src={pixQrUrl} alt="QR Code Pix" className="ac-qr" />}
+                    <code>{PIX_KEY}</code>
+                    <span className="ac-donate-desc">Descrição: DoacaoFjTexSuite</span>
+                    <div className="ac-donate-btns">
                       <button
                         type="button"
-                        className="ac-btn-dark"
+                        className="ac-action-main"
                         onClick={async () => {
-                          await navigator.clipboard.writeText(pixBrCode);
-                          setCopyTag('code');
+                          await navigator.clipboard.writeText(PIX_KEY);
+                          setCopyTag('key');
                           setTimeout(() => setCopyTag(null), 2000);
                         }}
                       >
-                        {copyTag === 'code' ? 'COPIADO!' : 'COPIA E COLA'}
+                        {copyTag === 'key' ? <Check size={12} /> : <Copy size={12} />} CHAVE
                       </button>
-                    )}
+                      {pixBrCode && (
+                        <button
+                          type="button"
+                          className="ac-btn-dark"
+                          onClick={async () => {
+                            await navigator.clipboard.writeText(pixBrCode);
+                            setCopyTag('code');
+                            setTimeout(() => setCopyTag(null), 2000);
+                          }}
+                        >
+                          {copyTag === 'code' ? 'COPIADO!' : 'COPIA E COLA'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="ac-donate-box">
+                    <strong>PayPal</strong>
+                    <code>{PAYPAL_EMAIL}</code>
+                    <span className="ac-donate-desc">Descrição: DoacaoFjTexSuite</span>
+                    <div className="ac-donate-btns">
+                      <button
+                        type="button"
+                        className="ac-action-main"
+                        onClick={async () => {
+                          await navigator.clipboard.writeText(PAYPAL_EMAIL);
+                          setCopyTag('pp');
+                          setTimeout(() => setCopyTag(null), 2000);
+                        }}
+                      >
+                        {copyTag === 'pp' ? 'COPIADO!' : 'COPIAR E-MAIL'}
+                      </button>
+                      <button
+                        type="button"
+                        className="ac-btn-dark"
+                        onClick={() => open(getPayPalDonateUrl('DoacaoFjTexSuite'))}
+                      >
+                        ABRIR PAYPAL
+                      </button>
+                    </div>
                   </div>
                 </div>
-                <div className="ac-donate-box">
-                  <strong>PayPal</strong>
-                  <code>{PAYPAL_EMAIL}</code>
-                  <span className="ac-donate-desc">Descrição: DoacaoFjTexSuite</span>
+              ) : (
+                <div className="ac-fb-form">
                   <div className="ac-donate-btns">
+                    <button
+                      type="button"
+                      className={fbKind === 'feature' ? 'ac-btn-dark' : 'ac-action-main'}
+                      onClick={() => setFbKind('feature')}
+                    >
+                      Sugerir Recurso
+                    </button>
+                    <button
+                      type="button"
+                      className={fbKind === 'bug' ? 'ac-btn-dark' : 'ac-action-main'}
+                      onClick={() => setFbKind('bug')}
+                    >
+                      Reportar Erro
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    className="ac-fb-input"
+                    placeholder="Resumo do pedido ou erro..."
+                    value={fbTitle}
+                    onChange={(e) => setFbTitle(e.target.value)}
+                  />
+                  <textarea
+                    rows={4}
+                    className="ac-fb-input"
+                    placeholder="Descreva os detalhes..."
+                    value={fbDetails}
+                    onChange={(e) => setFbDetails(e.target.value)}
+                  />
+                  <div className="ac-donate-btns">
+                    <button
+                      type="button"
+                      className="ac-btn-dark"
+                      onClick={() => {
+                        const body = `[${fbKind === 'bug' ? 'BUG' : 'FEATURE'}] ${fbTitle}\nApp: ForjaTeX Suite v${suiteVersion}\n---\n${fbDetails}`;
+                        const p = new URLSearchParams({
+                          title: `[${fbKind === 'bug' ? 'Bug' : 'Feature'}][Suite] ${fbTitle || 'Relatório'}`,
+                          body,
+                          labels: fbKind === 'bug' ? 'bug' : 'enhancement',
+                        });
+                        open(`${GITHUB_REPO_URL}/issues/new?${p.toString()}`);
+                      }}
+                    >
+                      ENVIAR NO GITHUB
+                    </button>
+                    <button
+                      type="button"
+                      className="ac-action-main"
+                      onClick={() => {
+                        const body = `[${fbKind === 'bug' ? 'BUG' : 'FEATURE'}] ${fbTitle}\nApp: ForjaTeX Suite v${suiteVersion}\n---\n${fbDetails}`;
+                        const p = new URLSearchParams({
+                          subject: `[ForjaTeX Suite] ${fbTitle || 'Relatório'}`,
+                          body,
+                        });
+                        open(`mailto:${PAYPAL_EMAIL}?${p.toString()}`);
+                      }}
+                    >
+                      E-MAIL
+                    </button>
                     <button
                       type="button"
                       className="ac-action-main"
                       onClick={async () => {
-                        await navigator.clipboard.writeText(PAYPAL_EMAIL);
-                        setCopyTag('pp');
+                        const body = `[${fbKind === 'bug' ? 'BUG' : 'FEATURE'}] ${fbTitle}\nApp: ForjaTeX Suite v${suiteVersion}\n---\n${fbDetails}`;
+                        await navigator.clipboard.writeText(body);
+                        setCopyTag('fb');
                         setTimeout(() => setCopyTag(null), 2000);
                       }}
                     >
-                      {copyTag === 'pp' ? 'COPIADO!' : 'COPIAR E-MAIL'}
-                    </button>
-                    <button
-                      type="button"
-                      className="ac-btn-dark"
-                      onClick={() => open(getPayPalDonateUrl('DoacaoFjTexSuite'))}
-                    >
-                      ABRIR PAYPAL
+                      {copyTag === 'fb' ? 'COPIADO!' : 'COPIAR'}
                     </button>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>

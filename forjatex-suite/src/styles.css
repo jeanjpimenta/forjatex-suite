@@ -633,3 +633,40 @@ body {
     transform: rotate(360deg);
   }
 }
+
+.ac-modal-tabs {
+  display: flex;
+  gap: 6px;
+}
+
+.ac-modal-tabs button {
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.ac-modal-tabs button.active {
+  background: var(--btn-dark);
+  border-color: var(--btn-dark);
+  color: var(--btn-dark-text);
+}
+
+.ac-fb-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ac-fb-input {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 12px;
+  font-family: inherit;
+}

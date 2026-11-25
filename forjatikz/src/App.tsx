@@ -81,6 +81,10 @@ export default function App() {
   const [mode, setMode] = useState<'diagram' | 'pgfplots'>('diagram');
   const [statusMsg, setStatusMsg] = useState('');
   const [donateOpen, setDonateOpen] = useState(false);
+  const [donateTab, setDonateTab] = useState<'donate' | 'feedback'>('donate');
+  const [fbKind, setFbKind] = useState<'feature' | 'bug'>('feature');
+  const [fbTitle, setFbTitle] = useState('');
+  const [fbDetails, setFbDetails] = useState('');
   const [pixQrUrl, setPixQrUrl] = useState('');
   const [pixBrCode, setPixBrCode] = useState('');
   const [copyTag, setCopyTag] = useState<string | null>(null);
@@ -687,70 +691,157 @@ export default function App() {
         <div className="ft-modal-backdrop" onClick={() => setDonateOpen(false)}>
           <div className="ft-modal" onClick={(e) => e.stopPropagation()}>
             <div className="ft-modal-head">
-              <strong>Apoiar o ForjaTikZ</strong>
+              <div className="ft-tabs">
+                <button
+                  type="button"
+                  className={`ft-tab ${donateTab === 'donate' ? 'active' : ''}`}
+                  onClick={() => setDonateTab('donate')}
+                >
+                  Apoiar (Pix / PayPal)
+                </button>
+                <button
+                  type="button"
+                  className={`ft-tab ${donateTab === 'feedback' ? 'active' : ''}`}
+                  onClick={() => setDonateTab('feedback')}
+                >
+                  Pedidos &amp; Bugs
+                </button>
+              </div>
               <button type="button" className="ft-btn" onClick={() => setDonateOpen(false)}>
                 <X size={14} />
               </button>
             </div>
-            <div className="ft-donate-grid">
-              <div className="ft-donate-box">
-                <strong>Pix (Chave Aleatória)</strong>
-                {pixQrUrl && <img src={pixQrUrl} alt="QR Code Pix" className="ft-qr" />}
-                <code>{PIX_KEY}</code>
-                <span>Descrição: DoacaoFjTeXTikZ</span>
-                <div className="ft-btn-row">
-                  <button
-                    type="button"
-                    className="ft-btn"
-                    onClick={async () => {
-                      await navigator.clipboard.writeText(PIX_KEY);
-                      setCopyTag('key');
-                      setTimeout(() => setCopyTag(null), 2000);
-                    }}
-                  >
-                    {copyTag === 'key' ? <Check size={12} /> : <Copy size={12} />} Chave
-                  </button>
-                  {pixBrCode && (
+            {donateTab === 'donate' ? (
+              <div className="ft-donate-grid">
+                <div className="ft-donate-box">
+                  <strong>Pix (Chave Aleatória)</strong>
+                  {pixQrUrl && <img src={pixQrUrl} alt="QR Code Pix" className="ft-qr" />}
+                  <code>{PIX_KEY}</code>
+                  <span>Descrição: DoacaoFjTeXTikZ</span>
+                  <div className="ft-btn-row">
                     <button
                       type="button"
-                      className="ft-btn primary"
+                      className="ft-btn"
                       onClick={async () => {
-                        await navigator.clipboard.writeText(pixBrCode);
-                        setCopyTag('code');
+                        await navigator.clipboard.writeText(PIX_KEY);
+                        setCopyTag('key');
                         setTimeout(() => setCopyTag(null), 2000);
                       }}
                     >
-                      {copyTag === 'code' ? 'Copiado!' : 'Copia e Cola'}
+                      {copyTag === 'key' ? <Check size={12} /> : <Copy size={12} />} Chave
                     </button>
-                  )}
+                    {pixBrCode && (
+                      <button
+                        type="button"
+                        className="ft-btn primary"
+                        onClick={async () => {
+                          await navigator.clipboard.writeText(pixBrCode);
+                          setCopyTag('code');
+                          setTimeout(() => setCopyTag(null), 2000);
+                        }}
+                      >
+                        {copyTag === 'code' ? 'Copiado!' : 'Copia e Cola'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div className="ft-donate-box">
+                  <strong>PayPal</strong>
+                  <code>{PAYPAL_EMAIL}</code>
+                  <span>Descrição: DoacaoFjTeXTikZ</span>
+                  <div className="ft-btn-row">
+                    <button
+                      type="button"
+                      className="ft-btn"
+                      onClick={async () => {
+                        await navigator.clipboard.writeText(PAYPAL_EMAIL);
+                        setCopyTag('pp');
+                        setTimeout(() => setCopyTag(null), 2000);
+                      }}
+                    >
+                      {copyTag === 'pp' ? 'Copiado!' : 'Copiar E-mail'}
+                    </button>
+                    <button
+                      type="button"
+                      className="ft-btn primary"
+                      onClick={() => openExternal(getPayPalDonateUrl('DoacaoFjTeXTikZ'))}
+                    >
+                      Abrir PayPal
+                    </button>
+                  </div>
                 </div>
               </div>
-              <div className="ft-donate-box">
-                <strong>PayPal</strong>
-                <code>{PAYPAL_EMAIL}</code>
-                <span>Descrição: DoacaoFjTeXTikZ</span>
+            ) : (
+              <div className="ft-props">
                 <div className="ft-btn-row">
                   <button
                     type="button"
-                    className="ft-btn"
-                    onClick={async () => {
-                      await navigator.clipboard.writeText(PAYPAL_EMAIL);
-                      setCopyTag('pp');
-                      setTimeout(() => setCopyTag(null), 2000);
-                    }}
+                    className={`ft-btn ${fbKind === 'feature' ? 'primary' : ''}`}
+                    onClick={() => setFbKind('feature')}
                   >
-                    {copyTag === 'pp' ? 'Copiado!' : 'Copiar E-mail'}
+                    Sugerir Recurso
                   </button>
                   <button
                     type="button"
-                    className="ft-btn primary"
-                    onClick={() => openExternal(getPayPalDonateUrl('DoacaoFjTeXTikZ'))}
+                    className={`ft-btn ${fbKind === 'bug' ? 'primary' : ''}`}
+                    onClick={() => setFbKind('bug')}
                   >
-                    Abrir PayPal
+                    Reportar Erro
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Resumo do pedido ou erro..."
+                  value={fbTitle}
+                  onChange={(e) => setFbTitle(e.target.value)}
+                />
+                <textarea
+                  rows={4}
+                  placeholder="Descreva os detalhes..."
+                  value={fbDetails}
+                  onChange={(e) => setFbDetails(e.target.value)}
+                  style={{
+                    padding: '6px 8px',
+                    borderRadius: 5,
+                    border: '1px solid var(--border)',
+                    background: 'var(--surface)',
+                    color: 'var(--text)',
+                    fontSize: 12,
+                  }}
+                />
+                <div className="ft-btn-row">
+                  <button
+                    type="button"
+                    className="ft-btn primary"
+                    onClick={() => {
+                      const body = `[${fbKind === 'bug' ? 'BUG' : 'FEATURE'}] ${fbTitle}\nApp: ForjaTikZ 1.0.0\n---\n${fbDetails}`;
+                      const p = new URLSearchParams({
+                        title: `[${fbKind === 'bug' ? 'Bug' : 'Feature'}][ForjaTikZ] ${fbTitle || 'Relatório'}`,
+                        body,
+                        labels: fbKind === 'bug' ? 'bug' : 'enhancement',
+                      });
+                      openExternal(`https://github.com/jeanjpimenta/forjatex-suite/issues/new?${p.toString()}`);
+                    }}
+                  >
+                    Enviar no GitHub
+                  </button>
+                  <button
+                    type="button"
+                    className="ft-btn"
+                    onClick={() => {
+                      const body = `[${fbKind === 'bug' ? 'BUG' : 'FEATURE'}] ${fbTitle}\nApp: ForjaTikZ 1.0.0\n---\n${fbDetails}`;
+                      const p = new URLSearchParams({
+                        subject: `[ForjaTikZ] ${fbTitle || 'Relatório'}`,
+                        body,
+                      });
+                      openExternal(`mailto:${PAYPAL_EMAIL}?${p.toString()}`);
+                    }}
+                  >
+                    E-mail
                   </button>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       )}
