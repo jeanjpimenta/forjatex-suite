@@ -1,0 +1,68 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\definecolor{fjblue}{HTML}{0284C7}
+\definecolor{fjdark}{HTML}{0F172A}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=fjblue,
+  urlcolor=fjblue,
+  pdftitle={Manual do Usuário — ForjaTeX App Suite},
+  pdfauthor={Jean Pimenta / Arkhé Code}
+}
+
+\title{\textbf{\color{fjdark}Manual do Usuário — ForjaTeX App Suite}\\
+\large Hub Central e Atualizador de Aplicativos \LaTeX{} (GNU GPL v3.0)}
+\author{Jean Pimenta $\cdot$ Arkhé Code\\
+\href{https://forjatex.com.br}{forjatex.com.br} $\cdot$ \href{https://github.com/jeanjpimenta/forjatex-suite}{GitHub}}
+\date{Versão 1.2.1}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+\section{O que é o ForjaTeX App Suite}
+O \textbf{ForjaTeX App Suite} é o hub central leve do ecossistema ForjaTeX. Ele identifica os aplicativos instalados no seu computador, permite abri-los em um clique e baixa atualizações diretamente do \textbf{GitHub Releases} sem necessidade de assinatura paga ou conta.
+
+\section{Instalando, Abrindo e Atualizando Aplicativos}
+\begin{enumerate}
+  \item Na grade principal, cada card exibe a versão instalada ou disponível, o ícone do aplicativo, descrição e botão principal (\textbf{ABRIR}, \textbf{INSTALAR} ou \textbf{ATUALIZAR}).
+  \item No seletor \textbf{INSTALADOR} no topo, escolha entre \textbf{.MSI (Padrão)} — executado via \texttt{msiexec /passive} — ou \textbf{.EXE (NSIS)}.
+  \item Ao clicar em \textbf{INSTALAR} ou \textbf{ATUALIZAR}, a barra de progresso exibe em tempo real os megabytes baixados e a porcentagem concluída.
+  \item Use o botão \textbf{...} em cada card para reinstalar manualmente ou consultar as novidades da versão.
+\end{enumerate}
+
+\section{Auto-atualização do Próprio Suite}
+Quando uma nova versão do \textbf{ForjaTeX App Suite} estiver disponível no manifesto (\texttt{suite-manifest.json}), uma faixa superior exibirá o botão \textbf{ATUALIZAR E REINICIAR}. Ao clicar, o Suite baixa o novo instalador, aplica a atualização e reabre automaticamente.
+
+\section{Idioma, Tema e Suporte}
+\begin{itemize}
+  \item \textbf{Idioma:} detectado automaticamente pelo sistema e alternável entre \textbf{PT-BR} e \textbf{EN} no topo da janela.
+  \item \textbf{Tema:} alterne entre Claro e Escuro pelo ícone de Lua/Sol.
+  \item \textbf{Apoiar \& Pedidos:} clique em \textbf{APOIAR} para acessar Pix (QR Code), PayPal ou enviar sugestões/bugs diretamente para \texttt{forjatex.com.br}.
+\end{itemize}
+
+\section{Glossário}
+\begin{description}
+  \item[Manifesto JSON (\texttt{suite-manifest.json})] Arquivo publicado no GitHub Releases que informa as versões mais recentes e URLs dos instaladores da suíte.
+  \item[MSI (Windows Installer)] Formato padrão corporativo da Microsoft instalado via \texttt{msiexec}.
+  \item[NSIS (.exe)] Instalador leve por usuário (\texttt{\%LOCALAPPDATA\%}).
+\end{description}
+
+\section{Histórico de Versões (Changelog)}
+\begin{itemize}
+  \item \textbf{v1.2.1:} Suporte padrão a instaladores \texttt{.msi} (\texttt{msiexec /passive}) com seletor \texttt{.MSI / .EXE}, tradução PT-BR/EN automática, envio direto de feedback para \texttt{forjatex.com.br} e links oficiais.
+  \item \textbf{v1.2.0:} Layout uniforme estilo ArtCraft (área fixa ao maximizar, efeito hover), detecção real de versão instalada, barra de progresso em MB e auto-atualização (\textbf{ATUALIZAR E REINICIAR}).
+  \item \textbf{v1.1.0:} Interface em grade uniforme com ícones dedicados e modal de doação Pix/PayPal.
+  \item \textbf{v1.0.0:} Lançamento inicial do hub launcher e integrador com GitHub Releases.
+\end{itemize}
+
+\end{document}
+

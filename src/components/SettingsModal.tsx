@@ -334,6 +334,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </select>
                 </label>
 
+                <div className="flex items-end">
+                  <button
+                    type="button"
+                    className="tf-btn-small w-full justify-center"
+                    style={{ height: 34 }}
+                    onClick={() =>
+                      window.open(
+                        locale === 'pt-BR'
+                          ? '/manuals/manual-pt-BR.pdf'
+                          : '/manuals/manual-en-US.pdf',
+                        '_blank'
+                      )
+                    }
+                  >
+                    {locale === 'pt-BR'
+                      ? 'Abrir Manual do Usuário (PDF · PT-BR)'
+                      : 'Open User Manual (PDF · EN-US)'}
+                  </button>
+                </div>
+
                 <label>
                   <span>{t('settings.theme')}</span>
                   <select

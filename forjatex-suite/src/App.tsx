@@ -490,15 +490,28 @@ export default function App() {
         {showConfig && (
           <div className="ac-config-bar">
             <label>
-              <span>URL DO MANIFESTO (GITHUB RELEASES)</span>
+              <span>{t('manifestUrlLabel')}</span>
               <input
                 type="text"
                 value={manifestUrl}
                 onChange={(e) => setManifestUrl(e.target.value)}
               />
             </label>
+            <button
+              type="button"
+              className="ac-action-main"
+              style={{ flex: 'none', padding: '0 12px', height: 30 }}
+              onClick={() =>
+                window.open(
+                  locale === 'pt-BR' ? '/manuals/manual-pt-BR.pdf' : '/manuals/manual-en-US.pdf',
+                  '_blank'
+                )
+              }
+            >
+              {locale === 'pt-BR' ? 'MANUAL (PDF · PT-BR)' : 'MANUAL (PDF · EN-US)'}
+            </button>
             <button type="button" className="ac-btn-dark" onClick={handleCheckUpdates}>
-              SALVAR E SINCRONIZAR
+              {t('saveSync')}
             </button>
           </div>
         )}

@@ -405,6 +405,19 @@ export default function App() {
             <option value="pt-BR">PT-BR</option>
             <option value="en">EN</option>
           </select>
+          <button
+            type="button"
+            className="ft-btn"
+            onClick={() =>
+              window.open(
+                locale === 'pt-BR' ? '/manuals/manual-pt-BR.pdf' : '/manuals/manual-en-US.pdf',
+                '_blank'
+              )
+            }
+            title="Abrir Manual do Usuário (PDF)"
+          >
+            Manual (PDF)
+          </button>
           <button type="button" className="ft-btn" onClick={handleCompileCheck}>
             <CheckCircle2 size={14} /> {t('testLatex')}
           </button>

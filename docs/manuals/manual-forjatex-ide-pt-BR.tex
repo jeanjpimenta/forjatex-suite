@@ -1,0 +1,90 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\definecolor{fjblue}{HTML}{0284C7}
+\definecolor{fjdark}{HTML}{0F172A}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=fjblue,
+  urlcolor=fjblue,
+  pdftitle={Manual do Usuário — ForjaTeX IDE},
+  pdfauthor={Jean Pimenta / Arkhé Code}
+}
+
+\title{\textbf{\color{fjdark}Manual do Usuário — ForjaTeX IDE}\\
+\large Ecossistema ForjaTeX App Suite (GNU GPL v3.0)}
+\author{Jean Pimenta $\cdot$ Arkhé Code\\
+\href{https://forjatex.com.br}{forjatex.com.br} $\cdot$ \href{https://github.com/jeanjpimenta/forjatex-suite}{GitHub}}
+\date{Versão 1.3.0}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Introdução e Requisitos}
+O \textbf{ForjaTeX IDE} é uma IDE desktop gratuita, de código aberto (GNU GPL v3.0) e \textit{offline-first} para escrita científica em \LaTeX{}, desenvolvida com Tauri v2, Rust, React e Monaco Editor.
+
+\subsection{Requisitos do Sistema}
+\begin{itemize}
+  \item Sistema Operacional Windows (64-bit) ou compilação a partir do código-fonte (Linux/macOS).
+  \item Uma distribuição \TeX{} instalada localmente: \textbf{MiKTeX}, \textbf{TeX Live} ou \textbf{Tectonic}.
+\end{itemize}
+
+\section{Primeiros Passos e Compilação}
+\begin{enumerate}
+  \item Clique em \textbf{Abrir Pasta} ou \textbf{Novo Projeto} (para escolher um template ABNT, Artigo, Beamer, etc.) ou \textbf{Importar .zip} para trazer um projeto exportado do Overleaf.
+  \item No Explorer à esquerda, clique com o botão direito em qualquer arquivo \texttt{.tex} e escolha \textbf{Definir como arquivo principal} caso não seja o \texttt{main.tex}.
+  \item Escolha o motor no topo (\texttt{pdflatex}, \texttt{xelatex}, \texttt{lualatex} ou \texttt{latexmk}) e clique em \textbf{Compilar}.
+  \item \textbf{Quick Build Sequencial por Projeto:} clique com o botão direito no botão \textbf{Compilar} para escolher uma sequência personalizada (ex.: \texttt{pdflatex $\to$ bibtex $\to$ pdflatex $\times 2$}). A escolha é salva individualmente por projeto.
+\end{enumerate}
+
+\section{Editor, SyncTeX e Preview em Tempo Real}
+\begin{itemize}
+  \item \textbf{Autocomplete Inteligente:} digite \texttt{\textbackslash cite\{} para listar chaves do seu \texttt{.bib}, \texttt{\textbackslash ref\{} para listar \texttt{\textbackslash label} do projeto e \texttt{:} para acionar \textit{User Tags}.
+  \item \textbf{Preview de Equações no Hover:} passe o mouse sobre qualquer fórmula \texttt{\$...\$\,} ou \texttt{\$\$...\$\$\,} para visualizar a renderização matemática via KaTeX.
+  \item \textbf{SyncTeX Bidirecional:} um clique simples no PDF destaca o arquivo correspondente no Explorer; um duplo clique abre o arquivo exatamente na linha.
+  \item \textbf{Corretor Ortográfico e Gramatical LaTeX-Aware:} verifica texto em PT-BR ou EN ignorando comandos, matemática e comentários, com correções rápidas (\texttt{Ctrl+.}).
+\end{itemize}
+
+\section{Assistentes Visuais Integrados}
+\begin{itemize}
+  \item \textbf{Estúdio de Tabelas:} criação visual com suporte a \texttt{booktabs} e \texttt{tabularray}, mesclagem de células e importação de CSV/Excel.
+  \item \textbf{Assistente de Matrizes \& Preâmbulo:} suporte a \texttt{amsmath} (\texttt{pmatrix}, \texttt{bmatrix}, \texttt{cases}) e \texttt{nicematrix} com preview visual em KaTeX.
+  \item \textbf{Assistente de Fontes (TTF/OTF):} detecta fontes instaladas no Windows ou copia arquivos locais para uso com \texttt{fontspec} (XeLaTeX/LuaLaTeX).
+  \item \textbf{Assistente de Imagens \& Referência Rápida Offline:} inserção guiada de figuras e catálogo offline organizável por categorias e tags.
+\end{itemize}
+
+\section{Configurações, Git e IA}
+\begin{itemize}
+  \item \textbf{Compilador \& Projeto:} configure caminhos customizados do MiKTeX/TeX Live/Tectonic, pasta isolada \texttt{build/} e auto-save.
+  \item \textbf{Editor \& Automação:} alterne entre tema Escuro e Claro Suave (Branco Gelo), idioma (\textbf{PT-BR} / \textbf{EN}) e cadastre perfis de Quick Build.
+  \item \textbf{Git Integrado:} configure \texttt{user.name}, \texttt{user.email}, Token PAT (GitHub/GitLab), gere \texttt{.gitignore} para \LaTeX{}, faça Clone, Commit, Pull e Push na aba \textbf{GIT}.
+  \item \textbf{Inteligência Artificial (BYOK):} acessível como aba ao lado do \textbf{PDF Preview} usando sua própria chave (Gemini, OpenAI, Claude ou Ollama local).
+\end{itemize}
+
+\section{Glossário}
+\begin{description}
+  \item[SyncTeX] Tecnologia que sincroniza a posição do código \texttt{.tex} com o ponto exato no PDF gerado.
+  \item[Quick Build Sequencial] Execução encadeada de comandos (como \texttt{pdflatex} e \texttt{bibtex}) necessária para atualizar sumários e bibliografias.
+  \item[LaTeX-Aware] Verificador que entende a sintaxe do \LaTeX{} para não apontar erros ortográficos em comandos ou equações.
+  \item[BYOK (Bring Your Own Key)] Modelo onde o usuário utiliza sua própria chave de API de IA, salva apenas localmente.
+\end{description}
+
+\section{Histórico de Versões (Changelog)}
+\begin{itemize}
+  \item \textbf{v1.3.0:} Sistema de tradução comunitário (PT-BR e English) com detecção automática, Git completo com Token PAT/Clone/\texttt{.gitignore}, Tooltip React na régua do editor e envio direto de Pedidos \& Bugs para \texttt{forjatex.com.br}.
+  \item \textbf{v1.2.0:} Painel de IA movido para aba ao lado do PDF Preview e nova aba Git nas Configurações.
+  \item \textbf{v1.1.0:} Preview no Assistente de Matriz Avançado, popup KaTeX real no hover, Referência Rápida com categorias/tags, Corretor LaTeX-Aware e aba Git inicial.
+  \item \textbf{v1.0.0:} Tema Claro Suave (Branco Gelo), Quick Build multi-perfil por projeto e instalador automático de pacotes \texttt{.sty} ausentes.
+\end{itemize}
+
+\end{document}
+

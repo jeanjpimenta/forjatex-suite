@@ -92,6 +92,7 @@ jobs:
         with:
           files: |
             suite-manifest.json
+            docs/manuals/*.pdf
             src-tauri/target/release/bundle/nsis/*.exe
             src-tauri/target/release/bundle/msi/*.msi
             forjatex-suite/src-tauri/target/release/bundle/nsis/*.exe
