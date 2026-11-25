@@ -23,6 +23,12 @@ import {
   PAYPAL_EMAIL,
   PIX_KEY,
 } from './pixDonate';
+import {
+  detectSuiteLocale,
+  saveSuiteLocale,
+  SUITE_DICT,
+  type SuiteLocale,
+} from './i18n';
 
 interface InstalledAppInfo {
   id: string;
@@ -177,6 +183,8 @@ function compareSemver(a: string, b: string): number {
 
 export default function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [locale, setLocale] = useState<SuiteLocale>(() => detectSuiteLocale());
+  const t = (key: string) => SUITE_DICT[locale][key] ?? SUITE_DICT['pt-BR'][key] ?? key;
   const [suiteVersion, setSuiteVersion] = useState('1.2.0');
   const [suiteRemote, setSuiteRemote] = useState<SuiteSelfInfo | null>(null);
   const [apps, setApps] = useState<SuiteAppEntry[]>(DEFAULT_APPS);
@@ -381,13 +389,27 @@ export default function App() {
             <span className="ac-brand-sub">FORJATEX APP SUITE · V{suiteVersion}</span>
           </div>
           <div className="ac-topbar-right">
+            <select
+              className="ac-select"
+              style={{ height: 26, fontSize: 11 }}
+              value={locale}
+              onChange={(e) => {
+                const next = e.target.value as SuiteLocale;
+                setLocale(next);
+                saveSuiteLocale(next);
+              }}
+              title="Idioma / Language"
+            >
+              <option value="pt-BR">PT-BR</option>
+              <option value="en">EN</option>
+            </select>
             <button
               type="button"
               className="ac-donate-btn"
               onClick={() => setDonateOpen(true)}
               title="Apoiar o ForjaTeX App Suite (Pix / PayPal)"
             >
-              <Heart size={13} /> APOIAR
+              <Heart size={13} /> {t('support')}
             </button>
             <button
               type="button"
@@ -490,7 +512,7 @@ export default function App() {
           </button>
 
           <div className="ac-toolbar-right">
-            <span className="ac-sort-label">INSTALADOR</span>
+            <span className="ac-sort-label">{t('installer')}</span>
             <select
               className="ac-select"
               value={installerFormat}
@@ -501,22 +523,22 @@ export default function App() {
               }}
               title="Escolha o formato padrão dos instaladores baixados pelo Suite"
             >
-              <option value="msi">.MSI (Padrão)</option>
+              <option value="msi">.MSI</option>
               <option value="exe">.EXE (NSIS)</option>
             </select>
-            <span className="ac-sort-label">ORDENAR</span>
+            <span className="ac-sort-label">{t('sort')}</span>
             <select
               className="ac-select"
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as 'name' | 'status')}
             >
-              <option value="name">Nome (A-Z)</option>
-              <option value="status">Instalados primeiro</option>
+              <option value="name">{t('sortName')}</option>
+              <option value="status">{t('sortStatus')}</option>
             </select>
             <input
               type="text"
               className="ac-search"
-              placeholder="Buscar aplicativos"
+              placeholder={t('searchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -603,10 +625,10 @@ export default function App() {
                   </div>
                 )}
 
-                <div className="ac-card-actions">
+                  <div className="ac-card-actions">
                   {app.comingSoon ? (
                     <button type="button" className="ac-action-main" disabled>
-                      EM BREVE
+                      {t('comingSoon')}
                     </button>
                   ) : hasUpdate ? (
                     <button
@@ -615,7 +637,7 @@ export default function App() {
                       disabled={busyId === app.id}
                       onClick={() => handleInstallOrUpdate(app, true)}
                     >
-                      {busyId === app.id ? 'ATUALIZANDO...' : `ATUALIZAR PARA V${app.latestVersion}`}
+                      {busyId === app.id ? t('updating') : `${t('updateTo')} V${app.latestVersion}`}
                     </button>
                   ) : isInstalled ? (
                     <button
@@ -623,7 +645,7 @@ export default function App() {
                       className="ac-action-main"
                       onClick={() => handleLaunch(app)}
                     >
-                      ABRIR
+                      {t('open')}
                     </button>
                   ) : (
                     <button
@@ -632,7 +654,7 @@ export default function App() {
                       disabled={busyId === app.id}
                       onClick={() => handleInstallOrUpdate(app, true)}
                     >
-                      {busyId === app.id ? 'BAIXANDO...' : 'INSTALAR'}
+                      {busyId === app.id ? t('downloading') : t('install')}
                     </button>
                   )}
 

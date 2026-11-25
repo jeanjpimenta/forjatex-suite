@@ -33,7 +33,8 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [locale, setLocale] = useState<LocaleCode>(() => {
     const saved = localStorage.getItem(STORAGE_LOCALE_KEY);
     if (saved === 'en' || saved === 'pt-BR') return saved;
-    return 'pt-BR';
+    const sys = (typeof navigator !== 'undefined' ? navigator.language : 'en').toLowerCase();
+    return sys.startsWith('pt') ? 'pt-BR' : 'en';
   });
 
   useEffect(() => {

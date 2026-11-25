@@ -231,7 +231,7 @@ export function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<'compiler' | 'editor' | 'ai' | 'git'>('compiler');
   const [rightTab, setRightTab] = useState<'pdf' | 'ai'>('pdf');
-  const { t } = useI18n();
+  const { locale, setLocale, t } = useI18n();
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [tableWizardOpen, setTableWizardOpen] = useState(false);
   const [mathSymbolsOpen, setMathSymbolsOpen] = useState(false);
@@ -959,6 +959,15 @@ export function App() {
           >
             <BookOpen size={14} />
             <span>{t('topbar.help')}</span>
+          </button>
+
+          <button
+            type="button"
+            className="tf-tool-btn"
+            onClick={() => setLocale(locale === 'pt-BR' ? 'en' : 'pt-BR')}
+            title="Idioma / Language (PT-BR / EN)"
+          >
+            <span>{locale === 'pt-BR' ? 'PT' : 'EN'}</span>
           </button>
 
           <button

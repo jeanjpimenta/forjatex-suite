@@ -28,6 +28,12 @@ import {
   PAYPAL_EMAIL,
   PIX_KEY,
 } from './pixDonate';
+import {
+  detectTikzLocale,
+  saveTikzLocale,
+  TIKZ_DICT,
+  type TikzLocale,
+} from './i18n';
 
 type NodeShape = 'circle' | 'rect' | 'diamond' | 'ellipse' | 'text';
 type EdgeLineStyle = 'solid' | 'dashed' | 'dotted';
@@ -128,6 +134,8 @@ const COLOR_HEX: Record<string, string> = {
 
 export default function App() {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [locale, setLocale] = useState<TikzLocale>(() => detectTikzLocale());
+  const t = (key: string) => TIKZ_DICT[locale][key] ?? TIKZ_DICT['pt-BR'][key] ?? key;
   const [mode, setMode] = useState<'diagram' | 'pgfplots'>('pgfplots');
   const [statusMsg, setStatusMsg] = useState('');
   const [donateOpen, setDonateOpen] = useState(false);
@@ -359,7 +367,7 @@ export default function App() {
           <img src="/logo.png" alt="ForjaTikZ" className="ft-logo" />
           <div>
             <h1>ForjaTikZ</h1>
-            <span>Studio Visual TikZ &amp; PGFPlots (v1.1.0)</span>
+            <span>{t('subtitle')}</span>
           </div>
         </div>
 
@@ -369,26 +377,39 @@ export default function App() {
             className={`ft-tab ${mode === 'pgfplots' ? 'active' : ''}`}
             onClick={() => setMode('pgfplots')}
           >
-            <LineChart size={14} /> Gráficos (PGFPlots)
+            <LineChart size={14} /> {t('tabPlots')}
           </button>
           <button
             type="button"
             className={`ft-tab ${mode === 'diagram' ? 'active' : ''}`}
             onClick={() => setMode('diagram')}
           >
-            <Workflow size={14} /> Diagramas (TikZ)
+            <Workflow size={14} /> {t('tabDiagrams')}
           </button>
         </div>
 
         <div className="ft-actions">
+          <select
+            className="ft-btn"
+            value={locale}
+            onChange={(e) => {
+              const next = e.target.value as TikzLocale;
+              setLocale(next);
+              saveTikzLocale(next);
+            }}
+            title="Idioma / Language"
+          >
+            <option value="pt-BR">PT-BR</option>
+            <option value="en">EN</option>
+          </select>
           <button type="button" className="ft-btn" onClick={handleCompileCheck}>
-            <CheckCircle2 size={14} /> Testar LaTeX
+            <CheckCircle2 size={14} /> {t('testLatex')}
           </button>
           <button type="button" className="ft-btn" onClick={handleExport}>
-            <Download size={14} /> Exportar .tex
+            <Download size={14} /> {t('exportTex')}
           </button>
           <button type="button" className="ft-btn primary" onClick={handleCopy}>
-            <Copy size={14} /> Copiar Código
+            <Copy size={14} /> {t('copyCode')}
           </button>
           <button
             type="button"
@@ -396,7 +417,7 @@ export default function App() {
             onClick={() => setDonateOpen(true)}
             title="Suporte & Apoiar o ForjaTikZ"
           >
-            <Heart size={14} color="#f43f5e" /> Apoiar
+            <Heart size={14} color="#f43f5e" /> {t('support')}
           </button>
           <button
             type="button"
@@ -587,51 +608,51 @@ export default function App() {
             </>
           ) : (
             <>
-              <div className="ft-sec-title">1. Tipo de Gráfico</div>
+              <div className="ft-sec-title">{t('plotTypeTitle')}</div>
               <div className="ft-btn-row">
                 <button
                   type="button"
                   className={`ft-btn ${plotKind === 'function' ? 'primary' : ''}`}
                   onClick={() => setPlotKind('function')}
                 >
-                  <LineChart size={13} /> Funções f(x)
+                  <LineChart size={13} /> {t('kindFunc')}
                 </button>
                 <button
                   type="button"
                   className={`ft-btn ${plotKind === 'scatter' ? 'primary' : ''}`}
                   onClick={() => setPlotKind('scatter')}
                 >
-                  <ScatterChart size={13} /> Pontos / CSV
+                  <ScatterChart size={13} /> {t('kindScatter')}
                 </button>
                 <button
                   type="button"
                   className={`ft-btn ${plotKind === 'bars' ? 'primary' : ''}`}
                   onClick={() => setPlotKind('bars')}
                 >
-                  <BarChart3 size={13} /> Barras
+                  <BarChart3 size={13} /> {t('kindBars')}
                 </button>
                 <button
                   type="button"
                   className={`ft-btn ${plotKind === 'surface3d' ? 'primary' : ''}`}
                   onClick={() => setPlotKind('surface3d')}
                 >
-                  Superfície 3D
+                  {t('kind3d')}
                 </button>
               </div>
 
-              <div className="ft-sec-title">2. Configuração dos Eixos</div>
+              <div className="ft-sec-title">{t('axisConfigTitle')}</div>
               <div className="ft-props">
                 <label>
-                  <span>Título do Gráfico</span>
+                  <span>{t('chartTitle')}</span>
                   <input value={plotTitle} onChange={(e) => setPlotTitle(e.target.value)} />
                 </label>
                 <div className="ft-grid2">
                   <label>
-                    <span>Rótulo Eixo X</span>
+                    <span>{t('xLabel')}</span>
                     <input value={xLabel} onChange={(e) => setXLabel(e.target.value)} />
                   </label>
                   <label>
-                    <span>Rótulo Eixo Y</span>
+                    <span>{t('yLabel')}</span>
                     <input value={yLabel} onChange={(e) => setYLabel(e.target.value)} />
                   </label>
                 </div>
@@ -1151,10 +1172,10 @@ export default function App() {
 
         {/* Right Live LaTeX Output */}
         <aside className="ft-code-pane">
-          <div className="ft-sec-title">Código LaTeX Gerado</div>
+          <div className="ft-sec-title">{t('generatedCode')}</div>
           <pre className="ft-code">{tikzCode}</pre>
           <div className="ft-hint">
-            Preâmbulo: <code>\usepackage{'{tikz, pgfplots}'}</code>
+            {t('preamble')}: <code>\usepackage{'{tikz, pgfplots}'}</code>
             <br />
             <code>\pgfplotsset{'{compat=1.18}'}</code>
           </div>
