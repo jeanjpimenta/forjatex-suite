@@ -2,8 +2,8 @@
 name = "forjatikz"
 version = "1.1.0"
 description = "ForjaTikZ — Editor Visual de Diagramas TikZ e Gráficos PGFPlots"
-authors = ["ForjaTeX Contributors"]
-license = "MIT"
+authors = ["Jean Pimenta <jean.pimenta@protonmail.com>", "Arkhé Code"]
+license = "GPL-3.0-or-later"
 edition = "2024"
 rust-version = "1.90"
 

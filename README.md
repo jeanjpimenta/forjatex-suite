@@ -66,3 +66,11 @@ Grab the latest Windows `.exe` (NSIS) and `.msi` installers from [**GitHub Relea
 
 ### Community Translations
 Want to help translate **ForjaTeX** into Spanish, French, German, or another language? Check [src/i18n/README.md](src/i18n/README.md) — translations use simple JSON files!
+
+---
+
+## Licença & Marca / License & Credits
+
+- **Código-fonte / Source Code:** [GNU GPL v3.0](LICENSE) — qualquer versão modificada distribuída deve permanecer com código aberto sob GPL v3.
+- **Marca e Logotipos / Trademarks & Logos:** consulte [NOTICE.md](NOTICE.md).
+- **Idealizado e mantido por / Created & maintained by:** **Jean Pimenta** · **Arkhé Code**
