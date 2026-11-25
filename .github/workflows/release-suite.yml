@@ -68,7 +68,7 @@ jobs:
               }
             )
           }
-          $manifest | ConvertTo-Json -Depth 4 | Out-File -Encoding utf8 suite-manifest.json
+          [System.IO.File]::WriteAllText("$PWD\suite-manifest.json", ($manifest | ConvertTo-Json -Depth 4), (New-Object System.Text.UTF8Encoding($false)))
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2

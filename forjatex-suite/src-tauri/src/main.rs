@@ -84,7 +84,7 @@ fn fetch_manifest_json(url: String) -> Result<String, String> {
     #[cfg(target_os = "windows")]
     {
         let script = format!(
-            "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; (Invoke-WebRequest -Uri '{}' -UseBasicParsing).Content",
+            "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; $wc = New-Object System.Net.WebClient; $wc.Encoding = [System.Text.Encoding]::UTF8; $wc.Headers.Add('User-Agent', 'ForjaTeX-Suite'); $wc.DownloadString('{}').TrimStart([char]0xFEFF)",
             url.replace('\'', "''")
         );
         let out = silent_command("powershell")
@@ -92,7 +92,7 @@ fn fetch_manifest_json(url: String) -> Result<String, String> {
             .output()
             .map_err(|e| format!("Falha ao buscar manifesto: {}", e))?;
         if out.status.success() {
-            Ok(String::from_utf8_lossy(&out.stdout).to_string())
+            Ok(String::from_utf8_lossy(&out.stdout).trim().to_string())
         } else {
             Err(String::from_utf8_lossy(&out.stderr).to_string())
         }

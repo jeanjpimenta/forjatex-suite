@@ -240,3 +240,63 @@ body {
   color: var(--muted);
 }
 
+
+.ft-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.ft-modal {
+  width: 560px;
+  max-width: 94vw;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ft-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ft-donate-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.ft-donate-box {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  font-size: 12px;
+}
+
+.ft-donate-box code {
+  font-size: 10px;
+  word-break: break-all;
+}
+
+.ft-qr {
+  width: 140px;
+  height: 140px;
+  background: #fff;
+  padding: 4px;
+  border-radius: 6px;
+}

@@ -1,12 +1,15 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { save } from '@tauri-apps/plugin-dialog';
+import { open as openExternal } from '@tauri-apps/plugin-shell';
 import {
   ArrowRight,
+  Check,
   CheckCircle2,
   Circle,
   Copy,
   Download,
+  Heart,
   LineChart,
   Moon,
   Plus,
@@ -14,7 +17,14 @@ import {
   Sun,
   Trash2,
   Workflow,
+  X,
 } from 'lucide-react';
+import {
+  generatePixQrDataUrl,
+  getPayPalDonateUrl,
+  PAYPAL_EMAIL,
+  PIX_KEY,
+} from './pixDonate';
 
 type NodeShape = 'circle' | 'rect';
 
@@ -70,6 +80,10 @@ export default function App() {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [mode, setMode] = useState<'diagram' | 'pgfplots'>('diagram');
   const [statusMsg, setStatusMsg] = useState('');
+  const [donateOpen, setDonateOpen] = useState(false);
+  const [pixQrUrl, setPixQrUrl] = useState('');
+  const [pixBrCode, setPixBrCode] = useState('');
+  const [copyTag, setCopyTag] = useState<string | null>(null);
 
   // TikZ Diagram State
   const [nodes, setNodes] = useState<TikzNode[]>([
@@ -102,6 +116,15 @@ export default function App() {
   React.useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
+
+  React.useEffect(() => {
+    generatePixQrDataUrl('DoacaoFjTeXTikZ')
+      .then(({ brCode, qrUrl }) => {
+        setPixBrCode(brCode);
+        setPixQrUrl(qrUrl);
+      })
+      .catch(() => {});
+  }, []);
 
   const tikzCode = useMemo(() => {
     if (mode === 'diagram') {
@@ -224,6 +247,14 @@ export default function App() {
           </button>
           <button type="button" className="ft-btn primary" onClick={handleCopy}>
             <Copy size={14} /> Copiar Código
+          </button>
+          <button
+            type="button"
+            className="ft-btn"
+            onClick={() => setDonateOpen(true)}
+            title="Apoiar o ForjaTikZ (Pix / PayPal)"
+          >
+            <Heart size={14} color="#f43f5e" /> Apoiar
           </button>
           <button
             type="button"
@@ -651,6 +682,78 @@ export default function App() {
           </div>
         </aside>
       </main>
+
+      {donateOpen && (
+        <div className="ft-modal-backdrop" onClick={() => setDonateOpen(false)}>
+          <div className="ft-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="ft-modal-head">
+              <strong>Apoiar o ForjaTikZ</strong>
+              <button type="button" className="ft-btn" onClick={() => setDonateOpen(false)}>
+                <X size={14} />
+              </button>
+            </div>
+            <div className="ft-donate-grid">
+              <div className="ft-donate-box">
+                <strong>Pix (Chave Aleatória)</strong>
+                {pixQrUrl && <img src={pixQrUrl} alt="QR Code Pix" className="ft-qr" />}
+                <code>{PIX_KEY}</code>
+                <span>Descrição: DoacaoFjTeXTikZ</span>
+                <div className="ft-btn-row">
+                  <button
+                    type="button"
+                    className="ft-btn"
+                    onClick={async () => {
+                      await navigator.clipboard.writeText(PIX_KEY);
+                      setCopyTag('key');
+                      setTimeout(() => setCopyTag(null), 2000);
+                    }}
+                  >
+                    {copyTag === 'key' ? <Check size={12} /> : <Copy size={12} />} Chave
+                  </button>
+                  {pixBrCode && (
+                    <button
+                      type="button"
+                      className="ft-btn primary"
+                      onClick={async () => {
+                        await navigator.clipboard.writeText(pixBrCode);
+                        setCopyTag('code');
+                        setTimeout(() => setCopyTag(null), 2000);
+                      }}
+                    >
+                      {copyTag === 'code' ? 'Copiado!' : 'Copia e Cola'}
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="ft-donate-box">
+                <strong>PayPal</strong>
+                <code>{PAYPAL_EMAIL}</code>
+                <span>Descrição: DoacaoFjTeXTikZ</span>
+                <div className="ft-btn-row">
+                  <button
+                    type="button"
+                    className="ft-btn"
+                    onClick={async () => {
+                      await navigator.clipboard.writeText(PAYPAL_EMAIL);
+                      setCopyTag('pp');
+                      setTimeout(() => setCopyTag(null), 2000);
+                    }}
+                  >
+                    {copyTag === 'pp' ? 'Copiado!' : 'Copiar E-mail'}
+                  </button>
+                  <button
+                    type="button"
+                    className="ft-btn primary"
+                    onClick={() => openExternal(getPayPalDonateUrl('DoacaoFjTeXTikZ'))}
+                  >
+                    Abrir PayPal
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

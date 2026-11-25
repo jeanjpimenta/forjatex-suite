@@ -3,6 +3,9 @@ import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-shell';
 import {
   ArrowUpRight,
+  Check,
+  Copy,
+  Heart,
   LayoutGrid,
   List,
   Moon,
@@ -12,6 +15,12 @@ import {
   Sun,
   X,
 } from 'lucide-react';
+import {
+  generatePixQrDataUrl,
+  getPayPalDonateUrl,
+  PAYPAL_EMAIL,
+  PIX_KEY,
+} from './pixDonate';
 
 interface InstalledAppInfo {
   id: string;
@@ -129,6 +138,10 @@ export default function App() {
   const [sortBy, setSortBy] = useState<'name' | 'status'>('name');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showConfig, setShowConfig] = useState(false);
+  const [donateOpen, setDonateOpen] = useState(false);
+  const [pixQrUrl, setPixQrUrl] = useState('');
+  const [pixBrCode, setPixBrCode] = useState('');
+  const [copyTag, setCopyTag] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [bannerText, setBannerText] = useState<string | null>(
     'ForjaTeX App Suite conectado ao GitHub Releases (jeanjpimenta/forjatex-suite).'
@@ -153,6 +166,12 @@ export default function App() {
 
   useEffect(() => {
     scanInstalled();
+    generatePixQrDataUrl('DoacaoFjTexSuite')
+      .then(({ brCode, qrUrl }) => {
+        setPixBrCode(brCode);
+        setPixQrUrl(qrUrl);
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -243,6 +262,14 @@ export default function App() {
           <span className="ac-brand-sub">FORJATEX APP SUITE</span>
         </div>
         <div className="ac-topbar-right">
+          <button
+            type="button"
+            className="ac-donate-btn"
+            onClick={() => setDonateOpen(true)}
+            title="Apoiar o ForjaTeX App Suite (Pix / PayPal)"
+          >
+            <Heart size={13} /> APOIAR
+          </button>
           <button
             type="button"
             className="ac-icon-btn"
@@ -474,6 +501,80 @@ export default function App() {
           GITHUB.COM/JEANJPIMENTA/FORJATEX-SUITE <ArrowUpRight size={11} />
         </button>
       </footer>
+
+      {donateOpen && (
+        <div className="ac-modal-backdrop" onClick={() => setDonateOpen(false)}>
+          <div className="ac-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="ac-modal-head">
+              <strong>Apoiar o ForjaTeX App Suite</strong>
+              <button type="button" className="ac-icon-btn" onClick={() => setDonateOpen(false)}>
+                <X size={14} />
+              </button>
+            </div>
+            <div className="ac-modal-body">
+              <div className="ac-donate-grid">
+                <div className="ac-donate-box">
+                  <strong>Pix (Chave Aleatória)</strong>
+                  {pixQrUrl && <img src={pixQrUrl} alt="QR Code Pix" className="ac-qr" />}
+                  <code>{PIX_KEY}</code>
+                  <span className="ac-donate-desc">Descrição: DoacaoFjTexSuite</span>
+                  <div className="ac-donate-btns">
+                    <button
+                      type="button"
+                      className="ac-action-main"
+                      onClick={async () => {
+                        await navigator.clipboard.writeText(PIX_KEY);
+                        setCopyTag('key');
+                        setTimeout(() => setCopyTag(null), 2000);
+                      }}
+                    >
+                      {copyTag === 'key' ? <Check size={12} /> : <Copy size={12} />} CHAVE
+                    </button>
+                    {pixBrCode && (
+                      <button
+                        type="button"
+                        className="ac-btn-dark"
+                        onClick={async () => {
+                          await navigator.clipboard.writeText(pixBrCode);
+                          setCopyTag('code');
+                          setTimeout(() => setCopyTag(null), 2000);
+                        }}
+                      >
+                        {copyTag === 'code' ? 'COPIADO!' : 'COPIA E COLA'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div className="ac-donate-box">
+                  <strong>PayPal</strong>
+                  <code>{PAYPAL_EMAIL}</code>
+                  <span className="ac-donate-desc">Descrição: DoacaoFjTexSuite</span>
+                  <div className="ac-donate-btns">
+                    <button
+                      type="button"
+                      className="ac-action-main"
+                      onClick={async () => {
+                        await navigator.clipboard.writeText(PAYPAL_EMAIL);
+                        setCopyTag('pp');
+                        setTimeout(() => setCopyTag(null), 2000);
+                      }}
+                    >
+                      {copyTag === 'pp' ? 'COPIADO!' : 'COPIAR E-MAIL'}
+                    </button>
+                    <button
+                      type="button"
+                      className="ac-btn-dark"
+                      onClick={() => open(getPayPalDonateUrl('DoacaoFjTexSuite'))}
+                    >
+                      ABRIR PAYPAL
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

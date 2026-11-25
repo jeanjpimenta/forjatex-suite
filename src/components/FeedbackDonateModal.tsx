@@ -1,11 +1,20 @@
-import React, { useState } from 'react';
-import { Bug, Heart, Lightbulb, Copy, Check, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Bug, Heart, Lightbulb, Copy, Check, X, ExternalLink } from 'lucide-react';
+import { open as openExternal } from '@tauri-apps/plugin-shell';
+import {
+  generatePixQrDataUrl,
+  getPayPalDonateUrl,
+  PAYPAL_EMAIL,
+  PIX_KEY,
+} from '../utils/pixDonate';
 
 interface FeedbackDonateModalProps {
   open: boolean;
   onClose: () => void;
   compilerSummary: string;
 }
+
+const APP_DONATE_DESC = 'DoacaoFjTeXIDE';
 
 export const FeedbackDonateModal: React.FC<FeedbackDonateModalProps> = ({
   open,
@@ -17,14 +26,37 @@ export const FeedbackDonateModal: React.FC<FeedbackDonateModalProps> = ({
   const [title, setTitle] = useState('');
   const [details, setDetails] = useState('');
   const [copied, setCopied] = useState(false);
+  const [copyTag, setCopyTag] = useState<string | null>(null);
+  const [pixQrUrl, setPixQrUrl] = useState('');
+  const [pixBrCode, setPixBrCode] = useState('');
+
+  useEffect(() => {
+    if (!open) return;
+    generatePixQrDataUrl(APP_DONATE_DESC)
+      .then(({ brCode, qrUrl }) => {
+        setPixBrCode(brCode);
+        setPixQrUrl(qrUrl);
+      })
+      .catch(() => {});
+  }, [open]);
 
   if (!open) return null;
+
+  const copyText = async (tag: string, text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopyTag(tag);
+      setTimeout(() => setCopyTag(null), 2200);
+    } catch {
+      // ignore
+    }
+  };
 
   const handleCopyReport = async (e: React.FormEvent) => {
     e.preventDefault();
     const payload = [
       `[${kind === 'bug' ? 'BUG REPORT' : 'PEDIDO DE RECURSO'}] ${title}`,
-      `Versão: ForjaTeX 1.0.0`,
+      `Versão: ForjaTeX 1.3.0`,
       `Compilador: ${compilerSummary}`,
       `---`,
       details,
@@ -41,7 +73,7 @@ export const FeedbackDonateModal: React.FC<FeedbackDonateModalProps> = ({
 
   return (
     <div className="tf-modal-backdrop" onClick={onClose}>
-      <div className="tf-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="tf-modal tf-modal-wide" onClick={(e) => e.stopPropagation()}>
         <div className="tf-modal-header">
           <div className="tf-modal-tabs">
             <button
@@ -108,7 +140,7 @@ export const FeedbackDonateModal: React.FC<FeedbackDonateModalProps> = ({
                 <textarea
                   required
                   rows={4}
-                  placeholder="Descreva o que aconteceu ou o que gostaria de ver no TeXForge..."
+                  placeholder="Descreva o que aconteceu ou o que gostaria de ver no ForjaTeX..."
                   value={details}
                   onChange={(e) => setDetails(e.target.value)}
                 />
@@ -121,20 +153,78 @@ export const FeedbackDonateModal: React.FC<FeedbackDonateModalProps> = ({
             </form>
           ) : (
             <div className="tf-donate-box">
-              <Heart size={32} className="text-rose-400" />
+              <Heart size={28} className="text-rose-400" />
               <h3>Ajude a manter o ForjaTeX gratuito</h3>
               <p>
                 Sem paywalls de compilação, sem limite de páginas e sem anúncios. Qualquer doação ajuda a
-                custear certificados de assinatura (Windows/Mac) e o desenvolvimento contínuo.
+                custear certificados de assinatura digital (Code Signing) e o desenvolvimento contínuo.
               </p>
               <div className="tf-donate-cards">
                 <div className="tf-donate-card">
-                  <strong>Pix (Brasil)</strong>
-                  <span>Configure sua chave Pix nas variáveis de release</span>
+                  <strong>Pix (Brasil — Chave Aleatória)</strong>
+                  {pixQrUrl && (
+                    <img
+                      src={pixQrUrl}
+                      alt="QR Code Pix"
+                      style={{
+                        width: 156,
+                        height: 156,
+                        borderRadius: 8,
+                        background: '#fff',
+                        padding: 6,
+                        margin: '6px auto',
+                      }}
+                    />
+                  )}
+                  <span className="text-[11px] font-mono break-all select-all">{PIX_KEY}</span>
+                  <span className="text-[11px] text-slate-400">
+                    Descrição: <strong>{APP_DONATE_DESC}</strong>
+                  </span>
+                  <div className="flex items-center justify-center gap-2 mt-2">
+                    <button
+                      type="button"
+                      className="tf-btn-small"
+                      onClick={() => copyText('pix-key', PIX_KEY)}
+                    >
+                      {copyTag === 'pix-key' ? <Check size={12} /> : <Copy size={12} />}
+                      {copyTag === 'pix-key' ? 'Chave copiada!' : 'Copiar Chave'}
+                    </button>
+                    {pixBrCode && (
+                      <button
+                        type="button"
+                        className="tf-btn-small accent"
+                        onClick={() => copyText('pix-code', pixBrCode)}
+                      >
+                        {copyTag === 'pix-code' ? <Check size={12} /> : <Copy size={12} />}
+                        {copyTag === 'pix-code' ? 'Copiado!' : 'Copia e Cola'}
+                      </button>
+                    )}
+                  </div>
                 </div>
+
                 <div className="tf-donate-card">
-                  <strong>GitHub Sponsors / Ko-fi</strong>
-                  <span>Apoio mensal ou pontual em qualquer moeda</span>
+                  <strong>PayPal (Internacional / Cartão)</strong>
+                  <span className="text-xs font-mono break-all select-all mt-2">{PAYPAL_EMAIL}</span>
+                  <span className="text-[11px] text-slate-400">
+                    Descrição sugerida: <strong>{APP_DONATE_DESC}</strong>
+                  </span>
+                  <div className="flex items-center justify-center gap-2 mt-3">
+                    <button
+                      type="button"
+                      className="tf-btn-small"
+                      onClick={() => copyText('paypal', PAYPAL_EMAIL)}
+                    >
+                      {copyTag === 'paypal' ? <Check size={12} /> : <Copy size={12} />}
+                      {copyTag === 'paypal' ? 'E-mail copiado!' : 'Copiar E-mail'}
+                    </button>
+                    <button
+                      type="button"
+                      className="tf-btn-small accent"
+                      onClick={() => openExternal(getPayPalDonateUrl(APP_DONATE_DESC))}
+                    >
+                      <ExternalLink size={12} /> Abrir PayPal
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -144,4 +234,3 @@ export const FeedbackDonateModal: React.FC<FeedbackDonateModalProps> = ({
     </div>
   );
 };
-
