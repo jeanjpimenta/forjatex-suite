@@ -264,6 +264,25 @@ export const FeedbackDonateModal: React.FC<FeedbackDonateModalProps> = ({
                   </div>
                 </div>
               </div>
+              <div className="text-[11px] text-slate-400 mt-2">
+                Desenvolvido por{' '}
+                <button
+                  type="button"
+                  className="tf-link-btn"
+                  onClick={() => openExternal('https://jeanpimenta.com.br')}
+                >
+                  Jean Pimenta
+                </button>{' '}
+                ·{' '}
+                <button
+                  type="button"
+                  className="tf-link-btn"
+                  onClick={() => openExternal('https://arkhecode.com.br')}
+                >
+                  Arkhé Code
+                </button>{' '}
+                (GPL v3)
+              </div>
             </div>
           )}
         </div>

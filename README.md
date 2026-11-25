@@ -73,4 +73,4 @@ Want to help translate **ForjaTeX** into Spanish, French, German, or another lan
 
 - **Código-fonte / Source Code:** [GNU GPL v3.0](LICENSE) — qualquer versão modificada distribuída deve permanecer com código aberto sob GPL v3.
 - **Marca e Logotipos / Trademarks & Logos:** consulte [NOTICE.md](NOTICE.md).
-- **Idealizado e mantido por / Created & maintained by:** **Jean Pimenta** · **Arkhé Code**
+- **Idealizado e mantido por / Created & maintained by:** [**Jean Pimenta**](https://jeanpimenta.com.br) · [**Arkhé Code**](https://arkhecode.com.br) — Desenvolvimento de software, automação e soluções digitais.

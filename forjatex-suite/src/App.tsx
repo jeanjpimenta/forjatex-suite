@@ -692,7 +692,24 @@ export default function App() {
 
       <footer className="ac-footer">
         <div className="ac-footer-inner">
-          <span>VERIFICADO {lastChecked.toUpperCase()} · VIA GITHUB RELEASES</span>
+          <span>
+            VERIFICADO {lastChecked.toUpperCase()} · POR{' '}
+            <button
+              type="button"
+              className="ac-link-upper"
+              onClick={() => open('https://jeanpimenta.com.br')}
+            >
+              JEAN PIMENTA
+            </button>{' '}
+            ·{' '}
+            <button
+              type="button"
+              className="ac-link-upper"
+              onClick={() => open('https://arkhecode.com.br')}
+            >
+              ARKHÉ CODE <ArrowUpRight size={10} />
+            </button>
+          </span>
           <button
             type="button"
             className="ac-link-upper"

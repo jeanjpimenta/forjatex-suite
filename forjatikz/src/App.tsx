@@ -1186,6 +1186,7 @@ export default function App() {
               </button>
             </div>
             {donateTab === 'donate' ? (
+              <>
               <div className="ft-donate-grid">
                 <div className="ft-donate-box">
                   <strong>Pix (Chave Aleatória)</strong>
@@ -1245,6 +1246,27 @@ export default function App() {
                   </div>
                 </div>
               </div>
+              <div className="ft-hint" style={{ textAlign: 'center', marginTop: 8 }}>
+                Por{' '}
+                <button
+                  type="button"
+                  className="ft-btn"
+                  style={{ padding: '2px 6px', fontSize: 11 }}
+                  onClick={() => openExternal('https://jeanpimenta.com.br')}
+                >
+                  Jean Pimenta
+                </button>{' '}
+                ·{' '}
+                <button
+                  type="button"
+                  className="ft-btn"
+                  style={{ padding: '2px 6px', fontSize: 11 }}
+                  onClick={() => openExternal('https://arkhecode.com.br')}
+                >
+                  Arkhé Code
+                </button>
+              </div>
+              </>
             ) : (
               <div className="ft-props">
                 <div className="ft-btn-row">
