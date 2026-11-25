@@ -74,13 +74,13 @@ jobs:
               @{
                 id = "forjatikz"
                 name = "ForjaTikZ"
-                latestVersion = "1.0.0"
-                installerFile = "ForjaTikZ_1.0.0_x64_en-US.msi"
-                installerUrl = "https://github.com/$repo/releases/latest/download/ForjaTikZ_1.0.0_x64_en-US.msi"
-                msiFile = "ForjaTikZ_1.0.0_x64_en-US.msi"
-                msiUrl = "https://github.com/$repo/releases/latest/download/ForjaTikZ_1.0.0_x64_en-US.msi"
-                exeFile = "ForjaTikZ_1.0.0_x64-setup.exe"
-                exeUrl = "https://github.com/$repo/releases/latest/download/ForjaTikZ_1.0.0_x64-setup.exe"
+                latestVersion = "1.1.0"
+                installerFile = "ForjaTikZ_1.1.0_x64_en-US.msi"
+                installerUrl = "https://github.com/$repo/releases/latest/download/ForjaTikZ_1.1.0_x64_en-US.msi"
+                msiFile = "ForjaTikZ_1.1.0_x64_en-US.msi"
+                msiUrl = "https://github.com/$repo/releases/latest/download/ForjaTikZ_1.1.0_x64_en-US.msi"
+                exeFile = "ForjaTikZ_1.1.0_x64-setup.exe"
+                exeUrl = "https://github.com/$repo/releases/latest/download/ForjaTikZ_1.1.0_x64-setup.exe"
                 changelog = "Studio Visual TikZ & PGFPlots ($tag)"
               }
             )

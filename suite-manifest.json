@@ -25,14 +25,14 @@
     {
       "id": "forjatikz",
       "name": "ForjaTikZ",
-      "latestVersion": "1.0.0",
-      "installerFile": "ForjaTikZ_1.0.0_x64_en-US.msi",
-      "installerUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTikZ_1.0.0_x64_en-US.msi",
-      "msiFile": "ForjaTikZ_1.0.0_x64_en-US.msi",
-      "msiUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTikZ_1.0.0_x64_en-US.msi",
-      "exeFile": "ForjaTikZ_1.0.0_x64-setup.exe",
-      "exeUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTikZ_1.0.0_x64-setup.exe",
-      "changelog": "v1.0.0: Lançamento inicial — Diagramas TikZ e Gráficos PGFPlots."
+      "latestVersion": "1.1.0",
+      "installerFile": "ForjaTikZ_1.1.0_x64_en-US.msi",
+      "installerUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTikZ_1.1.0_x64_en-US.msi",
+      "msiFile": "ForjaTikZ_1.1.0_x64_en-US.msi",
+      "msiUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTikZ_1.1.0_x64_en-US.msi",
+      "exeFile": "ForjaTikZ_1.1.0_x64-setup.exe",
+      "exeUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTikZ_1.1.0_x64-setup.exe",
+      "changelog": "v1.1.0: PGFPlots completo (Funções, Pontos/CSV, Barras, 3D, Log) + Modelos TikZ CTAN."
     }
   ]
 }

@@ -1,6 +1,6 @@
 [package]
 name = "forjatikz"
-version = "1.0.0"
+version = "1.1.0"
 description = "ForjaTikZ — Editor Visual de Diagramas TikZ e Gráficos PGFPlots"
 authors = ["ForjaTeX Contributors"]
 license = "MIT"

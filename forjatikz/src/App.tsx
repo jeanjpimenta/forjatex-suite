@@ -4,15 +4,18 @@ import { save } from '@tauri-apps/plugin-dialog';
 import { open as openExternal } from '@tauri-apps/plugin-shell';
 import {
   ArrowRight,
+  BarChart3,
   Check,
   CheckCircle2,
   Circle,
   Copy,
+  Diamond,
   Download,
   Heart,
   LineChart,
   Moon,
   Plus,
+  ScatterChart,
   Square,
   Sun,
   Trash2,
@@ -26,7 +29,9 @@ import {
   PIX_KEY,
 } from './pixDonate';
 
-type NodeShape = 'circle' | 'rect';
+type NodeShape = 'circle' | 'rect' | 'diamond' | 'ellipse' | 'text';
+type EdgeLineStyle = 'solid' | 'dashed' | 'dotted';
+type EdgeBend = 'straight' | 'bend left=25' | 'bend right=25';
 
 interface TikzNode {
   id: string;
@@ -43,13 +48,20 @@ interface TikzEdge {
   to: string;
   label: string;
   arrow: '->' | '<->' | '--';
+  lineStyle: EdgeLineStyle;
+  bend: EdgeBend;
 }
+
+type PlotKind = 'function' | 'scatter' | 'bars' | 'surface3d';
+type AxisScaleType = 'linear' | 'semilogx' | 'semilogy' | 'loglog';
 
 interface PlotCurve {
   id: string;
-  expr: string; // e.g. sin(deg(x)), x^2/4
+  expr: string;
   color: string;
   label: string;
+  lineStyle: EdgeLineStyle;
+  fillArea: boolean;
 }
 
 const SCALE = 48; // px per cm
@@ -61,6 +73,7 @@ function evalSafeExpr(expr: string, x: number): number | null {
     const js = expr
       .replace(/deg\(x\)/g, 'x')
       .replace(/\^/g, '**')
+      .replace(/\bpi\b/gi, 'Math.PI')
       .replace(/\bsin\(/g, 'Math.sin(')
       .replace(/\bcos\(/g, 'Math.cos(')
       .replace(/\btan\(/g, 'Math.tan(')
@@ -76,9 +89,46 @@ function evalSafeExpr(expr: string, x: number): number | null {
   }
 }
 
+function parsePoints(raw: string): Array<{ x: number; y: number; err?: number }> {
+  const out: Array<{ x: number; y: number; err?: number }> = [];
+  for (const line of raw.split(/[\n;]+/)) {
+    const t = line.trim();
+    if (!t) continue;
+    const parts = t.split(/[\s,]+/).map(Number);
+    if (parts.length >= 2 && Number.isFinite(parts[0]) && Number.isFinite(parts[1])) {
+      const pt: { x: number; y: number; err?: number } = { x: parts[0], y: parts[1] };
+      if (parts.length >= 3 && Number.isFinite(parts[2])) pt.err = parts[2];
+      out.push(pt);
+    }
+  }
+  return out;
+}
+
+function parseBars(raw: string): Array<{ cat: string; val: number }> {
+  return raw
+    .split(/[\n,;]+/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((item) => {
+      const [cat, valStr] = item.split('=').map((s) => s.trim());
+      const val = Number(valStr);
+      if (cat && Number.isFinite(val)) return { cat, val };
+      return null;
+    })
+    .filter((b): b is { cat: string; val: number } => b !== null);
+}
+
+const COLOR_HEX: Record<string, string> = {
+  blue: '#38bdf8',
+  red: '#f43f5e',
+  teal: '#14b8a6',
+  orange: '#f59e0b',
+  purple: '#a855f7',
+};
+
 export default function App() {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-  const [mode, setMode] = useState<'diagram' | 'pgfplots'>('diagram');
+  const [mode, setMode] = useState<'diagram' | 'pgfplots'>('pgfplots');
   const [statusMsg, setStatusMsg] = useState('');
   const [donateOpen, setDonateOpen] = useState(false);
   const [donateTab, setDonateTab] = useState<'donate' | 'feedback'>('donate');
@@ -91,31 +141,39 @@ export default function App() {
 
   // TikZ Diagram State
   const [nodes, setNodes] = useState<TikzNode[]>([
-    { id: 'n1', label: 'A', x: -3, y: 1, shape: 'circle', color: 'blue' },
-    { id: 'n2', label: 'B', x: 0, y: 1.5, shape: 'rect', color: 'teal' },
-    { id: 'n3', label: 'C', x: 3, y: 0, shape: 'circle', color: 'orange' },
+    { id: 'n1', label: 'Início', x: -3.5, y: 1.5, shape: 'ellipse', color: 'teal' },
+    { id: 'n2', label: 'x > 0?', x: 0, y: 1.5, shape: 'diamond', color: 'orange' },
+    { id: 'n3', label: 'Executar', x: 3.5, y: 1.5, shape: 'rect', color: 'blue' },
   ]);
   const [edges, setEdges] = useState<TikzEdge[]>([
-    { id: 'e1', from: 'n1', to: 'n2', label: 'f', arrow: '->' },
-    { id: 'e2', from: 'n2', to: 'n3', label: 'g', arrow: '->' },
+    { id: 'e1', from: 'n1', to: 'n2', label: '', arrow: '->', lineStyle: 'solid', bend: 'straight' },
+    { id: 'e2', from: 'n2', to: 'n3', label: 'Sim', arrow: '->', lineStyle: 'solid', bend: 'straight' },
   ]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>('n1');
   const [connectFrom, setConnectFrom] = useState<string | null>(null);
+  const [customTikzTemplate, setCustomTikzTemplate] = useState<string | null>(null);
   const draggingRef = useRef<string | null>(null);
 
   // PGFPlots State
+  const [plotKind, setPlotKind] = useState<PlotKind>('function');
+  const [axisScale, setAxisScale] = useState<AxisScaleType>('linear');
+  const [useRadians, setUseRadians] = useState(true);
   const [plotTitle, setPlotTitle] = useState('Função Senoidal e Parábola');
   const [xLabel, setXLabel] = useState('$x$');
   const [yLabel, setYLabel] = useState('$f(x)$');
   const [xMin, setXMin] = useState(-4);
   const [xMax, setXMax] = useState(4);
-  const [yMin, setYMin] = useState(-2);
-  const [yMax, setYMax] = useState(3);
+  const [yMin, setYMin] = useState(-1.5);
+  const [yMax, setYMax] = useState(3.5);
   const [gridMode, setGridMode] = useState<'both' | 'major' | 'none'>('both');
   const [curves, setCurves] = useState<PlotCurve[]>([
-    { id: 'c1', expr: 'sin(deg(x))', color: 'blue', label: '\\sin(x)' },
-    { id: 'c2', expr: '0.2*x^2', color: 'red', label: '0.2x^2' },
+    { id: 'c1', expr: 'sin(x)', color: 'blue', label: '\\sin(x)', lineStyle: 'solid', fillArea: false },
+    { id: 'c2', expr: '0.2*x^2', color: 'red', label: '0.2x^2', lineStyle: 'dashed', fillArea: false },
   ]);
+  const [scatterRaw, setScatterRaw] = useState('0, 1.1, 0.2\n1, 2.3, 0.3\n2, 2.8, 0.25\n3, 4.1, 0.4');
+  const [useErrorBars, setUseErrorBars] = useState(true);
+  const [barsRaw, setBarsRaw] = useState('Jan=15\nFev=28\nMar=22\nAbr=35');
+  const [expr3d, setExpr3d] = useState('exp(-x^2 - y^2)');
 
   React.useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -130,36 +188,111 @@ export default function App() {
       .catch(() => {});
   }, []);
 
+  const parsedScatter = useMemo(() => parsePoints(scatterRaw), [scatterRaw]);
+  const parsedBars = useMemo(() => parseBars(barsRaw), [barsRaw]);
+
   const tikzCode = useMemo(() => {
     if (mode === 'diagram') {
+      if (customTikzTemplate) return customTikzTemplate;
+
       const nodeLines = nodes.map((n) => {
+        if (n.shape === 'text') {
+          return `  \\node (${n.id}) at (${n.x.toFixed(1)}, ${n.y.toFixed(1)}) {${n.label}};`;
+        }
         const shapeStyle =
           n.shape === 'circle'
             ? `circle, draw=${n.color}!80!black, fill=${n.color}!12`
+            : n.shape === 'diamond'
+            ? `diamond, aspect=1.6, draw=${n.color}!80!black, fill=${n.color}!12`
+            : n.shape === 'ellipse'
+            ? `ellipse, draw=${n.color}!80!black, fill=${n.color}!12`
             : `rectangle, rounded corners, draw=${n.color}!80!black, fill=${n.color}!12`;
-        return `  \\node[${shapeStyle}, minimum size=0.9cm] (${n.id}) at (${n.x.toFixed(1)}, ${n.y.toFixed(1)}) {$${n.label}$};`;
+        return `  \\node[${shapeStyle}, minimum size=0.9cm] (${n.id}) at (${n.x.toFixed(1)}, ${n.y.toFixed(1)}) {${n.label}};`;
       });
       const edgeLines = edges.map((e) => {
-        const lbl = e.label.trim() ? ` node[midway, above] {$${e.label}$}` : '';
-        return `  \\draw[${e.arrow}, thick] (${e.from}) -- (${e.to})${lbl};`;
+        const opts = [e.arrow, 'thick'];
+        if (e.lineStyle !== 'solid') opts.push(e.lineStyle);
+        if (e.bend !== 'straight') opts.push(e.bend);
+        const lbl = e.label.trim() ? ` node[midway, above] {${e.label}}` : '';
+        return `  \\draw[${opts.join(', ')}] (${e.from}) to${lbl} (${e.to});`;
       });
       return `\\begin{tikzpicture}[>=Stealth]\n${nodeLines.join('\n')}\n${edgeLines.join('\n')}\n\\end{tikzpicture}`;
     }
 
-    const curveLines = curves.map(
-      (c) =>
-        `    \\addplot[color=${c.color}, thick, samples=100, domain=${xMin}:${xMax}] {${c.expr}};\n    \\addlegendentry{$${c.label}$}`
-    );
-    return `\\begin{tikzpicture}\n  \\begin{axis}[\n    title={${plotTitle}},\n    xlabel={${xLabel}},\n    ylabel={${yLabel}},\n    xmin=${xMin}, xmax=${xMax},\n    ymin=${yMin}, ymax=${yMax},\n    grid=${gridMode},\n    legend pos=north west\n  ]\n${curveLines.join('\n')}\n  \\end{axis}\n\\end{tikzpicture}`;
-  }, [mode, nodes, edges, curves, plotTitle, xLabel, yLabel, xMin, xMax, yMin, yMax, gridMode]);
+    const axisEnv =
+      axisScale === 'semilogx'
+        ? 'semilogxaxis'
+        : axisScale === 'semilogy'
+        ? 'semilogyaxis'
+        : axisScale === 'loglog'
+        ? 'loglogaxis'
+        : 'axis';
+
+    if (plotKind === 'bars') {
+      const cats = parsedBars.map((b) => b.cat).join(', ');
+      const coords = parsedBars.map((b) => `(${b.cat}, ${b.val})`).join(' ');
+      return `\\begin{tikzpicture}\n  \\begin{axis}[\n    ybar,\n    title={${plotTitle}},\n    xlabel={${xLabel}},\n    ylabel={${yLabel}},\n    symbolic x coords={${cats}},\n    xtick=data,\n    nodes near coords,\n    ymin=0,\n    grid=${gridMode}\n  ]\n    \\addplot[fill=blue!50, draw=blue!80!black] coordinates { ${coords} };\n  \\end{axis}\n\\end{tikzpicture}`;
+    }
+
+    if (plotKind === 'scatter') {
+      const coords = parsedScatter
+        .map((p) =>
+          useErrorBars && p.err !== undefined
+            ? `(${p.x}, ${p.y}) +- (0, ${p.err})`
+            : `(${p.x}, ${p.y})`
+        )
+        .join(' ');
+      const errOpt = useErrorBars
+        ? ',\n      error bars/.cd, y dir=both, y explicit'
+        : '';
+      return `\\begin{tikzpicture}\n  \\begin{${axisEnv}}[\n    title={${plotTitle}},\n    xlabel={${xLabel}},\n    ylabel={${yLabel}},\n    grid=${gridMode}\n  ]\n    \\addplot[\n      only marks,\n      mark=*,\n      color=blue${errOpt}\n    ] coordinates { ${coords} };\n  \\end{${axisEnv}}\n\\end{tikzpicture}`;
+    }
+
+    if (plotKind === 'surface3d') {
+      return `\\begin{tikzpicture}\n  \\begin{axis}[\n    title={${plotTitle}},\n    view={60}{30},\n    colormap name=viridis,\n    colorbar,\n    grid=${gridMode}\n  ]\n    \\addplot3[surf, domain=${xMin}:${xMax}, domain y=${yMin}:${yMax}, samples=24] {${expr3d}};\n  \\end{axis}\n\\end{tikzpicture}`;
+    }
+
+    const trigLine = useRadians ? ',\n    trig format plots=rad' : '';
+    const curveLines = curves.map((c) => {
+      const opts = [`color=${c.color}`, 'thick', 'samples=100', `domain=${xMin}:${xMax}`];
+      if (c.lineStyle !== 'solid') opts.push(c.lineStyle);
+      const areaFill = c.fillArea
+        ? `\\closedcycle`
+        : '';
+      const fillOpt = c.fillArea ? `, fill=${c.color}!20` : '';
+      return `    \\addplot[${opts.join(', ')}${fillOpt}] {${c.expr}}${areaFill};\n    \\addlegendentry{$${c.label}$}`;
+    });
+    return `\\begin{tikzpicture}\n  \\begin{${axisEnv}}[\n    title={${plotTitle}},\n    xlabel={${xLabel}},\n    ylabel={${yLabel}},\n    xmin=${xMin}, xmax=${xMax},\n    ymin=${yMin}, ymax=${yMax},\n    grid=${gridMode}${trigLine},\n    legend pos=north west\n  ]\n${curveLines.join('\n')}\n  \\end{${axisEnv}}\n\\end{tikzpicture}`;
+  }, [
+    mode,
+    customTikzTemplate,
+    nodes,
+    edges,
+    axisScale,
+    plotKind,
+    plotTitle,
+    xLabel,
+    yLabel,
+    xMin,
+    xMax,
+    yMin,
+    yMax,
+    gridMode,
+    useRadians,
+    curves,
+    parsedBars,
+    parsedScatter,
+    useErrorBars,
+    expr3d,
+  ]);
 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId) || null;
 
   const handleSvgMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
     if (!draggingRef.current) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    const px = e.clientX - rect.left;
-    const py = e.clientY - rect.top;
+    const px = ((e.clientX - rect.left) / rect.width) * 620;
+    const py = ((e.clientY - rect.top) / rect.height) * 420;
     const xCm = Math.round(((px - CX) / SCALE) * 2) / 2;
     const yCm = Math.round(((CY - py) / SCALE) * 2) / 2;
     setNodes((prev) =>
@@ -172,6 +305,7 @@ export default function App() {
   };
 
   const addNode = (shape: NodeShape) => {
+    setCustomTikzTemplate(null);
     const id = `n${Date.now().toString().slice(-4)}`;
     const next: TikzNode = {
       id,
@@ -179,7 +313,7 @@ export default function App() {
       x: 0,
       y: 0,
       shape,
-      color: 'teal',
+      color: 'blue',
     };
     setNodes((p) => [...p, next]);
     setSelectedNodeId(id);
@@ -214,6 +348,10 @@ export default function App() {
     }
   };
 
+  const insertPresetExpr = (curveId: string, expr: string, label: string) => {
+    setCurves((p) => p.map((c) => (c.id === curveId ? { ...c, expr, label } : c)));
+  };
+
   return (
     <div className="ft-shell">
       <header className="ft-header">
@@ -221,24 +359,24 @@ export default function App() {
           <img src="/logo.png" alt="ForjaTikZ" className="ft-logo" />
           <div>
             <h1>ForjaTikZ</h1>
-            <span>Studio Visual TikZ &amp; PGFPlots</span>
+            <span>Studio Visual TikZ &amp; PGFPlots (v1.1.0)</span>
           </div>
         </div>
 
         <div className="ft-tabs">
           <button
             type="button"
-            className={`ft-tab ${mode === 'diagram' ? 'active' : ''}`}
-            onClick={() => setMode('diagram')}
-          >
-            <Workflow size={14} /> Diagramas (TikZ)
-          </button>
-          <button
-            type="button"
             className={`ft-tab ${mode === 'pgfplots' ? 'active' : ''}`}
             onClick={() => setMode('pgfplots')}
           >
             <LineChart size={14} /> Gráficos (PGFPlots)
+          </button>
+          <button
+            type="button"
+            className={`ft-tab ${mode === 'diagram' ? 'active' : ''}`}
+            onClick={() => setMode('diagram')}
+          >
+            <Workflow size={14} /> Diagramas (TikZ)
           </button>
         </div>
 
@@ -256,7 +394,7 @@ export default function App() {
             type="button"
             className="ft-btn"
             onClick={() => setDonateOpen(true)}
-            title="Apoiar o ForjaTikZ (Pix / PayPal)"
+            title="Suporte & Apoiar o ForjaTikZ"
           >
             <Heart size={14} color="#f43f5e" /> Apoiar
           </button>
@@ -277,30 +415,39 @@ export default function App() {
         <aside className="ft-sidebar">
           {mode === 'diagram' ? (
             <>
-              <div className="ft-sec-title">Elementos TikZ</div>
+              <div className="ft-sec-title">Adicionar Forma (TikZ)</div>
               <div className="ft-btn-row">
                 <button type="button" className="ft-btn" onClick={() => addNode('circle')}>
-                  <Circle size={13} /> + Círculo
+                  <Circle size={13} /> Círculo
                 </button>
                 <button type="button" className="ft-btn" onClick={() => addNode('rect')}>
-                  <Square size={13} /> + Caixa
+                  <Square size={13} /> Caixa
+                </button>
+                <button type="button" className="ft-btn" onClick={() => addNode('diamond')}>
+                  <Diamond size={13} /> Losango
+                </button>
+                <button type="button" className="ft-btn" onClick={() => addNode('ellipse')}>
+                  Elipse
                 </button>
               </div>
               <button
                 type="button"
                 className={`ft-btn ${connectFrom ? 'primary' : ''}`}
                 disabled={!selectedNodeId}
-                onClick={() => setConnectFrom((prev) => (prev ? null : selectedNodeId))}
+                onClick={() => {
+                  setCustomTikzTemplate(null);
+                  setConnectFrom((prev) => (prev ? null : selectedNodeId));
+                }}
               >
                 <ArrowRight size={13} />
-                {connectFrom ? 'Clique no nó destino...' : 'Conectar Nó Selecionado'}
+                {connectFrom ? 'Clique no nó de destino...' : 'Conectar Nó Selecionado'}
               </button>
 
-              {selectedNode && (
+              {selectedNode && !customTikzTemplate && (
                 <div className="ft-props">
-                  <div className="ft-sec-title">Propriedades ({selectedNode.id})</div>
+                  <div className="ft-sec-title">Nó Selecionado ({selectedNode.id})</div>
                   <label>
-                    <span>Rótulo (LaTeX)</span>
+                    <span>Texto dentro do nó</span>
                     <input
                       type="text"
                       value={selectedNode.label}
@@ -344,149 +491,408 @@ export default function App() {
                 </div>
               )}
 
-              <div className="ft-sec-title">Setas ({edges.length})</div>
-              <div className="ft-edge-list">
-                {edges.map((ed) => (
-                  <div key={ed.id} className="ft-edge-row">
-                    <span>
-                      {ed.from} {ed.arrow} {ed.to}
-                    </span>
-                    <input
-                      type="text"
-                      value={ed.label}
-                      placeholder="rótulo"
-                      onChange={(e) =>
-                        setEdges((p) =>
-                          p.map((x) => (x.id === ed.id ? { ...x, label: e.target.value } : x))
-                        )
-                      }
-                    />
-                    <button
-                      type="button"
-                      className="ft-icon-del"
-                      onClick={() => setEdges((p) => p.filter((x) => x.id !== ed.id))}
-                    >
-                      ×
-                    </button>
+              {!customTikzTemplate && (
+                <>
+                  <div className="ft-sec-title">Conexões / Setas ({edges.length})</div>
+                  <div className="ft-edge-list">
+                    {edges.map((ed) => (
+                      <div key={ed.id} className="ft-edge-card">
+                        <div className="ft-edge-top">
+                          <span>
+                            {ed.from} → {ed.to}
+                          </span>
+                          <button
+                            type="button"
+                            className="ft-icon-del"
+                            onClick={() => setEdges((p) => p.filter((x) => x.id !== ed.id))}
+                          >
+                            ×
+                          </button>
+                        </div>
+                        <div className="ft-grid2">
+                          <input
+                            type="text"
+                            value={ed.label}
+                            placeholder="Rótulo (ex: f)"
+                            onChange={(e) =>
+                              setEdges((p) =>
+                                p.map((x) => (x.id === ed.id ? { ...x, label: e.target.value } : x))
+                              )
+                            }
+                          />
+                          <select
+                            value={ed.bend}
+                            onChange={(e) =>
+                              setEdges((p) =>
+                                p.map((x) =>
+                                  x.id === ed.id ? { ...x, bend: e.target.value as EdgeBend } : x
+                                )
+                              )
+                            }
+                          >
+                            <option value="straight">Reta</option>
+                            <option value="bend left=25">Curva Esq.</option>
+                            <option value="bend right=25">Curva Dir.</option>
+                          </select>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </>
+              )}
+
+              <div className="ft-sec-title">Modelos Prontos (CTAN)</div>
+              <div className="ft-btn-row">
+                <button
+                  type="button"
+                  className="ft-btn"
+                  onClick={() =>
+                    setCustomTikzTemplate(
+                      `\\begin{tikzcd}\n  A \\arrow[r, "f"] \\arrow[d, swap, "g"] & B \\arrow[d, "h"] \\\\\n  C \\arrow[r, "j"] & D\n\\end{tikzcd}`
+                    )
+                  }
+                >
+                  Comutativo (tikz-cd)
+                </button>
+                <button
+                  type="button"
+                  className="ft-btn"
+                  onClick={() =>
+                    setCustomTikzTemplate(
+                      `\\begin{tikzpicture}[->, >=Stealth, node distance=2.5cm, auto]\n  \\node[state, initial] (q0) {$q_0$};\n  \\node[state, accepting, right of=q0] (q1) {$q_1$};\n  \\path (q0) edge[bend left] node {1} (q1)\n        (q1) edge[bend left] node {0} (q0);\n\\end{tikzpicture}`
+                    )
+                  }
+                >
+                  Autômato (automata)
+                </button>
+                <button
+                  type="button"
+                  className="ft-btn"
+                  onClick={() =>
+                    setCustomTikzTemplate(
+                      `\\begin{circuitikz}\n  \\draw (0,0) to[battery, l=$E$] (0,3)\n        to[resistor, l=$R$] (3,3)\n        to[capacitor, l=$C$] (3,0) -- (0,0);\n\\end{circuitikz}`
+                    )
+                  }
+                >
+                  Circuito (circuitikz)
+                </button>
+                <button
+                  type="button"
+                  className="ft-btn"
+                  onClick={() => setCustomTikzTemplate(null)}
+                >
+                  Canvas Visual
+                </button>
               </div>
             </>
           ) : (
             <>
-              <div className="ft-sec-title">Eixos PGFPlots</div>
+              <div className="ft-sec-title">1. Tipo de Gráfico</div>
+              <div className="ft-btn-row">
+                <button
+                  type="button"
+                  className={`ft-btn ${plotKind === 'function' ? 'primary' : ''}`}
+                  onClick={() => setPlotKind('function')}
+                >
+                  <LineChart size={13} /> Funções f(x)
+                </button>
+                <button
+                  type="button"
+                  className={`ft-btn ${plotKind === 'scatter' ? 'primary' : ''}`}
+                  onClick={() => setPlotKind('scatter')}
+                >
+                  <ScatterChart size={13} /> Pontos / CSV
+                </button>
+                <button
+                  type="button"
+                  className={`ft-btn ${plotKind === 'bars' ? 'primary' : ''}`}
+                  onClick={() => setPlotKind('bars')}
+                >
+                  <BarChart3 size={13} /> Barras
+                </button>
+                <button
+                  type="button"
+                  className={`ft-btn ${plotKind === 'surface3d' ? 'primary' : ''}`}
+                  onClick={() => setPlotKind('surface3d')}
+                >
+                  Superfície 3D
+                </button>
+              </div>
+
+              <div className="ft-sec-title">2. Configuração dos Eixos</div>
               <div className="ft-props">
                 <label>
-                  <span>Título</span>
+                  <span>Título do Gráfico</span>
                   <input value={plotTitle} onChange={(e) => setPlotTitle(e.target.value)} />
                 </label>
                 <div className="ft-grid2">
                   <label>
-                    <span>Eixo X</span>
+                    <span>Rótulo Eixo X</span>
                     <input value={xLabel} onChange={(e) => setXLabel(e.target.value)} />
                   </label>
                   <label>
-                    <span>Eixo Y</span>
+                    <span>Rótulo Eixo Y</span>
                     <input value={yLabel} onChange={(e) => setYLabel(e.target.value)} />
                   </label>
                 </div>
+                {plotKind !== 'bars' && (
+                  <div className="ft-grid2">
+                    <label>
+                      <span>X Mínimo</span>
+                      <input
+                        type="number"
+                        value={xMin}
+                        onChange={(e) => setXMin(Number(e.target.value))}
+                      />
+                    </label>
+                    <label>
+                      <span>X Máximo</span>
+                      <input
+                        type="number"
+                        value={xMax}
+                        onChange={(e) => setXMax(Number(e.target.value))}
+                      />
+                    </label>
+                    <label>
+                      <span>Y Mínimo</span>
+                      <input
+                        type="number"
+                        value={yMin}
+                        onChange={(e) => setYMin(Number(e.target.value))}
+                      />
+                    </label>
+                    <label>
+                      <span>Y Máximo</span>
+                      <input
+                        type="number"
+                        value={yMax}
+                        onChange={(e) => setYMax(Number(e.target.value))}
+                      />
+                    </label>
+                  </div>
+                )}
                 <div className="ft-grid2">
                   <label>
-                    <span>xmin</span>
-                    <input
-                      type="number"
-                      value={xMin}
-                      onChange={(e) => setXMin(Number(e.target.value))}
-                    />
+                    <span>Escala</span>
+                    <select
+                      value={axisScale}
+                      onChange={(e) => setAxisScale(e.target.value as AxisScaleType)}
+                    >
+                      <option value="linear">Linear</option>
+                      <option value="semilogx">Semilog X</option>
+                      <option value="semilogy">Semilog Y</option>
+                      <option value="loglog">Log-Log</option>
+                    </select>
                   </label>
                   <label>
-                    <span>xmax</span>
-                    <input
-                      type="number"
-                      value={xMax}
-                      onChange={(e) => setXMax(Number(e.target.value))}
-                    />
-                  </label>
-                  <label>
-                    <span>ymin</span>
-                    <input
-                      type="number"
-                      value={yMin}
-                      onChange={(e) => setYMin(Number(e.target.value))}
-                    />
-                  </label>
-                  <label>
-                    <span>ymax</span>
-                    <input
-                      type="number"
-                      value={yMax}
-                      onChange={(e) => setYMax(Number(e.target.value))}
-                    />
+                    <span>Grade</span>
+                    <select
+                      value={gridMode}
+                      onChange={(e) => setGridMode(e.target.value as 'both' | 'major' | 'none')}
+                    >
+                      <option value="both">Completa</option>
+                      <option value="major">Principal</option>
+                      <option value="none">Sem grade</option>
+                    </select>
                   </label>
                 </div>
-                <label>
-                  <span>Grade</span>
-                  <select
-                    value={gridMode}
-                    onChange={(e) => setGridMode(e.target.value as 'both' | 'major' | 'none')}
-                  >
-                    <option value="both">Completa (both)</option>
-                    <option value="major">Principal (major)</option>
-                    <option value="none">Sem grade (none)</option>
-                  </select>
-                </label>
               </div>
 
-              <div className="ft-sec-title">Curvas</div>
-              {curves.map((c) => (
-                <div key={c.id} className="ft-curve-card">
-                  <input
-                    value={c.expr}
-                    onChange={(e) =>
-                      setCurves((p) =>
-                        p.map((x) => (x.id === c.id ? { ...x, expr: e.target.value } : x))
-                      )
-                    }
-                    placeholder="Ex: sin(deg(x))"
-                  />
-                  <div className="ft-grid2">
-                    <input
-                      value={c.label}
-                      onChange={(e) =>
-                        setCurves((p) =>
-                          p.map((x) => (x.id === c.id ? { ...x, label: e.target.value } : x))
-                        )
-                      }
-                      placeholder="Legenda"
-                    />
-                    <select
-                      value={c.color}
-                      onChange={(e) =>
-                        setCurves((p) =>
-                          p.map((x) => (x.id === c.id ? { ...x, color: e.target.value } : x))
-                        )
-                      }
-                    >
-                      <option value="blue">blue</option>
-                      <option value="red">red</option>
-                      <option value="teal">teal</option>
-                      <option value="orange">orange</option>
-                    </select>
+              {plotKind === 'function' && (
+                <>
+                  <div className="ft-sec-title">3. Funções Matemáticas f(x)</div>
+                  <div className="ft-help-box">
+                    Escreva a fórmula em função de <code>x</code> (use <code>*</code> para multiplicar
+                    e <code>^</code> para potência, ex: <code>0.2*x^2</code> ou <code>sin(x)</code>).
                   </div>
+                  <label className="ft-check">
+                    <input
+                      type="checkbox"
+                      checked={useRadians}
+                      onChange={(e) => setUseRadians(e.target.checked)}
+                    />
+                    <span>Usar Radianos (trig format plots=rad)</span>
+                  </label>
+                  {curves.map((c, idx) => (
+                    <div key={c.id} className="ft-curve-card">
+                      <div className="ft-edge-top">
+                        <strong>Curva {idx + 1}</strong>
+                        {curves.length > 1 && (
+                          <button
+                            type="button"
+                            className="ft-icon-del"
+                            onClick={() => setCurves((p) => p.filter((x) => x.id !== c.id))}
+                            title="Remover curva"
+                          >
+                            ×
+                          </button>
+                        )}
+                      </div>
+                      <label>
+                        <span>Fórmula f(x)</span>
+                        <input
+                          value={c.expr}
+                          onChange={(e) =>
+                            setCurves((p) =>
+                              p.map((x) => (x.id === c.id ? { ...x, expr: e.target.value } : x))
+                            )
+                          }
+                          placeholder="Ex: 0.2*x^2 ou sin(x)"
+                        />
+                      </label>
+                      <div className="ft-preset-row">
+                        <button type="button" onClick={() => insertPresetExpr(c.id, 'x^2', 'x^2')}>
+                          x²
+                        </button>
+                        <button type="button" onClick={() => insertPresetExpr(c.id, 'sin(x)', '\\sin(x)')}>
+                          sin(x)
+                        </button>
+                        <button type="button" onClick={() => insertPresetExpr(c.id, 'cos(x)', '\\cos(x)')}>
+                          cos(x)
+                        </button>
+                        <button type="button" onClick={() => insertPresetExpr(c.id, 'exp(-x^2)', 'e^{-x^2}')}>
+                          e⁻ˣ²
+                        </button>
+                        <button type="button" onClick={() => insertPresetExpr(c.id, '2*x+1', '2x+1')}>
+                          2x+1
+                        </button>
+                      </div>
+                      <div className="ft-grid2">
+                        <label>
+                          <span>Legenda (LaTeX)</span>
+                          <input
+                            value={c.label}
+                            onChange={(e) =>
+                              setCurves((p) =>
+                                p.map((x) => (x.id === c.id ? { ...x, label: e.target.value } : x))
+                              )
+                            }
+                          />
+                        </label>
+                        <label>
+                          <span>Cor</span>
+                          <select
+                            value={c.color}
+                            onChange={(e) =>
+                              setCurves((p) =>
+                                p.map((x) => (x.id === c.id ? { ...x, color: e.target.value } : x))
+                              )
+                            }
+                          >
+                            <option value="blue">Azul</option>
+                            <option value="red">Vermelho</option>
+                            <option value="teal">Verde</option>
+                            <option value="orange">Laranja</option>
+                            <option value="purple">Roxo</option>
+                          </select>
+                        </label>
+                      </div>
+                      <div className="ft-grid2">
+                        <label>
+                          <span>Estilo da Linha</span>
+                          <select
+                            value={c.lineStyle}
+                            onChange={(e) =>
+                              setCurves((p) =>
+                                p.map((x) =>
+                                  x.id === c.id
+                                    ? { ...x, lineStyle: e.target.value as EdgeLineStyle }
+                                    : x
+                                )
+                              )
+                            }
+                          >
+                            <option value="solid">Contínua</option>
+                            <option value="dashed">Tracejada</option>
+                            <option value="dotted">Pontilhada</option>
+                          </select>
+                        </label>
+                        <label className="ft-check" style={{ marginTop: 14 }}>
+                          <input
+                            type="checkbox"
+                            checked={c.fillArea}
+                            onChange={(e) =>
+                              setCurves((p) =>
+                                p.map((x) =>
+                                  x.id === c.id ? { ...x, fillArea: e.target.checked } : x
+                                )
+                              )
+                            }
+                          />
+                          <span>Preencher área</span>
+                        </label>
+                      </div>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    className="ft-btn"
+                    onClick={() =>
+                      setCurves((p) => [
+                        ...p,
+                        {
+                          id: `c${Date.now()}`,
+                          expr: 'cos(x)',
+                          color: 'teal',
+                          label: '\\cos(x)',
+                          lineStyle: 'solid',
+                          fillArea: false,
+                        },
+                      ])
+                    }
+                  >
+                    <Plus size={13} /> Adicionar Curva
+                  </button>
+                </>
+              )}
+
+              {plotKind === 'scatter' && (
+                <div className="ft-props">
+                  <div className="ft-sec-title">3. Pontos (x, y) ou (x, y, erro)</div>
+                  <div className="ft-help-box">
+                    Um ponto por linha separado por vírgula ou espaço. Ex: <code>1, 2.3, 0.3</code>
+                  </div>
+                  <textarea
+                    rows={5}
+                    value={scatterRaw}
+                    onChange={(e) => setScatterRaw(e.target.value)}
+                    className="ft-textarea"
+                  />
+                  <label className="ft-check">
+                    <input
+                      type="checkbox"
+                      checked={useErrorBars}
+                      onChange={(e) => setUseErrorBars(e.target.checked)}
+                    />
+                    <span>Mostrar barras de erro (3ª coluna)</span>
+                  </label>
                 </div>
-              ))}
-              <button
-                type="button"
-                className="ft-btn"
-                onClick={() =>
-                  setCurves((p) => [
-                    ...p,
-                    { id: `c${Date.now()}`, expr: 'cos(deg(x))', color: 'teal', label: '\\cos(x)' },
-                  ])
-                }
-              >
-                <Plus size={13} /> Adicionar Curva
-              </button>
+              )}
+
+              {plotKind === 'bars' && (
+                <div className="ft-props">
+                  <div className="ft-sec-title">3. Categorias e Valores</div>
+                  <div className="ft-help-box">
+                    Um item por linha no formato <code>Categoria=Valor</code> (ex: <code>Jan=15</code>).
+                  </div>
+                  <textarea
+                    rows={5}
+                    value={barsRaw}
+                    onChange={(e) => setBarsRaw(e.target.value)}
+                    className="ft-textarea"
+                  />
+                </div>
+              )}
+
+              {plotKind === 'surface3d' && (
+                <div className="ft-props">
+                  <div className="ft-sec-title">3. Fórmula 3D f(x, y)</div>
+                  <div className="ft-help-box">
+                    Digite a função de <code>x</code> e <code>y</code> para gerar o gráfico 3D (`\addplot3 [surf]`).
+                  </div>
+                  <input value={expr3d} onChange={(e) => setExpr3d(e.target.value)} />
+                </div>
+              )}
             </>
           )}
         </aside>
@@ -494,185 +900,251 @@ export default function App() {
         {/* Center Canvas */}
         <section className="ft-canvas-wrap">
           {mode === 'diagram' ? (
-            <svg
-              className="ft-svg"
-              viewBox="0 0 620 420"
-              onMouseMove={handleSvgMouseMove}
-              onMouseUp={() => {
-                draggingRef.current = null;
-              }}
-            >
-              <defs>
-                <marker
-                  id="arrowHead"
-                  markerWidth="10"
-                  markerHeight="7"
-                  refX="9"
-                  refY="3.5"
-                  orient="auto"
-                >
-                  <polygon points="0 0, 10 3.5, 0 7" fill="#38bdf8" />
-                </marker>
-              </defs>
-              {/* Grid */}
-              {Array.from({ length: 13 }, (_, i) => i - 6).map((gx) => (
-                <line
-                  key={`vx-${gx}`}
-                  x1={CX + gx * SCALE}
-                  y1={0}
-                  x2={CX + gx * SCALE}
-                  y2={420}
-                  stroke={gx === 0 ? '#475569' : '#1e293b'}
-                  strokeWidth={gx === 0 ? 1.4 : 0.8}
-                />
-              ))}
-              {Array.from({ length: 9 }, (_, i) => i - 4).map((gy) => (
-                <line
-                  key={`hy-${gy}`}
-                  x1={0}
-                  y1={CY - gy * SCALE}
-                  x2={620}
-                  y2={CY - gy * SCALE}
-                  stroke={gy === 0 ? '#475569' : '#1e293b'}
-                  strokeWidth={gy === 0 ? 1.4 : 0.8}
-                />
-              ))}
-
-              {/* Edges */}
-              {edges.map((ed) => {
-                const a = nodes.find((n) => n.id === ed.from);
-                const b = nodes.find((n) => n.id === ed.to);
-                if (!a || !b) return null;
-                const x1 = CX + a.x * SCALE;
-                const y1 = CY - a.y * SCALE;
-                const x2 = CX + b.x * SCALE;
-                const y2 = CY - b.y * SCALE;
-                return (
-                  <g key={ed.id}>
-                    <line
-                      x1={x1}
-                      y1={y1}
-                      x2={x2}
-                      y2={y2}
-                      stroke="#38bdf8"
-                      strokeWidth={2}
-                      markerEnd={ed.arrow !== '--' ? 'url(#arrowHead)' : undefined}
-                    />
-                    {ed.label && (
-                      <text
-                        x={(x1 + x2) / 2}
-                        y={(y1 + y2) / 2 - 8}
-                        fill="#f59e0b"
-                        fontSize="12"
-                        textAnchor="middle"
-                      >
-                        {ed.label}
-                      </text>
-                    )}
-                  </g>
-                );
-              })}
-
-              {/* Nodes */}
-              {nodes.map((n) => {
-                const px = CX + n.x * SCALE;
-                const py = CY - n.y * SCALE;
-                const isSel = n.id === selectedNodeId;
-                return (
-                  <g
-                    key={n.id}
-                    style={{ cursor: 'grab' }}
-                    onMouseDown={() => {
-                      if (connectFrom && connectFrom !== n.id) {
-                        setEdges((p) => [
-                          ...p,
-                          {
-                            id: `e${Date.now()}`,
-                            from: connectFrom,
-                            to: n.id,
-                            label: '',
-                            arrow: '->',
-                          },
-                        ]);
-                        setConnectFrom(null);
-                      } else {
-                        setSelectedNodeId(n.id);
-                        draggingRef.current = n.id;
-                      }
-                    }}
+            customTikzTemplate ? (
+              <div className="ft-template-notice">
+                <strong>Modelo CTAN ativo</strong>
+                <p>
+                  O código gerado ao lado usa bibliotecas avançadas do CTAN (<code>tikz-cd</code>,{' '}
+                  <code>automata</code> ou <code>circuitikz</code>). Clique em <strong>Testar LaTeX</strong>{' '}
+                  ou <strong>Copiar Código</strong>, ou volte para <strong>Canvas Visual</strong>.
+                </p>
+                <pre className="ft-code">{customTikzTemplate}</pre>
+              </div>
+            ) : (
+              <svg
+                className="ft-svg"
+                viewBox="0 0 620 420"
+                onMouseMove={handleSvgMouseMove}
+                onMouseUp={() => {
+                  draggingRef.current = null;
+                }}
+              >
+                <defs>
+                  <marker
+                    id="arrowHead"
+                    markerWidth="10"
+                    markerHeight="7"
+                    refX="9"
+                    refY="3.5"
+                    orient="auto"
                   >
-                    {n.shape === 'circle' ? (
-                      <circle
-                        cx={px}
-                        cy={py}
-                        r={22}
-                        fill="#162238"
-                        stroke={isSel ? '#f59e0b' : '#38bdf8'}
-                        strokeWidth={isSel ? 3 : 2}
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#38bdf8" />
+                  </marker>
+                </defs>
+                {Array.from({ length: 13 }, (_, i) => i - 6).map((gx) => (
+                  <line
+                    key={`vx-${gx}`}
+                    x1={CX + gx * SCALE}
+                    y1={0}
+                    x2={CX + gx * SCALE}
+                    y2={420}
+                    stroke={gx === 0 ? '#475569' : '#1e293b'}
+                    strokeWidth={gx === 0 ? 1.4 : 0.8}
+                  />
+                ))}
+                {Array.from({ length: 9 }, (_, i) => i - 4).map((gy) => (
+                  <line
+                    key={`hy-${gy}`}
+                    x1={0}
+                    y1={CY - gy * SCALE}
+                    x2={620}
+                    y2={CY - gy * SCALE}
+                    stroke={gy === 0 ? '#475569' : '#1e293b'}
+                    strokeWidth={gy === 0 ? 1.4 : 0.8}
+                  />
+                ))}
+
+                {edges.map((ed) => {
+                  const a = nodes.find((n) => n.id === ed.from);
+                  const b = nodes.find((n) => n.id === ed.to);
+                  if (!a || !b) return null;
+                  const x1 = CX + a.x * SCALE;
+                  const y1 = CY - a.y * SCALE;
+                  const x2 = CX + b.x * SCALE;
+                  const y2 = CY - b.y * SCALE;
+                  return (
+                    <g key={ed.id}>
+                      <line
+                        x1={x1}
+                        y1={y1}
+                        x2={x2}
+                        y2={y2}
+                        stroke="#38bdf8"
+                        strokeWidth={2}
+                        strokeDasharray={ed.lineStyle === 'dashed' ? '6 4' : undefined}
+                        markerEnd={ed.arrow !== '--' ? 'url(#arrowHead)' : undefined}
                       />
-                    ) : (
-                      <rect
-                        x={px - 26}
-                        y={py - 18}
-                        width={52}
-                        height={36}
-                        rx={7}
-                        fill="#162238"
-                        stroke={isSel ? '#f59e0b' : '#38bdf8'}
-                        strokeWidth={isSel ? 3 : 2}
-                      />
-                    )}
-                    <text
-                      x={px}
-                      y={py + 4}
-                      fill="#e2e8f0"
-                      fontSize="13"
-                      fontWeight="600"
-                      textAnchor="middle"
+                      {ed.label && (
+                        <text
+                          x={(x1 + x2) / 2}
+                          y={(y1 + y2) / 2 - 8}
+                          fill="#f59e0b"
+                          fontSize="12"
+                          textAnchor="middle"
+                        >
+                          {ed.label}
+                        </text>
+                      )}
+                    </g>
+                  );
+                })}
+
+                {nodes.map((n) => {
+                  const px = CX + n.x * SCALE;
+                  const py = CY - n.y * SCALE;
+                  const isSel = n.id === selectedNodeId;
+                  const stroke = isSel ? '#f59e0b' : COLOR_HEX[n.color] || '#38bdf8';
+                  return (
+                    <g
+                      key={n.id}
+                      style={{ cursor: 'grab' }}
+                      onMouseDown={() => {
+                        if (connectFrom && connectFrom !== n.id) {
+                          setEdges((p) => [
+                            ...p,
+                            {
+                              id: `e${Date.now()}`,
+                              from: connectFrom,
+                              to: n.id,
+                              label: '',
+                              arrow: '->',
+                              lineStyle: 'solid',
+                              bend: 'straight',
+                            },
+                          ]);
+                          setConnectFrom(null);
+                        } else {
+                          setSelectedNodeId(n.id);
+                          draggingRef.current = n.id;
+                        }
+                      }}
                     >
-                      {n.label}
-                    </text>
-                  </g>
-                );
-              })}
-            </svg>
+                      {n.shape === 'circle' ? (
+                        <circle cx={px} cy={py} r={24} fill="#162238" stroke={stroke} strokeWidth={isSel ? 3 : 2} />
+                      ) : n.shape === 'diamond' ? (
+                        <polygon
+                          points={`${px},${py - 24} ${px + 34},${py} ${px},${py + 24} ${px - 34},${py}`}
+                          fill="#162238"
+                          stroke={stroke}
+                          strokeWidth={isSel ? 3 : 2}
+                        />
+                      ) : n.shape === 'ellipse' ? (
+                        <ellipse cx={px} cy={py} rx={32} ry={20} fill="#162238" stroke={stroke} strokeWidth={isSel ? 3 : 2} />
+                      ) : (
+                        <rect
+                          x={px - 30}
+                          y={py - 18}
+                          width={60}
+                          height={36}
+                          rx={7}
+                          fill="#162238"
+                          stroke={stroke}
+                          strokeWidth={isSel ? 3 : 2}
+                        />
+                      )}
+                      <text x={px} y={py + 4} fill="#e2e8f0" fontSize="12" fontWeight="600" textAnchor="middle">
+                        {n.label}
+                      </text>
+                    </g>
+                  );
+                })}
+              </svg>
+            )
           ) : (
             <svg className="ft-svg" viewBox="0 0 620 420">
-              <rect x={60} y={40} width={500} height={320} fill="none" stroke="#475569" />
-              <text x={310} y={24} fill="#e2e8f0" fontSize="14" textAnchor="middle">
+              <text x={310} y={24} fill="#e2e8f0" fontSize="14" fontWeight="600" textAnchor="middle">
                 {plotTitle}
               </text>
-              {curves.map((c) => {
-                const pts: string[] = [];
-                const steps = 120;
-                for (let i = 0; i <= steps; i++) {
-                  const xv = xMin + ((xMax - xMin) * i) / steps;
-                  const yv = evalSafeExpr(c.expr, xv);
-                  if (yv === null) continue;
-                  const sx = 60 + ((xv - xMin) / Math.max(0.001, xMax - xMin)) * 500;
-                  const sy = 360 - ((yv - yMin) / Math.max(0.001, yMax - yMin)) * 320;
-                  if (sy >= 35 && sy <= 365) {
-                    pts.push(`${sx.toFixed(1)},${sy.toFixed(1)}`);
+              {/* Plot Frame */}
+              <rect x={68} y={42} width={492} height={312} fill="none" stroke="#475569" strokeWidth={1.2} />
+              {/* Grid + Ticks */}
+              {gridMode !== 'none' &&
+                Array.from({ length: 5 }, (_, i) => i).map((step) => {
+                  const gx = 68 + (step * 492) / 4;
+                  const gy = 42 + (step * 312) / 4;
+                  const xv = xMin + (step * (xMax - xMin)) / 4;
+                  const yv = yMax - (step * (yMax - yMin)) / 4;
+                  return (
+                    <g key={step}>
+                      <line x1={gx} y1={42} x2={gx} y2={354} stroke="#1e293b" strokeWidth={0.9} />
+                      <line x1={68} y1={gy} x2={560} y2={gy} stroke="#1e293b" strokeWidth={0.9} />
+                      {plotKind !== 'bars' && (
+                        <>
+                          <text x={gx} y={372} fill="#94a3b8" fontSize="10" textAnchor="middle">
+                            {xv.toFixed(1)}
+                          </text>
+                          <text x={58} y={gy + 3} fill="#94a3b8" fontSize="10" textAnchor="end">
+                            {yv.toFixed(1)}
+                          </text>
+                        </>
+                      )}
+                    </g>
+                  );
+                })}
+
+              {plotKind === 'function' &&
+                curves.map((c) => {
+                  const pts: string[] = [];
+                  const steps = 140;
+                  for (let i = 0; i <= steps; i++) {
+                    const xv = xMin + ((xMax - xMin) * i) / steps;
+                    const yv = evalSafeExpr(c.expr, xv);
+                    if (yv === null) continue;
+                    const sx = 68 + ((xv - xMin) / Math.max(0.001, xMax - xMin)) * 492;
+                    const sy = 354 - ((yv - yMin) / Math.max(0.001, yMax - yMin)) * 312;
+                    if (sy >= 38 && sy <= 358) pts.push(`${sx.toFixed(1)},${sy.toFixed(1)}`);
                   }
-                }
-                const strokeColor =
-                  c.color === 'red'
-                    ? '#f43f5e'
-                    : c.color === 'teal'
-                    ? '#14b8a6'
-                    : c.color === 'orange'
-                    ? '#f59e0b'
-                    : '#38bdf8';
-                return (
-                  <polyline
-                    key={c.id}
-                    fill="none"
-                    stroke={strokeColor}
-                    strokeWidth={2.5}
-                    points={pts.join(' ')}
-                  />
-                );
-              })}
+                  const strokeColor = COLOR_HEX[c.color] || '#38bdf8';
+                  return (
+                    <polyline
+                      key={c.id}
+                      fill="none"
+                      stroke={strokeColor}
+                      strokeWidth={2.5}
+                      strokeDasharray={
+                        c.lineStyle === 'dashed' ? '6 4' : c.lineStyle === 'dotted' ? '2 4' : undefined
+                      }
+                      points={pts.join(' ')}
+                    />
+                  );
+                })}
+
+              {plotKind === 'scatter' &&
+                parsedScatter.map((p, idx) => {
+                  const sx = 68 + ((p.x - xMin) / Math.max(0.001, xMax - xMin)) * 492;
+                  const sy = 354 - ((p.y - yMin) / Math.max(0.001, yMax - yMin)) * 312;
+                  return <circle key={idx} cx={sx} cy={sy} r={4.5} fill="#38bdf8" />;
+                })}
+
+              {plotKind === 'bars' &&
+                parsedBars.map((b, idx) => {
+                  const maxV = Math.max(1, ...parsedBars.map((x) => x.val));
+                  const bw = Math.min(54, 420 / Math.max(1, parsedBars.length) - 14);
+                  const bx = 95 + idx * (460 / Math.max(1, parsedBars.length));
+                  const bh = (b.val / maxV) * 260;
+                  const by = 354 - bh;
+                  return (
+                    <g key={b.cat}>
+                      <rect x={bx} y={by} width={bw} height={bh} fill="#38bdf8" fillOpacity={0.75} />
+                      <text x={bx + bw / 2} y={by - 6} fill="#e2e8f0" fontSize="11" textAnchor="middle">
+                        {b.val}
+                      </text>
+                      <text x={bx + bw / 2} y={372} fill="#94a3b8" fontSize="11" textAnchor="middle">
+                        {b.cat}
+                      </text>
+                    </g>
+                  );
+                })}
+
+              {plotKind === 'surface3d' && (
+                <text x={310} y={200} fill="#94a3b8" fontSize="12" textAnchor="middle">
+                  Preview 3D disponível via botão "Testar LaTeX" (pdflatex)
+                </text>
+              )}
+
+              <text x={314} y={396} fill="#cbd5e1" fontSize="11" textAnchor="middle">
+                {xLabel}
+              </text>
             </svg>
           )}
         </section>
@@ -682,7 +1154,9 @@ export default function App() {
           <div className="ft-sec-title">Código LaTeX Gerado</div>
           <pre className="ft-code">{tikzCode}</pre>
           <div className="ft-hint">
-            Preâmbulo necessário: <code>\usepackage{'{tikz, pgfplots}'}</code>
+            Preâmbulo: <code>\usepackage{'{tikz, pgfplots}'}</code>
+            <br />
+            <code>\pgfplotsset{'{compat=1.18}'}</code>
           </div>
         </aside>
       </main>
@@ -800,21 +1274,14 @@ export default function App() {
                   placeholder="Descreva os detalhes..."
                   value={fbDetails}
                   onChange={(e) => setFbDetails(e.target.value)}
-                  style={{
-                    padding: '6px 8px',
-                    borderRadius: 5,
-                    border: '1px solid var(--border)',
-                    background: 'var(--surface)',
-                    color: 'var(--text)',
-                    fontSize: 12,
-                  }}
+                  className="ft-textarea"
                 />
                 <div className="ft-btn-row">
                   <button
                     type="button"
                     className="ft-btn primary"
                     onClick={() => {
-                      const body = `[${fbKind === 'bug' ? 'BUG' : 'FEATURE'}] ${fbTitle}\nApp: ForjaTikZ 1.0.0\n---\n${fbDetails}`;
+                      const body = `[${fbKind === 'bug' ? 'BUG' : 'FEATURE'}] ${fbTitle}\nApp: ForjaTikZ 1.1.0\n---\n${fbDetails}`;
                       const p = new URLSearchParams({
                         title: `[${fbKind === 'bug' ? 'Bug' : 'Feature'}][ForjaTikZ] ${fbTitle || 'Relatório'}`,
                         body,
@@ -829,7 +1296,7 @@ export default function App() {
                     type="button"
                     className="ft-btn"
                     onClick={() => {
-                      const body = `[${fbKind === 'bug' ? 'BUG' : 'FEATURE'}] ${fbTitle}\nApp: ForjaTikZ 1.0.0\n---\n${fbDetails}`;
+                      const body = `[${fbKind === 'bug' ? 'BUG' : 'FEATURE'}] ${fbTitle}\nApp: ForjaTikZ 1.1.0\n---\n${fbDetails}`;
                       const p = new URLSearchParams({
                         subject: `[ForjaTikZ] ${fbTitle || 'Relatório'}`,
                         body,
@@ -848,4 +1315,3 @@ export default function App() {
     </div>
   );
 }
-
