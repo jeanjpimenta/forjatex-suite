@@ -34,6 +34,8 @@ O **ForjaTeX App Suite** reúne aplicativos desktop rápidos, offline-first e de
 Baixe os instaladores `.exe` (NSIS) e `.msi` diretamente na aba [**Releases**](https://github.com/jeanjpimenta/forjatex-suite/releases).
 
 > **Requisito para compilação local:** tenha uma distribuição TeX instalada no sistema (**MiKTeX**, **TeX Live** ou **Tectonic**).
+>
+> **Nota sobre Assinatura Digital (Code Signing):** os instaladores atuais ainda **não possuem certificado de assinatura digital de código**, pois é um projeto independente em fase inicial. Por isso, o Windows SmartScreen pode exibir um aviso na primeira execução (basta clicar em *Mais informações → Executar assim mesmo*). Pretendo adicionar assinatura digital oficial assim que possível.
 
 ### Contribua com Traduções
 Quer ajudar a traduzir o **ForjaTeX** para Espanhol, Francês, Alemão ou outro idioma? Veja o passo a passo simples em [src/i18n/README.md](src/i18n/README.md).
@@ -59,6 +61,8 @@ Quer ajudar a traduzir o **ForjaTeX** para Espanhol, Francês, Alemão ou outro 
 Grab the latest Windows `.exe` (NSIS) and `.msi` installers from [**GitHub Releases**](https://github.com/jeanjpimenta/forjatex-suite/releases).
 
 > **Prerequisite for local LaTeX compilation:** install **MiKTeX**, **TeX Live**, or **Tectonic**.
+>
+> **Note on Code Signing:** current installers do **not yet have a digital code-signing certificate**, as this is an early-stage independent project. Because of this, Windows SmartScreen may show a warning on first launch (click *More info → Run anyway*). Official code signing is planned as soon as possible.
 
 ### Community Translations
 Want to help translate **ForjaTeX** into Spanish, French, German, or another language? Check [src/i18n/README.md](src/i18n/README.md) — translations use simple JSON files!
