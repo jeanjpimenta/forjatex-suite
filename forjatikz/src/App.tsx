@@ -921,12 +921,20 @@ export default function App() {
           <button
             type="button"
             className="ft-btn"
-            onClick={() =>
-              window.open(
-                locale === 'pt-BR' ? '/manuals/manual-pt-BR.pdf' : '/manuals/manual-en-US.pdf',
-                '_blank'
-              )
-            }
+            onClick={async () => {
+              const url = locale === 'pt-BR' ? '/manuals/manual-pt-BR.pdf' : '/manuals/manual-en-US.pdf';
+              const fileName = locale === 'pt-BR' ? 'manual-forjatikz-pt-BR.pdf' : 'manual-forjatikz-en-US.pdf';
+              try {
+                const resp = await fetch(url);
+                const buf = await resp.arrayBuffer();
+                await invoke('open_manual_pdf', {
+                  fileName,
+                  bytes: Array.from(new Uint8Array(buf)),
+                });
+              } catch {
+                window.open(url, '_blank');
+              }
+            }}
             title="Abrir Manual do Usuário (PDF)"
           >
             Manual (PDF)

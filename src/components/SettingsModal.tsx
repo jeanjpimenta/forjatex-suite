@@ -33,6 +33,7 @@ import {
   gitStatus,
   pickProjectFolder,
   testCompiler,
+  openManualPdf,
 } from '../utils/tauriBridge';
 import { AVAILABLE_LOCALES, useI18n, type LocaleCode } from '../i18n';
 
@@ -339,14 +340,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     type="button"
                     className="tf-btn-small w-full justify-center"
                     style={{ height: 34 }}
-                    onClick={() =>
-                      window.open(
-                        locale === 'pt-BR'
-                          ? '/manuals/manual-pt-BR.pdf'
-                          : '/manuals/manual-en-US.pdf',
-                        '_blank'
-                      )
-                    }
+                    onClick={() => void openManualPdf(locale)}
                   >
                     {locale === 'pt-BR'
                       ? 'Abrir Manual do Usuário (PDF · PT-BR)'

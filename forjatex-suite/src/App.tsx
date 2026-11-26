@@ -941,12 +941,20 @@ export default function App() {
                         type="button"
                         className="ac-action-main"
                         style={{ flex: 'none', padding: '0 12px', height: 30 }}
-                        onClick={() =>
-                          window.open(
-                            locale === 'pt-BR' ? '/manuals/manual-pt-BR.pdf' : '/manuals/manual-en-US.pdf',
-                            '_blank'
-                          )
-                        }
+                        onClick={async () => {
+                          const url = locale === 'pt-BR' ? '/manuals/manual-pt-BR.pdf' : '/manuals/manual-en-US.pdf';
+                          const fileName = locale === 'pt-BR' ? 'manual-forjatex-suite-pt-BR.pdf' : 'manual-forjatex-suite-en-US.pdf';
+                          try {
+                            const resp = await fetch(url);
+                            const buf = await resp.arrayBuffer();
+                            await invoke('open_manual_pdf', {
+                              fileName,
+                              bytes: Array.from(new Uint8Array(buf)),
+                            });
+                          } catch {
+                            window.open(url, '_blank');
+                          }
+                        }}
                       >
                         {locale === 'pt-BR' ? 'MANUAL (PDF · PT-BR)' : 'MANUAL (PDF · EN-US)'}
                       </button>

@@ -281,6 +281,21 @@ export async function convertMarkdownToLatex(req: {
   return invoke<string>('convert_markdown_to_latex', { req });
 }
 
+export async function openManualPdf(locale: string): Promise<void> {
+  const fileName = locale === 'pt-BR' ? 'manual-forjatex-ide-pt-BR.pdf' : 'manual-forjatex-ide-en-US.pdf';
+  const url = locale === 'pt-BR' ? '/manuals/manual-pt-BR.pdf' : '/manuals/manual-en-US.pdf';
+  try {
+    const resp = await fetch(url);
+    const buf = await resp.arrayBuffer();
+    await invoke('open_manual_pdf', {
+      fileName,
+      bytes: Array.from(new Uint8Array(buf)),
+    });
+  } catch {
+    window.open(url, '_blank');
+  }
+}
+
 export async function gitCommitAll(projectDir: string, message: string): Promise<string> {
   return invoke<string>('git_commit_all', { projectDir, message });
 }

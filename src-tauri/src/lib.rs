@@ -11,6 +11,40 @@ use tauri::Manager;
 
 mod markdown;
 
+#[tauri::command]
+fn open_manual_pdf(file_name: String, bytes: Vec<u8>) -> Result<(), String> {
+    let dir = std::env::temp_dir().join("forjatex-manuals");
+    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let safe_name = Path::new(&file_name)
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("manual.pdf");
+    let dest = dir.join(safe_name);
+    fs::write(&dest, bytes).map_err(|e| format!("Falha ao salvar manual: {}", e))?;
+    #[cfg(target_os = "windows")]
+    {
+        Command::new("explorer")
+            .arg(&dest)
+            .spawn()
+            .map_err(|e| format!("Falha ao abrir PDF: {}", e))?;
+    }
+    #[cfg(target_os = "linux")]
+    {
+        Command::new("xdg-open")
+            .arg(&dest)
+            .spawn()
+            .map_err(|e| format!("Falha ao abrir PDF: {}", e))?;
+    }
+    #[cfg(target_os = "macos")]
+    {
+        Command::new("open")
+            .arg(&dest)
+            .spawn()
+            .map_err(|e| format!("Falha ao abrir PDF: {}", e))?;
+    }
+    Ok(())
+}
+
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
 
@@ -2084,7 +2118,8 @@ pub fn run() {
             git_create_latex_gitignore,
             git_save_credential,
             git_clone,
-            markdown::convert_markdown_to_latex
+            markdown::convert_markdown_to_latex,
+            open_manual_pdf
         ])
         .run(tauri::generate_context!())
         .expect("error while building ForjaTeX");
