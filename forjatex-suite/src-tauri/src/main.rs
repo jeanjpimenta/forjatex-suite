@@ -253,14 +253,15 @@ async fn download_and_run_installer(
             } else {
                 format!("\"{}\" /S", installer_str)
             };
+            let bat_path = temp_dir.join("suite-self-update.cmd");
+            let bat_content = format!(
+                "@echo off\r\nping 127.0.0.1 -n 2 >nul\r\n{}\r\nstart \"\" \"{}\"\r\n",
+                install_cmd, current_str
+            );
+            std::fs::write(&bat_path, bat_content)
+                .map_err(|e| format!("Falha ao preparar script de atualização: {}", e))?;
             silent_command("cmd")
-                .args([
-                    "/C",
-                    &format!(
-                        "timeout /t 1 /nobreak >nul & {} & start \"\" \"{}\"",
-                        install_cmd, current_str
-                    ),
-                ])
+                .args(["/C", &bat_path.to_string_lossy()])
                 .spawn()
                 .map_err(|e| format!("Falha ao iniciar atualização do Suite: {}", e))?;
             app.exit(0);

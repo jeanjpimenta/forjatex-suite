@@ -1,17 +1,17 @@
 {
   "updatedAt": "2026-11-25T00:00:00Z",
   "suite": {
-    "latestVersion": "1.2.2",
-    "installerFile": "ForjaTeX.Suite_1.2.2_x64_en-US.msi",
-    "installerUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTeX.Suite_1.2.2_x64_en-US.msi",
-    "msiFile": "ForjaTeX.Suite_1.2.2_x64_en-US.msi",
-    "msiUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTeX.Suite_1.2.2_x64_en-US.msi",
-    "exeFile": "ForjaTeX.Suite_1.2.2_x64-setup.exe",
-    "exeUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTeX.Suite_1.2.2_x64-setup.exe",
-    "debFile": "forjatex-suite_1.2.2_amd64.deb",
-    "debUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/forjatex-suite_1.2.2_amd64.deb",
-    "appImageFile": "ForjaTeX.Suite_1.2.2_amd64.AppImage",
-    "appImageUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTeX.Suite_1.2.2_amd64.AppImage"
+    "latestVersion": "1.2.3",
+    "installerFile": "ForjaTeX.Suite_1.2.3_x64_en-US.msi",
+    "installerUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTeX.Suite_1.2.3_x64_en-US.msi",
+    "msiFile": "ForjaTeX.Suite_1.2.3_x64_en-US.msi",
+    "msiUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTeX.Suite_1.2.3_x64_en-US.msi",
+    "exeFile": "ForjaTeX.Suite_1.2.3_x64-setup.exe",
+    "exeUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTeX.Suite_1.2.3_x64-setup.exe",
+    "debFile": "forjatex-suite_1.2.3_amd64.deb",
+    "debUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/forjatex-suite_1.2.3_amd64.deb",
+    "appImageFile": "ForjaTeX.Suite_1.2.3_amd64.AppImage",
+    "appImageUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTeX.Suite_1.2.3_amd64.AppImage"
   },
   "apps": [
     {
