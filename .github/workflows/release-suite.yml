@@ -151,13 +151,16 @@ jobs:
           tag = os.environ.get("GITHUB_REF_NAME", "v1.2.8")
           base = f"https://github.com/{repo}/releases/latest/download"
 
+          def normalize_name(name: str) -> str:
+              return name.replace(" ", ".")
+
           def pick(folder: str, ext: str) -> str:
               p = Path("release-assets") / folder
               if not p.exists():
                   return ""
               for f in sorted(p.iterdir()):
                   if f.name.endswith(ext):
-                      return f.name
+                      return normalize_name(f.name)
               return ""
 
           def url(name: str) -> str:
@@ -220,7 +223,7 @@ jobs:
           flat.mkdir(exist_ok=True)
           for f in Path("release-assets").rglob("*"):
               if f.is_file():
-                  shutil.copy2(f, flat / f.name)
+                  shutil.copy2(f, flat / normalize_name(f.name))
           EOF
           ls -la release-upload
 
