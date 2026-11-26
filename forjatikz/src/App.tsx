@@ -185,6 +185,38 @@ export default function App() {
   const [useErrorBars, setUseErrorBars] = useState(true);
   const [barsRaw, setBarsRaw] = useState('Jan=15\nFev=28\nMar=22\nAbr=35');
   const [expr3d, setExpr3d] = useState('exp(-x^2 - y^2)');
+  const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
+    const saved = Number(localStorage.getItem('forjatikz_sidebar_w_v1'));
+    return Number.isFinite(saved) && saved >= 240 ? Math.min(560, saved) : 320;
+  });
+  const [codePaneWidth, setCodePaneWidth] = useState<number>(() => {
+    const saved = Number(localStorage.getItem('forjatikz_code_w_v1'));
+    return Number.isFinite(saved) && saved >= 240 ? Math.min(620, saved) : 340;
+  });
+
+  const startResize = (side: 'left' | 'right', e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startW = side === 'left' ? sidebarWidth : codePaneWidth;
+    const onMove = (ev: MouseEvent) => {
+      const dx = ev.clientX - startX;
+      if (side === 'left') {
+        const next = Math.max(240, Math.min(560, startW + dx));
+        setSidebarWidth(next);
+        localStorage.setItem('forjatikz_sidebar_w_v1', String(next));
+      } else {
+        const next = Math.max(240, Math.min(620, startW - dx));
+        setCodePaneWidth(next);
+        localStorage.setItem('forjatikz_code_w_v1', String(next));
+      }
+    };
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
 
   React.useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -447,7 +479,10 @@ export default function App() {
 
       {statusMsg && <div className="ft-status">{statusMsg}</div>}
 
-      <main className="ft-main">
+      <main
+        className="ft-main"
+        style={{ gridTemplateColumns: `${sidebarWidth}px 5px 1fr 5px ${codePaneWidth}px` }}
+      >
         {/* Left Controls */}
         <aside className="ft-sidebar">
           {mode === 'diagram' ? (
@@ -934,6 +969,12 @@ export default function App() {
           )}
         </aside>
 
+        <div
+          className="ft-resizer"
+          onMouseDown={(e) => startResize('left', e)}
+          title="Arraste para redimensionar o painel"
+        />
+
         {/* Center Canvas */}
         <section className="ft-canvas-wrap">
           {mode === 'diagram' ? (
@@ -1185,6 +1226,12 @@ export default function App() {
             </svg>
           )}
         </section>
+
+        <div
+          className="ft-resizer"
+          onMouseDown={(e) => startResize('right', e)}
+          title="Arraste para redimensionar o painel de código"
+        />
 
         {/* Right Live LaTeX Output */}
         <aside className="ft-code-pane">

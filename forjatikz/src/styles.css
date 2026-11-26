@@ -114,7 +114,19 @@ body {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: 320px 1fr 340px;
+  grid-template-columns: 320px 5px 1fr 5px 340px;
+}
+
+.ft-resizer {
+  width: 5px;
+  cursor: col-resize;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+
+.ft-resizer:hover,
+.ft-resizer:active {
+  background: var(--accent);
 }
 
 .ft-sidebar,
