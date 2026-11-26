@@ -145,3 +145,4 @@ export const TIKZ_DICT: Record<TikzLocale, Record<string, string>> = {
     tabFeedback: 'Requests & Bugs',
   },
 };
+

@@ -34,6 +34,12 @@ import {
   TIKZ_DICT,
   type TikzLocale,
 } from './i18n';
+import {
+  evalExprXY,
+  generateSpecialPgfLatex,
+  type GroupPlotConfig,
+  type SpecialPlotKind,
+} from './pgfplotsExtras';
 
 type NodeShape = 'circle' | 'rect' | 'diamond' | 'ellipse' | 'text';
 type EdgeLineStyle = 'solid' | 'dashed' | 'dotted';
@@ -58,7 +64,7 @@ interface TikzEdge {
   bend: EdgeBend;
 }
 
-type PlotKind = 'function' | 'scatter' | 'bars' | 'histogram' | 'surface3d';
+type PlotKind = 'function' | 'scatter' | 'bars' | 'histogram' | 'surface3d' | SpecialPlotKind;
 type AxisScaleType = 'linear' | 'semilogx' | 'semilogy' | 'loglog';
 type AxisLinesMode = 'box' | 'middle' | 'left' | 'none';
 type LegendPos =
@@ -287,6 +293,22 @@ export default function App() {
   const [csvColX, setCsvColX] = useState(0);
   const [csvColY, setCsvColY] = useState(1);
   const [csvColErr, setCsvColErr] = useState<number>(-1);
+  const [fillBetweenEnabled, setFillBetweenEnabled] = useState(false);
+  const [fillBetweenIdxA, setFillBetweenIdxA] = useState(0);
+  const [fillBetweenIdxB, setFillBetweenIdxB] = useState(1);
+  const [polarExpr, setPolarExpr] = useState('1 + cos(x)');
+  const [ternaryCoords, setTernaryCoords] = useState('0.2, 0.3, 0.5\n0.5, 0.2, 0.3\n0.3, 0.5, 0.2');
+  const [smithCoords, setSmithCoords] = useState('0.5, 0.2\n1.0, 0.8\n2.0, -0.5');
+  const [groupConfig, setGroupConfig] = useState<GroupPlotConfig>({
+    rows: 2,
+    cols: 2,
+    sharedAxes: true,
+    exprs: ['sin(x)', 'cos(x)', '0.2*x^2', 'exp(-x^2)'],
+  });
+  const [contourExpr, setContourExpr] = useState('sin(x)*cos(y)');
+  const [contourLevels, setContourLevels] = useState(8);
+  const [quiverU, setQuiverU] = useState('-y');
+  const [quiverV, setQuiverV] = useState('x');
   const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
     const saved = Number(localStorage.getItem('forjatikz_sidebar_w_v1'));
     return Number.isFinite(saved) && saved >= 240 ? Math.min(560, saved) : 320;
@@ -432,16 +454,55 @@ export default function App() {
       return `\\begin{tikzpicture}\n  \\begin{axis}[\n    title={${plotTitle}},\n    view={60}{30},\n    colormap name=${colormapName}${cbLine},\n    grid=${gridMode}\n  ]\n    \\addplot3[surf, domain=${xMin}:${xMax}, domain y=${yMin}:${yMax}, samples=24] {${expr3d}};\n  \\end{axis}\n\\end{tikzpicture}`;
     }
 
+    if (
+      plotKind === 'polar' ||
+      plotKind === 'ternary' ||
+      plotKind === 'smith' ||
+      plotKind === 'groupplot' ||
+      plotKind === 'contour' ||
+      plotKind === 'quiver'
+    ) {
+      return generateSpecialPgfLatex({
+        kind: plotKind,
+        plotTitle,
+        xLabel,
+        yLabel,
+        xMin,
+        xMax,
+        yMin,
+        yMax,
+        gridMode,
+        colormapName,
+        polarExpr,
+        ternaryCoords,
+        smithCoords,
+        group: groupConfig,
+        contourExpr,
+        contourLevels,
+        quiverU,
+        quiverV,
+      }).code;
+    }
+
     const trigLine = useRadians ? ',\n    trig format plots=rad' : '';
-    const curveLines = curves.map((c) => {
+    const useFillBetween = fillBetweenEnabled && curves.length >= 2;
+    const curveLines = curves.map((c, idx) => {
       const opts = [`color=${c.color}`, 'thick', 'samples=100', `domain=${xMin}:${xMax}`];
       if (c.lineStyle !== 'solid') opts.push(c.lineStyle);
+      if (useFillBetween && (idx === fillBetweenIdxA || idx === fillBetweenIdxB)) {
+        opts.push(`name path=curve${idx}`);
+      }
       const areaFill = c.fillArea
         ? `\\closedcycle`
         : '';
       const fillOpt = c.fillArea ? `, fill=${c.color}!20` : '';
       return `    \\addplot[${opts.join(', ')}${fillOpt}] {${c.expr}}${areaFill};\n    \\addlegendentry{$${c.label}$}`;
     });
+    if (useFillBetween && fillBetweenIdxA !== fillBetweenIdxB) {
+      curveLines.push(
+        `    \\addplot[fill=blue!18, fill opacity=0.4] fill between[of=curve${fillBetweenIdxA} and curve${fillBetweenIdxB}];`
+      );
+    }
     return `\\begin{tikzpicture}\n  \\begin{${axisEnv}}[\n    title={${plotTitle}},\n    xlabel={${xLabel}},\n    ylabel={${yLabel}},\n    xmin=${xMin}, xmax=${xMax},\n    ymin=${yMin}, ymax=${yMax},\n    grid=${gridMode}${axisLinesLine}${piLines}${trigLine},\n    legend pos=${legendPos}${legendColsLine}\n  ]\n${curveLines.join('\n')}\n  \\end{${axisEnv}}\n\\end{tikzpicture}`;
   }, [
     mode,
@@ -474,6 +535,17 @@ export default function App() {
     parsedHist,
     histBins,
     expr3d,
+    fillBetweenEnabled,
+    fillBetweenIdxA,
+    fillBetweenIdxB,
+    polarExpr,
+    ternaryCoords,
+    smithCoords,
+    groupConfig,
+    contourExpr,
+    contourLevels,
+    quiverU,
+    quiverV,
   ]);
 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId) || null;
@@ -844,6 +916,27 @@ export default function App() {
                   {t('kind3d')}
                 </button>
               </div>
+              <label className="ft-props" style={{ padding: 8 }}>
+                <span>Sistemas Especiais & Avançados (Fase 3 & 4)</span>
+                <select
+                  value={
+                    ['polar', 'ternary', 'smith', 'groupplot', 'contour', 'quiver'].includes(plotKind)
+                      ? plotKind
+                      : ''
+                  }
+                  onChange={(e) => {
+                    if (e.target.value) setPlotKind(e.target.value as PlotKind);
+                  }}
+                >
+                  <option value="">-- Escolher modo avançado --</option>
+                  <option value="groupplot">Subgráficos em Grade (groupplots)</option>
+                  <option value="polar">Coordenadas Polares (polaraxis)</option>
+                  <option value="ternary">Diagrama Ternário (ternaryaxis)</option>
+                  <option value="smith">Carta de Smith (smithchart)</option>
+                  <option value="contour">Curvas de Nível 2D (contour)</option>
+                  <option value="quiver">Campo Vetorial (quiver)</option>
+                </select>
+              </label>
 
               <div className="ft-sec-title">{t('axisConfigTitle')}</div>
               <div className="ft-props">
@@ -1175,6 +1268,49 @@ export default function App() {
                   >
                     <Plus size={13} /> Adicionar Curva
                   </button>
+
+                  {curves.length >= 2 && (
+                    <div className="ft-props">
+                      <label className="ft-check">
+                        <input
+                          type="checkbox"
+                          checked={fillBetweenEnabled}
+                          onChange={(e) => setFillBetweenEnabled(e.target.checked)}
+                        />
+                        <span>Preencher área entre curvas (fillbetween)</span>
+                      </label>
+                      {fillBetweenEnabled && (
+                        <div className="ft-grid2">
+                          <label>
+                            <span>Curva A</span>
+                            <select
+                              value={fillBetweenIdxA}
+                              onChange={(e) => setFillBetweenIdxA(Number(e.target.value))}
+                            >
+                              {curves.map((c, idx) => (
+                                <option key={c.id} value={idx}>
+                                  Curva {idx + 1}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label>
+                            <span>Curva B</span>
+                            <select
+                              value={fillBetweenIdxB}
+                              onChange={(e) => setFillBetweenIdxB(Number(e.target.value))}
+                            >
+                              {curves.map((c, idx) => (
+                                <option key={c.id} value={idx}>
+                                  Curva {idx + 1}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </>
               )}
 
@@ -1362,6 +1498,141 @@ export default function App() {
                     Digite a função de <code>x</code> e <code>y</code> para gerar o gráfico 3D (`\addplot3 [surf]`).
                   </div>
                   <input value={expr3d} onChange={(e) => setExpr3d(e.target.value)} />
+                </div>
+              )}
+
+              {plotKind === 'polar' && (
+                <div className="ft-props">
+                  <div className="ft-sec-title">3. Equação Polar r(θ)</div>
+                  <div className="ft-help-box">
+                    Use <code>x</code> como ângulo em graus/radianos (ex: <code>1 + cos(x)</code> ou <code>sin(3*x)</code>).
+                  </div>
+                  <input value={polarExpr} onChange={(e) => setPolarExpr(e.target.value)} />
+                </div>
+              )}
+
+              {plotKind === 'ternary' && (
+                <div className="ft-props">
+                  <div className="ft-sec-title">3. Coordenadas Ternárias (A, B, C)</div>
+                  <div className="ft-help-box">
+                    Um ponto por linha somando 1.0 (ex: <code>0.2, 0.3, 0.5</code>).
+                  </div>
+                  <textarea
+                    rows={5}
+                    value={ternaryCoords}
+                    onChange={(e) => setTernaryCoords(e.target.value)}
+                    className="ft-textarea"
+                  />
+                </div>
+              )}
+
+              {plotKind === 'smith' && (
+                <div className="ft-props">
+                  <div className="ft-sec-title">3. Impedâncias Normalizadas (R, X)</div>
+                  <div className="ft-help-box">
+                    Um ponto por linha <code>R, X</code> (ex: <code>0.5, 0.2</code>).
+                  </div>
+                  <textarea
+                    rows={5}
+                    value={smithCoords}
+                    onChange={(e) => setSmithCoords(e.target.value)}
+                    className="ft-textarea"
+                  />
+                </div>
+              )}
+
+              {plotKind === 'groupplot' && (
+                <div className="ft-props">
+                  <div className="ft-sec-title">3. Grade de Subgráficos (groupplots)</div>
+                  <div className="ft-grid2">
+                    <label>
+                      <span>Linhas</span>
+                      <select
+                        value={groupConfig.rows}
+                        onChange={(e) =>
+                          setGroupConfig((g) => ({ ...g, rows: Number(e.target.value) }))
+                        }
+                      >
+                        <option value={1}>1</option>
+                        <option value={2}>2</option>
+                        <option value={3}>3</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Colunas</span>
+                      <select
+                        value={groupConfig.cols}
+                        onChange={(e) =>
+                          setGroupConfig((g) => ({ ...g, cols: Number(e.target.value) }))
+                        }
+                      >
+                        <option value={1}>1</option>
+                        <option value={2}>2</option>
+                        <option value={3}>3</option>
+                      </select>
+                    </label>
+                  </div>
+                  <label className="ft-check">
+                    <input
+                      type="checkbox"
+                      checked={groupConfig.sharedAxes}
+                      onChange={(e) =>
+                        setGroupConfig((g) => ({ ...g, sharedAxes: e.target.checked }))
+                      }
+                    />
+                    <span>Compartilhar rótulos nas bordas</span>
+                  </label>
+                  {Array.from({ length: groupConfig.rows * groupConfig.cols }, (_, idx) => (
+                    <label key={idx}>
+                      <span>Subgráfico {idx + 1} f(x)</span>
+                      <input
+                        value={groupConfig.exprs[idx] || 'sin(x)'}
+                        onChange={(e) =>
+                          setGroupConfig((g) => {
+                            const next = [...g.exprs];
+                            next[idx] = e.target.value;
+                            return { ...g, exprs: next };
+                          })
+                        }
+                      />
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              {plotKind === 'contour' && (
+                <div className="ft-props">
+                  <div className="ft-sec-title">3. Curvas de Nível f(x, y)</div>
+                  <label>
+                    <span>Função f(x, y)</span>
+                    <input value={contourExpr} onChange={(e) => setContourExpr(e.target.value)} />
+                  </label>
+                  <label>
+                    <span>Quantidade de níveis: {contourLevels}</span>
+                    <input
+                      type="range"
+                      min={4}
+                      max={16}
+                      value={contourLevels}
+                      onChange={(e) => setContourLevels(Number(e.target.value))}
+                    />
+                  </label>
+                </div>
+              )}
+
+              {plotKind === 'quiver' && (
+                <div className="ft-props">
+                  <div className="ft-sec-title">3. Campo Vetorial (u, v)</div>
+                  <div className="ft-grid2">
+                    <label>
+                      <span>Componente u(x, y)</span>
+                      <input value={quiverU} onChange={(e) => setQuiverU(e.target.value)} />
+                    </label>
+                    <label>
+                      <span>Componente v(x, y)</span>
+                      <input value={quiverV} onChange={(e) => setQuiverV(e.target.value)} />
+                    </label>
+                  </div>
                 </div>
               )}
             </>
@@ -1700,6 +1971,137 @@ export default function App() {
                 </text>
               )}
 
+              {plotKind === 'polar' && (() => {
+                const pts: string[] = [];
+                for (let deg = 0; deg <= 360; deg += 4) {
+                  const rad = (deg * Math.PI) / 180;
+                  const rVal = evalSafeExpr(polarExpr, rad);
+                  if (rVal === null) continue;
+                  const rr = Math.min(130, Math.abs(rVal) * 55);
+                  const px = 314 + rr * Math.cos(rad);
+                  const py = 198 - rr * Math.sin(rad);
+                  pts.push(`${px.toFixed(1)},${py.toFixed(1)}`);
+                }
+                return (
+                  <g>
+                    {[40, 80, 120].map((r) => (
+                      <circle key={r} cx={314} cy={198} r={r} fill="none" stroke="#334155" strokeDasharray="3 3" />
+                    ))}
+                    <polyline fill="none" stroke="#38bdf8" strokeWidth={2.2} points={pts.join(' ')} />
+                  </g>
+                );
+              })()}
+
+              {plotKind === 'ternary' && (
+                <g>
+                  <polygon points="314,68 184,310 444,310" fill="none" stroke="#64748b" strokeWidth={1.6} />
+                  {ternaryCoords
+                    .split(/\r?\n/)
+                    .map((l, idx) => {
+                      const [a, b, c] = l.split(',').map((v) => Number(v.trim()));
+                      if (!Number.isFinite(a) || !Number.isFinite(b) || !Number.isFinite(c)) return null;
+                      const sum = Math.max(0.001, a + b + c);
+                      const na = a / sum;
+                      const nb = b / sum;
+                      const nc = c / sum;
+                      const px = na * 314 + nb * 184 + nc * 444;
+                      const py = na * 68 + nb * 310 + nc * 310;
+                      return <circle key={idx} cx={px} cy={py} r={4.5} fill="#38bdf8" />;
+                    })}
+                </g>
+              )}
+
+              {plotKind === 'smith' && (
+                <g>
+                  <circle cx={314} cy={198} r={128} fill="none" stroke="#64748b" strokeWidth={1.5} />
+                  <circle cx={378} cy={198} r={64} fill="none" stroke="#334155" strokeDasharray="3 3" />
+                  <line x1={186} y1={198} x2={442} y2={198} stroke="#334155" />
+                  {smithCoords.split(/\r?\n/).map((l, idx) => {
+                    const [r, x] = l.split(',').map((v) => Number(v.trim()));
+                    if (!Number.isFinite(r) || !Number.isFinite(x)) return null;
+                    const den = (r + 1) * (r + 1) + x * x;
+                    const gx = (r * r - 1 + x * x) / den;
+                    const gy = (2 * x) / den;
+                    return <circle key={idx} cx={314 + gx * 128} cy={198 - gy * 128} r={4.5} fill="#f59e0b" />;
+                  })}
+                </g>
+              )}
+
+              {plotKind === 'groupplot' && (
+                <g>
+                  {Array.from({ length: groupConfig.rows * groupConfig.cols }, (_, idx) => {
+                    const r = Math.floor(idx / groupConfig.cols);
+                    const c = idx % groupConfig.cols;
+                    const cw = 480 / groupConfig.cols;
+                    const ch = 290 / groupConfig.rows;
+                    const ox = 74 + c * cw;
+                    const oy = 50 + r * ch;
+                    return (
+                      <g key={idx}>
+                        <rect x={ox} y={oy} width={cw - 12} height={ch - 14} fill="none" stroke="#475569" />
+                        <text x={ox + (cw - 12) / 2} y={oy + 14} fill="#94a3b8" fontSize="9.5" textAnchor="middle">
+                          {groupConfig.exprs[idx] || 'sin(x)'}
+                        </text>
+                      </g>
+                    );
+                  })}
+                </g>
+              )}
+
+              {plotKind === 'contour' && (
+                <g>
+                  {Array.from({ length: 12 }, (_, ix) =>
+                    Array.from({ length: 10 }, (__, iy) => {
+                      const xv = xMin + ((ix + 0.5) / 12) * (xMax - xMin);
+                      const yv = yMax - ((iy + 0.5) / 10) * (yMax - yMin);
+                      const val = evalExprXY(contourExpr, xv, yv) ?? 0;
+                      const norm = Math.max(0, Math.min(1, (val + 1) / 2));
+                      const hue = Math.round((1 - norm) * 240);
+                      return (
+                        <rect
+                          key={`${ix}-${iy}`}
+                          x={68 + ix * (492 / 12)}
+                          y={42 + iy * (312 / 10)}
+                          width={492 / 12 + 0.5}
+                          height={312 / 10 + 0.5}
+                          fill={`hsla(${hue}, 75%, 50%, 0.45)`}
+                        />
+                      );
+                    })
+                  )}
+                </g>
+              )}
+
+              {plotKind === 'quiver' && (
+                <g>
+                  {Array.from({ length: 7 }, (_, ix) =>
+                    Array.from({ length: 5 }, (__, iy) => {
+                      const xv = xMin + ((ix + 0.5) / 7) * (xMax - xMin);
+                      const yv = yMax - ((iy + 0.5) / 5) * (yMax - yMin);
+                      const u = evalExprXY(quiverU, xv, yv) ?? 0;
+                      const v = evalExprXY(quiverV, xv, yv) ?? 0;
+                      const mag = Math.max(0.001, Math.hypot(u, v));
+                      const sx = 68 + ((xv - xMin) / Math.max(0.001, xMax - xMin)) * 492;
+                      const sy = 354 - ((yv - yMin) / Math.max(0.001, yMax - yMin)) * 312;
+                      const dx = (u / mag) * 18;
+                      const dy = -(v / mag) * 18;
+                      return (
+                        <line
+                          key={`${ix}-${iy}`}
+                          x1={sx}
+                          y1={sy}
+                          x2={sx + dx}
+                          y2={sy + dy}
+                          stroke="#38bdf8"
+                          strokeWidth={1.6}
+                          markerEnd="url(#arrowHead)"
+                        />
+                      );
+                    })
+                  )}
+                </g>
+              )}
+
               <text x={314} y={396} fill="#cbd5e1" fontSize="11" textAnchor="middle">
                 {xLabel}
               </text>
@@ -1726,6 +2128,26 @@ export default function App() {
             </code>
             <br />
             <code>\pgfplotsset{'{compat=1.18}'}</code>
+            {fillBetweenEnabled && plotKind === 'function' && curves.length >= 2 && (
+              <>
+                <br />
+                <code>\usepgfplotslibrary{'{fillbetween}'}</code>
+              </>
+            )}
+            {(['polar', 'ternary', 'smith', 'groupplot'] as PlotKind[]).includes(plotKind) && (
+              <>
+                <br />
+                <code>
+                  \usepgfplotslibrary{'{'}
+                  {plotKind === 'groupplot'
+                    ? 'groupplots'
+                    : plotKind === 'smith'
+                    ? 'smithchart'
+                    : plotKind}
+                  {'}'}
+                </code>
+              </>
+            )}
           </div>
         </aside>
       </main>
