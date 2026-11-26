@@ -259,6 +259,7 @@ export default function App() {
   useEffect(() => {
     getVersion().then(setSuiteVersion).catch(() => {});
     scanInstalled();
+    void checkUpdates(true);
     generatePixQrDataUrl('DoacaoFjTexSuite')
       .then(({ brCode, qrUrl }) => {
         setPixBrCode(brCode);
@@ -269,9 +270,14 @@ export default function App() {
     const unlistenPromise = listen<DownloadProgress>('download-progress', (ev) => {
       setProgressMap((prev) => ({ ...prev, [ev.payload.id]: ev.payload }));
     });
+    const timer = window.setInterval(() => {
+      void checkUpdates(true);
+    }, 15 * 60 * 1000);
     return () => {
+      window.clearInterval(timer);
       unlistenPromise.then((fn) => fn());
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -280,8 +286,8 @@ export default function App() {
     return () => window.removeEventListener('click', close);
   }, []);
 
-  const handleCheckUpdates = async () => {
-    setBusyId('manifest');
+  const checkUpdates = async (silent = false) => {
+    if (!silent) setBusyId('manifest');
     localStorage.setItem(MANIFEST_KEY, manifestUrl);
     try {
       const raw = await invoke<string>('fetch_manifest_json', { url: manifestUrl });
@@ -298,14 +304,20 @@ export default function App() {
         );
       }
       setLastChecked('agora mesmo');
-      setBannerText('Catálogo sincronizado com sucesso via GitHub Releases.');
+      if (!silent) {
+        setBannerText('Catálogo sincronizado com sucesso via GitHub Releases.');
+      }
     } catch (e) {
-      setBannerText(`Manifesto remoto indisponível: ${String(e)}`);
+      if (!silent) {
+        setBannerText(`Manifesto remoto indisponível: ${String(e)}`);
+      }
     } finally {
-      setBusyId(null);
+      if (!silent) setBusyId(null);
       await scanInstalled();
     }
   };
+
+  const handleCheckUpdates = () => checkUpdates(false);
 
   const handleLaunch = async (app: SuiteAppEntry) => {
     const info = installedMap[app.id];
@@ -687,6 +699,24 @@ export default function App() {
                     <button type="button" className="ac-action-main" disabled>
                       {t('comingSoon')}
                     </button>
+                  ) : isInstalled && hasUpdate ? (
+                    <>
+                      <button
+                        type="button"
+                        className="ac-action-main"
+                        onClick={() => handleLaunch(app)}
+                      >
+                        {t('open')}
+                      </button>
+                      <button
+                        type="button"
+                        className="ac-action-main update"
+                        disabled={busyId === app.id}
+                        onClick={() => handleInstallOrUpdate(app, true)}
+                      >
+                        {busyId === app.id ? t('updating') : `${t('updateTo')} V${app.latestVersion}`}
+                      </button>
+                    </>
                   ) : hasUpdate ? (
                     <button
                       type="button"

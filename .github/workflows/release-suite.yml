@@ -166,7 +166,7 @@ jobs:
           manifest = {
               "updatedAt": datetime.now(timezone.utc).isoformat(),
               "suite": {
-                  "latestVersion": "1.2.1",
+                  "latestVersion": "1.2.2",
                   "installerFile": pick("suite", ".msi"),
                   "installerUrl": url(pick("suite", ".msi")),
                   "msiFile": pick("suite", ".msi"),
