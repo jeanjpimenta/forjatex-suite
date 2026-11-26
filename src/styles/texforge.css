@@ -853,6 +853,107 @@ body,
   pointer-events: none;
 }
 
+/* ===== v1.4.0: Left Activity Bar + Instant i18n Tooltips ===== */
+.tf-topbar-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.tf-activity-bar {
+  width: 44px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border-color);
+  user-select: none;
+  z-index: 30;
+}
+
+.tf-activity-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.tf-activity-divider {
+  width: 22px;
+  height: 1px;
+  background: var(--border-color);
+  margin: 4px 0;
+}
+
+.tf-activity-btn {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.tf-activity-btn:hover:not(:disabled) {
+  background: rgba(56, 189, 248, 0.12);
+  color: var(--text-primary);
+}
+
+.tf-activity-btn.active {
+  background: rgba(2, 132, 199, 0.18);
+  color: var(--accent);
+  border-color: rgba(56, 189, 248, 0.35);
+}
+
+.tf-activity-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.tf-activity-md-badge {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  padding: 2px 4px;
+  border-radius: 4px;
+  border: 1px solid currentColor;
+  line-height: 1;
+}
+
+.tf-activity-lang-btn {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.tf-activity-btn[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  padding: 5px 9px;
+  border-radius: 6px;
+  background: var(--bg-panel);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  font-size: 12px;
+  font-weight: 500;
+  pointer-events: none;
+  z-index: 90;
+}
+
 .tf-pdf-empty {
   height: 100%;
   display: flex;
@@ -2620,4 +2721,105 @@ body,
   border: 1px solid var(--accent);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
   pointer-events: none;
+}
+
+/* ===== v1.4.0: Left Activity Bar + Instant i18n Tooltips ===== */
+.tf-topbar-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.tf-activity-bar {
+  width: 44px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border-color);
+  user-select: none;
+  z-index: 30;
+}
+
+.tf-activity-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.tf-activity-divider {
+  width: 22px;
+  height: 1px;
+  background: var(--border-color);
+  margin: 4px 0;
+}
+
+.tf-activity-btn {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.tf-activity-btn:hover:not(:disabled) {
+  background: rgba(56, 189, 248, 0.12);
+  color: var(--text-primary);
+}
+
+.tf-activity-btn.active {
+  background: rgba(2, 132, 199, 0.18);
+  color: var(--accent);
+  border-color: rgba(56, 189, 248, 0.35);
+}
+
+.tf-activity-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.tf-activity-md-badge {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  padding: 2px 4px;
+  border-radius: 4px;
+  border: 1px solid currentColor;
+  line-height: 1;
+}
+
+.tf-activity-lang-btn {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.tf-activity-btn[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  padding: 5px 9px;
+  border-radius: 6px;
+  background: var(--bg-panel);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  font-size: 12px;
+  font-weight: 500;
+  pointer-events: none;
+  z-index: 90;
 }

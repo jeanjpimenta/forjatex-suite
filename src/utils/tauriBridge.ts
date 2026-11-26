@@ -259,6 +259,28 @@ export async function gitInit(projectDir: string): Promise<string> {
   return invoke<string>('git_init', { projectDir });
 }
 
+export async function pickMarkdownFile(): Promise<string | null> {
+  if (!isTauriRuntime()) return null;
+  const selected = await open({
+    multiple: false,
+    filters: [{ name: 'Markdown (.md)', extensions: ['md', 'markdown', 'txt'] }],
+    title: 'Selecionar arquivo Markdown (.md)',
+  });
+  return typeof selected === 'string' ? selected : null;
+}
+
+export async function convertMarkdownToLatex(req: {
+  markdown?: string;
+  filePath?: string;
+  template: 'article' | 'abnt' | 'beamer' | 'snippet';
+  title: string;
+  author: string;
+  institution: string;
+  convertCitations: boolean;
+}): Promise<string> {
+  return invoke<string>('convert_markdown_to_latex', { req });
+}
+
 export async function gitCommitAll(projectDir: string, message: string): Promise<string> {
   return invoke<string>('git_commit_all', { projectDir, message });
 }

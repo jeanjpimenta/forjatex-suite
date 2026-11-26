@@ -49,6 +49,8 @@ interface ExplorerSidebarProps {
   onSetMainFile: (relativePath: string) => void;
   onCreateEntry: (parentDir: string, name: string, isDir: boolean) => Promise<void>;
   onOpenGitSettings: () => void;
+  activeTab?: 'files' | 'structure' | 'git';
+  onTabChange?: (tab: 'files' | 'structure' | 'git') => void;
 }
 
 function getFileIcon(ext: string) {
@@ -79,8 +81,15 @@ export const ExplorerSidebar: React.FC<ExplorerSidebarProps> = ({
   onSetMainFile,
   onCreateEntry,
   onOpenGitSettings,
+  activeTab: controlledTab,
+  onTabChange,
 }) => {
-  const [sidebarTab, setSidebarTab] = useState<'files' | 'structure' | 'git'>('files');
+  const [internalTab, setInternalTab] = useState<'files' | 'structure' | 'git'>('files');
+  const sidebarTab = controlledTab ?? internalTab;
+  const setSidebarTab = (tab: 'files' | 'structure' | 'git') => {
+    setInternalTab(tab);
+    onTabChange?.(tab);
+  };
   const [gitInfo, setGitInfo] = useState<GitStatusInfo | null>(null);
   const [gitBusy, setGitBusy] = useState(false);
   const [gitMsg, setGitMsg] = useState('');

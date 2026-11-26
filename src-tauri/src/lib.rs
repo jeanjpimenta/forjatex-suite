@@ -9,6 +9,8 @@ use std::process::Command;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 use tauri::Manager;
 
+mod markdown;
+
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
 
@@ -2081,7 +2083,8 @@ pub fn run() {
             git_set_user_config,
             git_create_latex_gitignore,
             git_save_credential,
-            git_clone
+            git_clone,
+            markdown::convert_markdown_to_latex
         ])
         .run(tauri::generate_context!())
         .expect("error while building ForjaTeX");

@@ -2,25 +2,19 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useI18n } from './i18n';
 import {
   Play,
-  Settings,
-  Sparkles,
-  Heart,
   ChevronUp,
   ChevronDown,
   AlertTriangle,
   CheckCircle2,
   Loader2,
-  Eraser,
-  FolderPlus,
   FolderOpen,
   Plus,
+  Sparkles,
   X,
-  Sun,
-  Moon,
-  BookOpen,
-  FileArchive,
 } from 'lucide-react';
+import { ActivityBar, type SidebarTabId } from './components/ActivityBar';
 import { ExplorerSidebar } from './components/ExplorerSidebar';
+import { MarkdownImportModal } from './components/MarkdownImportModal';
 import { EditorPane } from './components/EditorPane';
 import { AiPromptPane } from './components/AiPromptPane';
 import { PdfPreviewPane } from './components/PdfPreviewPane';
@@ -242,6 +236,9 @@ export function App() {
   const [fontWizardOpen, setFontWizardOpen] = useState(false);
   const [imageWizardOpen, setImageWizardOpen] = useState(false);
   const [quickRefOpen, setQuickRefOpen] = useState(false);
+  const [mdImportOpen, setMdImportOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarTab, setSidebarTab] = useState<SidebarTabId>('files');
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     const saved = localStorage.getItem(STORAGE_THEME_KEY);
     return saved === 'light' ? 'light' : 'dark';
@@ -920,97 +917,9 @@ export function App() {
         </div>
 
         <div className="tf-topbar-right">
-          <button
-            type="button"
-            className="tf-tool-btn"
-            onClick={handleImportOverleafZip}
-            title="Importar projeto .zip exportado do Overleaf"
-          >
-            <FileArchive size={14} />
-            <span>Overleaf .zip</span>
-          </button>
-
-          <button
-            type="button"
-            className="tf-tool-btn"
-            onClick={() => setNewProjectOpen(true)}
-            title="Criar ou gerenciar templates"
-          >
-            <FolderPlus size={14} />
-            <span>Templates</span>
-          </button>
-
-          <button
-            type="button"
-            className="tf-tool-btn"
-            disabled={!activeWs.projectDir}
-            onClick={handleCleanAux}
-            title="Limpar arquivos auxiliares (.aux, .log, .toc) mantendo o PDF"
-          >
-            <Eraser size={14} />
-            <span>{t('topbar.cleanAux')}</span>
-          </button>
-
-          <button
-            type="button"
-            className="tf-tool-btn"
-            onClick={() => setQuickRefOpen(true)}
-            title={`Referência Rápida LaTeX (${shortcuts.quickRef})`}
-          >
-            <BookOpen size={14} />
-            <span>{t('topbar.help')}</span>
-          </button>
-
-          <button
-            type="button"
-            className="tf-tool-btn"
-            onClick={() => setLocale(locale === 'pt-BR' ? 'en' : 'pt-BR')}
-            title="Idioma / Language (PT-BR / EN)"
-          >
-            <span>{locale === 'pt-BR' ? 'PT' : 'EN'}</span>
-          </button>
-
-          <button
-            type="button"
-            className="tf-tool-btn"
-            onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
-            title={t('topbar.toggleTheme')}
-          >
-            {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
-          </button>
-
-          <button
-            type="button"
-            className={`tf-tool-btn ${rightTab === 'ai' ? 'active' : ''}`}
-            onClick={() => setRightTab((tab) => (tab === 'ai' ? 'pdf' : 'ai'))}
-            title="Alternar entre PDF Preview e IA na área direita"
-          >
-            <Sparkles size={14} />
-            <span>{t('topbar.ai')}</span>
-          </button>
-
-          <button
-            type="button"
-            className="tf-tool-btn"
-            onClick={() => {
-              setSettingsTab('compiler');
-              setSettingsOpen(true);
-            }}
-            title="Configurações de Compilador, Editor, IA e Git"
-          >
-            <Settings size={14} />
-            <span>{t('topbar.settings')}</span>
-          </button>
-
-          <button
-            type="button"
-            className="tf-tool-btn"
-            onClick={() => setFeedbackOpen(true)}
-            title="Enviar pedido, reportar erro ou apoiar o ForjaTeX"
-          >
-            <Heart size={14} className="text-rose-400" />
-            <span>{t('topbar.donate')}</span>
-          </button>
+          <span className="tf-topbar-hint">
+            {activeWs.projectDir ? activeWs.name : t('app.tagline')}
+          </span>
         </div>
       </header>
 
@@ -1061,40 +970,75 @@ export function App() {
 
       {/* Main 3-Pane IDE Workspace */}
       <main className="tf-workspace" ref={workspaceRef}>
-        <div style={{ width: `${leftWidthPx}px`, display: 'flex', minHeight: 0, flexShrink: 0 }}>
-          <ExplorerSidebar
-            projectDir={activeWs.projectDir}
-            tree={activeWs.tree}
-            outline={activeWs.projectIndex.outline}
-            mainFile={activeWs.mainFile}
-            activeFilePath={activeWs.activeTabPath}
-            highlightedFile={activeWs.highlightedFile}
-            onOpenFolder={() => handleOpenFolder(false)}
-            onNewTemplateProject={() => setNewProjectOpen(true)}
-            onRefresh={handleRefreshTree}
-            onSelectFile={(node) => openFileNode(node)}
-            onJumpToOutline={async (fileRel, line) => {
-              const node = findNodeByPath(activeWs.tree, fileRel);
-              if (node) await openFileNode(node, line);
-            }}
-            onSetMainFile={handleSetMainFile}
-            onCreateEntry={async (parentDir, name, isDir) => {
-              const sep = parentDir.includes('\\') ? '\\' : '/';
-              await createProjectEntry(`${parentDir}${sep}${name}`, isDir);
-              await handleRefreshTree();
-            }}
-            onOpenGitSettings={() => {
-              setSettingsTab('git');
-              setSettingsOpen(true);
-            }}
-          />
-        </div>
-
-        <div
-          className="tf-col-resizer"
-          onMouseDown={startLeftResize}
-          title="Arraste para redimensionar Explorer e Editor"
+        <ActivityBar
+          sidebarOpen={sidebarOpen}
+          sidebarTab={sidebarTab}
+          rightTab={rightTab}
+          hasProject={Boolean(activeWs.projectDir)}
+          theme={theme}
+          onSelectSidebarTab={(tab) => {
+            if (sidebarOpen && sidebarTab === tab) {
+              setSidebarOpen(false);
+            } else {
+              setSidebarTab(tab);
+              setSidebarOpen(true);
+            }
+          }}
+          onOpenTemplates={() => setNewProjectOpen(true)}
+          onOpenMarkdownImport={() => setMdImportOpen(true)}
+          onImportOverleafZip={handleImportOverleafZip}
+          onCleanAux={handleCleanAux}
+          onOpenQuickRef={() => setQuickRefOpen(true)}
+          onToggleAi={() => setRightTab((tab) => (tab === 'ai' ? 'pdf' : 'ai'))}
+          onToggleTheme={() => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'))}
+          onToggleLocale={() => setLocale(locale === 'pt-BR' ? 'en' : 'pt-BR')}
+          onOpenSettings={() => {
+            setSettingsTab('compiler');
+            setSettingsOpen(true);
+          }}
+          onOpenFeedback={() => setFeedbackOpen(true)}
         />
+
+        {sidebarOpen && (
+          <>
+            <div style={{ width: `${leftWidthPx}px`, display: 'flex', minHeight: 0, flexShrink: 0 }}>
+              <ExplorerSidebar
+                projectDir={activeWs.projectDir}
+                tree={activeWs.tree}
+                outline={activeWs.projectIndex.outline}
+                mainFile={activeWs.mainFile}
+                activeFilePath={activeWs.activeTabPath}
+                highlightedFile={activeWs.highlightedFile}
+                activeTab={sidebarTab}
+                onTabChange={setSidebarTab}
+                onOpenFolder={() => handleOpenFolder(false)}
+                onNewTemplateProject={() => setNewProjectOpen(true)}
+                onRefresh={handleRefreshTree}
+                onSelectFile={(node) => openFileNode(node)}
+                onJumpToOutline={async (fileRel, line) => {
+                  const node = findNodeByPath(activeWs.tree, fileRel);
+                  if (node) await openFileNode(node, line);
+                }}
+                onSetMainFile={handleSetMainFile}
+                onCreateEntry={async (parentDir, name, isDir) => {
+                  const sep = parentDir.includes('\\') ? '\\' : '/';
+                  await createProjectEntry(`${parentDir}${sep}${name}`, isDir);
+                  await handleRefreshTree();
+                }}
+                onOpenGitSettings={() => {
+                  setSettingsTab('git');
+                  setSettingsOpen(true);
+                }}
+              />
+            </div>
+
+            <div
+              className="tf-col-resizer"
+              onMouseDown={startLeftResize}
+              title="Arraste para redimensionar Explorer e Editor"
+            />
+          </>
+        )}
 
         {/* Center: Editor + Diagnostics */}
         <section className="tf-center-column">
@@ -1397,6 +1341,38 @@ export function App() {
           );
           setActiveWorkspaceId(newWs.id);
           await hydrateWorkspaceFromDisk(newWs.id, dir, preferredMainFile);
+        }}
+      />
+
+      <MarkdownImportModal
+        open={mdImportOpen}
+        hasProject={Boolean(activeWs.projectDir)}
+        onClose={() => setMdImportOpen(false)}
+        onInsertIntoEditor={(latex) => setPendingInsert({ text: latex, nonce: Date.now() })}
+        onSaveAsNewFile={async (fileName, latex) => {
+          if (!activeWs.projectDir) return;
+          const sep = activeWs.projectDir.includes('\\') ? '\\' : '/';
+          const fullPath = `${activeWs.projectDir}${sep}${fileName}`;
+          await writeProjectFile(fullPath, latex);
+          await handleRefreshTree();
+          updateWorkspace(activeWs.id, (w) => ({
+            ...w,
+            tabs: [
+              ...w.tabs.filter((tab) => tab.path !== fullPath),
+              {
+                path: fullPath,
+                relative_path: fileName,
+                name: fileName,
+                content: latex,
+                saved_content: latex,
+                dirty: false,
+                is_binary: false,
+                extension: 'tex',
+                mime_type: 'text/plain',
+              },
+            ],
+            activeTabPath: fullPath,
+          }));
         }}
       />
     </div>
