@@ -182,7 +182,7 @@ jobs:
                   {
                       "id": "forjatex",
                       "name": "ForjaTeX IDE",
-                      "latestVersion": "1.4.0",
+                      "latestVersion": "1.4.1",
                       "installerFile": pick("forjatex", ".msi"),
                       "installerUrl": url(pick("forjatex", ".msi")),
                       "msiFile": pick("forjatex", ".msi"),
