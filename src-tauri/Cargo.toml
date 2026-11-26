@@ -1,6 +1,6 @@
 [package]
 name = "forjatex"
-version = "1.3.0"
+version = "1.4.0"
 description = "ForjaTeX — Cross-platform LaTeX IDE"
 authors = ["Jean Pimenta <jean.pimenta@protonmail.com>", "Arkhé Code"]
 license = "GPL-3.0-or-later"
