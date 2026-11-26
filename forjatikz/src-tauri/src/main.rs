@@ -16,8 +16,43 @@ fn compile_tikz_check(tex_snippet: String) -> Result<String, String> {
     let dir = std::env::temp_dir().join("forjatikz-preview");
     fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     let tex_path = dir.join("preview.tex");
+    let mut pgf_libs: Vec<&str> = Vec::new();
+    if tex_snippet.contains("fill between") {
+        pgf_libs.push("fillbetween");
+    }
+    if tex_snippet.contains("groupplot") {
+        pgf_libs.push("groupplots");
+    }
+    if tex_snippet.contains("polaraxis") {
+        pgf_libs.push("polar");
+    }
+    if tex_snippet.contains("ternaryaxis") {
+        pgf_libs.push("ternary");
+    }
+    if tex_snippet.contains("smithchart") {
+        pgf_libs.push("smithchart");
+    }
+    let pgf_lib_line = if pgf_libs.is_empty() {
+        String::new()
+    } else {
+        format!("\\usepgfplotslibrary{{{}}}\n", pgf_libs.join(","))
+    };
+    let mut extra_pkgs = String::new();
+    if tex_snippet.contains("circuitikz") {
+        extra_pkgs.push_str("\\usepackage{circuitikz}\n");
+    }
+    let mut tikz_libs = vec!["arrows.meta", "positioning", "fit", "shapes.geometric"];
+    if tex_snippet.contains("tikzcd") {
+        tikz_libs.push("cd");
+    }
+    if tex_snippet.contains("state") {
+        tikz_libs.push("automata");
+    }
     let full = format!(
-        "\\documentclass[tikz,border=4pt]{{standalone}}\n\\usepackage{{pgfplots}}\n\\pgfplotsset{{compat=1.18}}\n\\usetikzlibrary{{arrows.meta,positioning}}\n\\begin{{document}}\n{}\n\\end{{document}}\n",
+        "\\documentclass[tikz,border=4pt]{{standalone}}\n\\usepackage{{pgfplots,pgfplotstable}}\n{}\\pgfplotsset{{compat=1.18}}\n{}\\usetikzlibrary{{{}}}\n\\begin{{document}}\n{}\n\\end{{document}}\n",
+        extra_pkgs,
+        pgf_lib_line,
+        tikz_libs.join(","),
         tex_snippet
     );
     fs::write(&tex_path, full).map_err(|e| e.to_string())?;

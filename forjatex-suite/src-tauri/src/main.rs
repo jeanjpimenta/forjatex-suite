@@ -340,7 +340,8 @@ async fn download_and_run_installer(
         }
 
         if file_name.to_lowercase().ends_with(".msi") {
-            let mut args = vec!["/i", dest.to_str().unwrap_or_default()];
+            let path_str = dest.to_str().unwrap_or_default();
+            let mut args = vec!["/i", path_str];
             if silent {
                 args.push("/passive");
             }
@@ -348,10 +349,29 @@ async fn download_and_run_installer(
                 .args(&args)
                 .status()
                 .map_err(|e| format!("Falha ao executar msiexec: {}", e))?;
-            if status.success() {
+            let code = status.code().unwrap_or(-1);
+            if status.success() || code == 3010 {
                 Ok(format!("{} instalado/atualizado via MSI!", id))
+            } else if silent && code != 1602 {
+                // Fallback to interactive MSI so Windows SmartScreen/UAC prompts can be handled by the user
+                let fallback = Command::new("msiexec")
+                    .args(["/i", path_str])
+                    .status()
+                    .map_err(|e| format!("Falha ao executar msiexec interativo: {}", e))?;
+                let fb_code = fallback.code().unwrap_or(-1);
+                if fallback.success() || fb_code == 3010 {
+                    Ok(format!("{} instalado/atualizado via MSI!", id))
+                } else {
+                    Err(format!(
+                        "Instalador MSI cancelado ou retornou erro (código {}).",
+                        fb_code
+                    ))
+                }
             } else {
-                Err("Instalador MSI cancelado ou retornou erro.".to_string())
+                Err(format!(
+                    "Instalador MSI cancelado ou retornou erro (código {}).",
+                    code
+                ))
             }
         } else if silent && file_name.to_lowercase().ends_with(".exe") {
             let status = Command::new(&dest)

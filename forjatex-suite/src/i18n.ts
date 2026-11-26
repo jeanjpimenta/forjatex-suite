@@ -109,3 +109,4 @@ export const SUITE_DICT: Record<SuiteLocale, Record<string, string>> = {
     inDev: 'In development',
   },
 };
+

@@ -7,6 +7,8 @@ import {
   BarChart3,
   Check,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   Circle,
   Copy,
   Diamond,
@@ -166,6 +168,40 @@ function getPiTicks(xMin: number, xMax: number) {
   return candidates.filter((c) => c.val >= xMin - 0.05 && c.val <= xMax + 0.05);
 }
 
+function legendPosOption(pos: LegendPos): string {
+  switch (pos) {
+    case 'north':
+      return 'legend style={at={(0.5,0.97)}, anchor=north}';
+    case 'south':
+      return 'legend style={at={(0.5,0.03)}, anchor=south}';
+    case 'east':
+      return 'legend style={at={(0.97,0.5)}, anchor=east}';
+    case 'west':
+      return 'legend style={at={(0.03,0.5)}, anchor=west}';
+    case 'center':
+      return 'legend style={at={(0.5,0.5)}, anchor=center}';
+    default:
+      return `legend pos=${pos}`;
+  }
+}
+
+const CollapsibleSection: React.FC<{
+  title: string;
+  open: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}> = ({ title, open, onToggle, children }) => (
+  <div className="ft-accordion">
+    <button type="button" className="ft-acc-head" onClick={onToggle}>
+      <span>{title}</span>
+      <span className="ft-acc-chevron">
+        {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+      </span>
+    </button>
+    {open && <div className="ft-acc-body">{children}</div>}
+  </div>
+);
+
 interface PlotCurve {
   id: string;
   expr: string;
@@ -274,6 +310,12 @@ export default function App() {
   const [snapToShapes, setSnapToShapes] = useState(true);
   const [alignGuides, setAlignGuides] = useState<{ x?: number; y?: number }>({});
   const [paletteMenu, setPaletteMenu] = useState<'shapes' | null>(null);
+  const [openSec, setOpenSec] = useState<Record<string, boolean>>({
+    plotType: true,
+    axis: true,
+    data: true,
+  });
+  const toggleSec = (key: string) => setOpenSec((p) => ({ ...p, [key]: !p[key] }));
   const [connectFrom, setConnectFrom] = useState<string | null>(null);
   const [customTikzTemplate, setCustomTikzTemplate] = useState<string | null>(null);
   const draggingRef = useRef<string | null>(null);
@@ -469,7 +511,7 @@ export default function App() {
           ? ',\n      error bars/.cd, y dir=both, y explicit'
           : '';
         const errColOpt = useErrorBars ? ', y error=err' : '';
-        return `\\begin{tikzpicture}\n  \\pgfplotstableread{\n${header}\n${tableRows}\n  }\\scatterdata\n  \\begin{${axisEnv}}[\n    title={${plotTitle}},\n    xlabel={${xLabel}},\n    ylabel={${yLabel}},\n    grid=${gridMode}${axisLinesLine},\n    legend pos=${legendPos}${legendColsLine}\n  ]\n    \\addplot[only marks, mark=*, color=blue${errPlotOpt}] table[x=x, y=y${errColOpt}] {\\scatterdata};\n    \\addlegendentry{Dados}\n    \\addplot[thick, dashed, red] table[x=x, y={create col/linear regression={y=y}}] {\\scatterdata};\n    \\addlegendentry{Ajuste Linear}\n  \\end{${axisEnv}}\n\\end{tikzpicture}`;
+        return `\\begin{tikzpicture}\n  \\pgfplotstableread{\n${header}\n${tableRows}\n  }\\scatterdata\n  \\begin{${axisEnv}}[\n    title={${plotTitle}},\n    xlabel={${xLabel}},\n    ylabel={${yLabel}},\n    grid=${gridMode}${axisLinesLine},\n    ${legendPosOption(legendPos)}${legendColsLine}\n  ]\n    \\addplot[only marks, mark=*, color=blue${errPlotOpt}] table[x=x, y=y${errColOpt}] {\\scatterdata};\n    \\addlegendentry{Dados}\n    \\addplot[thick, dashed, red] table[x=x, y={create col/linear regression={y=y}}] {\\scatterdata};\n    \\addlegendentry{Ajuste Linear}\n  \\end{${axisEnv}}\n\\end{tikzpicture}`;
       }
       const coords = parsedScatter
         .map((p) =>
@@ -538,7 +580,7 @@ export default function App() {
         `    \\addplot[fill=blue!18, fill opacity=0.4] fill between[of=curve${fillBetweenIdxA} and curve${fillBetweenIdxB}];`
       );
     }
-    return `\\begin{tikzpicture}\n  \\begin{${axisEnv}}[\n    title={${plotTitle}},\n    xlabel={${xLabel}},\n    ylabel={${yLabel}},\n    xmin=${xMin}, xmax=${xMax},\n    ymin=${yMin}, ymax=${yMax},\n    grid=${gridMode}${axisLinesLine}${piLines}${trigLine},\n    legend pos=${legendPos}${legendColsLine}\n  ]\n${curveLines.join('\n')}\n  \\end{${axisEnv}}\n\\end{tikzpicture}`;
+    return `\\begin{tikzpicture}\n  \\begin{${axisEnv}}[\n    title={${plotTitle}},\n    xlabel={${xLabel}},\n    ylabel={${yLabel}},\n    xmin=${xMin}, xmax=${xMax},\n    ymin=${yMin}, ymax=${yMax},\n    grid=${gridMode}${axisLinesLine}${piLines}${trigLine},\n    ${legendPosOption(legendPos)}${legendColsLine}\n  ]\n${curveLines.join('\n')}\n  \\end{${axisEnv}}\n\\end{tikzpicture}`;
   }, [
     mode,
     customTikzTemplate,
@@ -1032,7 +1074,11 @@ export default function App() {
             </>
           ) : (
             <>
-              <div className="ft-sec-title">{t('plotTypeTitle')}</div>
+              <CollapsibleSection
+                title={t('plotTypeTitle')}
+                open={openSec.plotType}
+                onToggle={() => toggleSec('plotType')}
+              >
               <div className="ft-btn-row">
                 <button
                   type="button"
@@ -1071,7 +1117,7 @@ export default function App() {
                 </button>
               </div>
               <label className="ft-props" style={{ padding: 8 }}>
-                <span>Sistemas Especiais & Avançados (Fase 3 & 4)</span>
+                <span>Sistemas Especiais & Avançados</span>
                 <select
                   value={
                     ['polar', 'ternary', 'smith', 'groupplot', 'contour', 'quiver'].includes(plotKind)
@@ -1091,9 +1137,14 @@ export default function App() {
                   <option value="quiver">Campo Vetorial (quiver)</option>
                 </select>
               </label>
+              </CollapsibleSection>
 
-              <div className="ft-sec-title">{t('axisConfigTitle')}</div>
-              <div className="ft-props">
+              <CollapsibleSection
+                title={t('axisConfigTitle')}
+                open={openSec.axis}
+                onToggle={() => toggleSec('axis')}
+              >
+              <div className="ft-props" style={{ border: 'none', padding: 0, background: 'transparent' }}>
                 <label>
                   <span>{t('chartTitle')}</span>
                   <input value={plotTitle} onChange={(e) => setPlotTitle(e.target.value)} />
@@ -1276,10 +1327,14 @@ export default function App() {
                   </div>
                 )}
               </div>
+              </CollapsibleSection>
 
               {plotKind === 'function' && (
-                <>
-                  <div className="ft-sec-title">3. Funções Matemáticas f(x)</div>
+                <CollapsibleSection
+                  title="3. Funções Matemáticas f(x)"
+                  open={openSec.data}
+                  onToggle={() => toggleSec('data')}
+                >
                   <div className="ft-help-box">
                     Escreva a fórmula em função de <code>x</code> (use <code>*</code> para multiplicar
                     e <code>^</code> para potência, ex: <code>0.2*x^2</code> ou <code>sin(x)</code>).
@@ -1465,7 +1520,7 @@ export default function App() {
                       )}
                     </div>
                   )}
-                </>
+                </CollapsibleSection>
               )}
 
               {plotKind === 'scatter' && (
@@ -2546,6 +2601,65 @@ export default function App() {
                   )}
                 </g>
               )}
+
+              {/* Live Legend Overlay in Central SVG */}
+              {(plotKind === 'function' || (plotKind === 'scatter' && showRegression)) && (() => {
+                const items =
+                  plotKind === 'function'
+                    ? curves.map((c) => ({
+                        label: c.label || c.expr,
+                        color: COLOR_HEX[c.color] || '#38bdf8',
+                      }))
+                    : [
+                        { label: 'Dados', color: '#38bdf8' },
+                        { label: 'Ajuste Linear', color: '#f43f5e' },
+                      ];
+                const boxW = 112;
+                const boxH = 10 + items.length * 16;
+                const xMap = {
+                  west: 76,
+                  center: 314 - boxW / 2,
+                  east: 552 - boxW,
+                };
+                const yMap = {
+                  north: 50,
+                  center: 198 - boxH / 2,
+                  south: 346 - boxH,
+                };
+                const lx = legendPos.includes('west')
+                  ? xMap.west
+                  : legendPos.includes('east')
+                  ? xMap.east
+                  : xMap.center;
+                const ly = legendPos.includes('north')
+                  ? yMap.north
+                  : legendPos.includes('south')
+                  ? yMap.south
+                  : yMap.center;
+                return (
+                  <g>
+                    <rect
+                      x={lx}
+                      y={ly}
+                      width={boxW}
+                      height={boxH}
+                      rx={4}
+                      fill="#0f172a"
+                      fillOpacity={0.86}
+                      stroke="#475569"
+                      strokeWidth={1}
+                    />
+                    {items.map((it, idx) => (
+                      <g key={idx} transform={`translate(${lx + 8}, ${ly + 14 + idx * 16})`}>
+                        <line x1={0} y1={-3} x2={16} y2={-3} stroke={it.color} strokeWidth={2.2} />
+                        <text x={22} y={0} fill="#e2e8f0" fontSize="10">
+                          {it.label.replace(/\\/g, '').slice(0, 14)}
+                        </text>
+                      </g>
+                    ))}
+                  </g>
+                );
+              })()}
 
               <text x={314} y={396} fill="#cbd5e1" fontSize="11" textAnchor="middle">
                 {xLabel}
