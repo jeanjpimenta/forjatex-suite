@@ -2118,7 +2118,6 @@ export default function App() {
         {/* Right Live LaTeX Output */}
         <aside className="ft-code-pane">
           <div className="ft-sec-title">{t('generatedCode')}</div>
-          <pre className="ft-code">{tikzCode}</pre>
           <div className="ft-hint">
             {t('preamble')}:{' '}
             <code>
@@ -2149,6 +2148,7 @@ export default function App() {
               </>
             )}
           </div>
+          <pre className="ft-code">{tikzCode}</pre>
         </aside>
       </main>
 
