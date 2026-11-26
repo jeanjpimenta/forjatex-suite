@@ -201,7 +201,7 @@ jobs:
                   {
                       "id": "forjatikz",
                       "name": "ForjaTikZ",
-                      "latestVersion": "1.3.0",
+                      "latestVersion": "1.4.0",
                       "installerFile": pick("forjatikz", ".msi"),
                       "installerUrl": url(pick("forjatikz", ".msi")),
                       "msiFile": pick("forjatikz", ".msi"),

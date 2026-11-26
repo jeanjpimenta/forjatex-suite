@@ -52,6 +52,16 @@ interface TikzNode {
   y: number; // cm (-4..4)
   shape: NodeShape;
   color: string;
+  opacity?: number; // 10..100
+  rotation?: number; // -180..180 deg
+  dashStyle?: EdgeLineStyle;
+}
+
+interface TikzFitGroup {
+  id: string;
+  nodeIds: string[];
+  label: string;
+  color: string;
 }
 
 interface TikzEdge {
@@ -256,9 +266,18 @@ export default function App() {
     { id: 'e2', from: 'n2', to: 'n3', label: 'Sim', arrow: '->', lineStyle: 'solid', bend: 'straight' },
   ]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>('n1');
+  const [selectedIds, setSelectedIds] = useState<string[]>(['n1']);
+  const [fitGroups, setFitGroups] = useState<TikzFitGroup[]>([]);
+  const [historyPast, setHistoryPast] = useState<Array<{ nodes: TikzNode[]; edges: TikzEdge[]; fitGroups: TikzFitGroup[] }>>([]);
+  const [historyFuture, setHistoryFuture] = useState<Array<{ nodes: TikzNode[]; edges: TikzEdge[]; fitGroups: TikzFitGroup[] }>>([]);
+  const [snapToGrid, setSnapToGrid] = useState(true);
+  const [snapToShapes, setSnapToShapes] = useState(true);
+  const [alignGuides, setAlignGuides] = useState<{ x?: number; y?: number }>({});
+  const [paletteMenu, setPaletteMenu] = useState<'shapes' | null>(null);
   const [connectFrom, setConnectFrom] = useState<string | null>(null);
   const [customTikzTemplate, setCustomTikzTemplate] = useState<string | null>(null);
   const draggingRef = useRef<string | null>(null);
+  const dragSnapshotTakenRef = useRef(false);
 
   // PGFPlots State
   const [plotKind, setPlotKind] = useState<PlotKind>('function');
@@ -370,8 +389,16 @@ export default function App() {
       if (customTikzTemplate) return customTikzTemplate;
 
       const nodeLines = nodes.map((n) => {
+        const extraOpts: string[] = [];
+        if (n.rotation && n.rotation !== 0) extraOpts.push(`rotate=${n.rotation}`);
+        if (n.opacity !== undefined && n.opacity < 100) {
+          const op = (n.opacity / 100).toFixed(2);
+          extraOpts.push(`fill opacity=${op}`, `draw opacity=${op}`);
+        }
+        if (n.dashStyle && n.dashStyle !== 'solid') extraOpts.push(n.dashStyle);
+        const extraStr = extraOpts.length ? `, ${extraOpts.join(', ')}` : '';
         if (n.shape === 'text') {
-          return `  \\node (${n.id}) at (${n.x.toFixed(1)}, ${n.y.toFixed(1)}) {${n.label}};`;
+          return `  \\node${extraStr ? `[${extraOpts.join(', ')}]` : ''} (${n.id}) at (${n.x.toFixed(1)}, ${n.y.toFixed(1)}) {${n.label}};`;
         }
         const shapeStyle =
           n.shape === 'circle'
@@ -381,8 +408,16 @@ export default function App() {
             : n.shape === 'ellipse'
             ? `ellipse, draw=${n.color}!80!black, fill=${n.color}!12`
             : `rectangle, rounded corners, draw=${n.color}!80!black, fill=${n.color}!12`;
-        return `  \\node[${shapeStyle}, minimum size=0.9cm] (${n.id}) at (${n.x.toFixed(1)}, ${n.y.toFixed(1)}) {${n.label}};`;
+        return `  \\node[${shapeStyle}, minimum size=0.9cm${extraStr}] (${n.id}) at (${n.x.toFixed(1)}, ${n.y.toFixed(1)}) {${n.label}};`;
       });
+      const fitLines = fitGroups
+        .map((fg) => {
+          const valid = fg.nodeIds.filter((id) => nodes.some((n) => n.id === id));
+          if (valid.length < 2) return '';
+          const refs = valid.map((id) => `(${id})`).join(' ');
+          return `  \\node[draw=${fg.color}!80!black, dashed, rounded corners, inner sep=8pt, fit=${refs}, label=above:{${fg.label}}] (${fg.id}) {};`;
+        })
+        .filter(Boolean);
       const edgeLines = edges.map((e) => {
         const opts = [e.arrow, 'thick'];
         if (e.lineStyle !== 'solid') opts.push(e.lineStyle);
@@ -390,7 +425,7 @@ export default function App() {
         const lbl = e.label.trim() ? ` node[midway, above] {${e.label}}` : '';
         return `  \\draw[${opts.join(', ')}] (${e.from}) to${lbl} (${e.to});`;
       });
-      return `\\begin{tikzpicture}[>=Stealth]\n${nodeLines.join('\n')}\n${edgeLines.join('\n')}\n\\end{tikzpicture}`;
+      return `\\begin{tikzpicture}[>=Stealth]\n${nodeLines.join('\n')}${fitLines.length ? `\n${fitLines.join('\n')}` : ''}\n${edgeLines.join('\n')}\n\\end{tikzpicture}`;
     }
 
     const axisEnv =
@@ -509,6 +544,7 @@ export default function App() {
     customTikzTemplate,
     nodes,
     edges,
+    fitGroups,
     plotKind,
     axisScale,
     plotTitle,
@@ -550,13 +586,125 @@ export default function App() {
 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId) || null;
 
+  const pushHistory = () => {
+    setHistoryPast((p) => [...p.slice(-29), { nodes, edges, fitGroups }]);
+    setHistoryFuture([]);
+  };
+
+  const handleUndo = () => {
+    if (historyPast.length === 0) return;
+    const prev = historyPast[historyPast.length - 1];
+    setHistoryFuture((f) => [{ nodes, edges, fitGroups }, ...f.slice(0, 29)]);
+    setHistoryPast((p) => p.slice(0, -1));
+    setNodes(prev.nodes);
+    setEdges(prev.edges);
+    setFitGroups(prev.fitGroups);
+  };
+
+  const handleRedo = () => {
+    if (historyFuture.length === 0) return;
+    const next = historyFuture[0];
+    setHistoryPast((p) => [...p.slice(-29), { nodes, edges, fitGroups }]);
+    setHistoryFuture((f) => f.slice(1));
+    setNodes(next.nodes);
+    setEdges(next.edges);
+    setFitGroups(next.fitGroups);
+  };
+
+  React.useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (mode !== 'diagram') return;
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+      } else if (
+        (e.ctrlKey || e.metaKey) &&
+        (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey))
+      ) {
+        e.preventDefault();
+        handleRedo();
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
+        e.preventDefault();
+        setSelectedIds(nodes.map((n) => n.id));
+        if (nodes[0]) setSelectedNodeId(nodes[0].id);
+      } else if (e.key === 'Delete' && selectedIds.length > 0) {
+        e.preventDefault();
+        pushHistory();
+        const del = new Set(selectedIds);
+        setNodes((p) => p.filter((n) => !del.has(n.id)));
+        setEdges((p) => p.filter((ed) => !del.has(ed.from) && !del.has(ed.to)));
+        setSelectedIds([]);
+        setSelectedNodeId(null);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  });
+
+  const alignSelected = (kind: 'left' | 'centerX' | 'top' | 'centerY') => {
+    const sel = nodes.filter((n) => selectedIds.includes(n.id));
+    if (sel.length < 2) return;
+    pushHistory();
+    let targetVal = 0;
+    if (kind === 'left') targetVal = Math.min(...sel.map((n) => n.x));
+    else if (kind === 'centerX') targetVal = sel.reduce((a, b) => a + b.x, 0) / sel.length;
+    else if (kind === 'top') targetVal = Math.max(...sel.map((n) => n.y));
+    else if (kind === 'centerY') targetVal = sel.reduce((a, b) => a + b.y, 0) / sel.length;
+
+    setNodes((prev) =>
+      prev.map((n) => {
+        if (!selectedIds.includes(n.id)) return n;
+        if (kind === 'left' || kind === 'centerX') return { ...n, x: Number(targetVal.toFixed(1)) };
+        return { ...n, y: Number(targetVal.toFixed(1)) };
+      })
+    );
+  };
+
+  const createFitGroup = () => {
+    if (selectedIds.length < 2) return;
+    pushHistory();
+    const id = `g${Date.now().toString().slice(-4)}`;
+    setFitGroups((p) => [
+      ...p,
+      { id, nodeIds: [...selectedIds], label: `Grupo ${p.length + 1}`, color: 'blue' },
+    ]);
+  };
+
   const handleSvgMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
     if (!draggingRef.current) return;
+    if (!dragSnapshotTakenRef.current) {
+      pushHistory();
+      dragSnapshotTakenRef.current = true;
+    }
     const rect = e.currentTarget.getBoundingClientRect();
     const px = ((e.clientX - rect.left) / rect.width) * 620;
     const py = ((e.clientY - rect.top) / rect.height) * 420;
-    const xCm = Math.round(((px - CX) / SCALE) * 2) / 2;
-    const yCm = Math.round(((CY - py) / SCALE) * 2) / 2;
+    let xCm = (px - CX) / SCALE;
+    let yCm = (CY - py) / SCALE;
+    if (snapToGrid) {
+      xCm = Math.round(xCm * 2) / 2;
+      yCm = Math.round(yCm * 2) / 2;
+    } else {
+      xCm = Math.round(xCm * 10) / 10;
+      yCm = Math.round(yCm * 10) / 10;
+    }
+    const guides: { x?: number; y?: number } = {};
+    if (snapToShapes) {
+      for (const other of nodes) {
+        if (other.id === draggingRef.current) continue;
+        if (Math.abs(other.x - xCm) < 0.22) {
+          xCm = other.x;
+          guides.x = other.x;
+        }
+        if (Math.abs(other.y - yCm) < 0.22) {
+          yCm = other.y;
+          guides.y = other.y;
+        }
+      }
+    }
+    setAlignGuides(guides);
     setNodes((prev) =>
       prev.map((n) =>
         n.id === draggingRef.current
@@ -568,17 +716,23 @@ export default function App() {
 
   const addNode = (shape: NodeShape) => {
     setCustomTikzTemplate(null);
+    pushHistory();
     const id = `n${Date.now().toString().slice(-4)}`;
     const next: TikzNode = {
       id,
-      label: `N_${nodes.length + 1}`,
+      label: shape === 'text' ? '$f(x)$' : `N_${nodes.length + 1}`,
       x: 0,
       y: 0,
       shape,
       color: 'blue',
+      opacity: 100,
+      rotation: 0,
+      dashStyle: 'solid',
     };
     setNodes((p) => [...p, next]);
     setSelectedNodeId(id);
+    setSelectedIds([id]);
+    setPaletteMenu(null);
   };
 
   const handleCopy = async () => {
@@ -1659,14 +1813,219 @@ export default function App() {
                 <pre className="ft-code">{customTikzTemplate}</pre>
               </div>
             ) : (
-              <svg
-                className="ft-svg"
-                viewBox="0 0 620 420"
-                onMouseMove={handleSvgMouseMove}
-                onMouseUp={() => {
-                  draggingRef.current = null;
-                }}
-              >
+              <>
+              <div className="ft-ctx-bar">
+                <button
+                  type="button"
+                  className="ft-ctx-chip"
+                  disabled={historyPast.length === 0}
+                  onClick={handleUndo}
+                  title="Desfazer (Ctrl+Z)"
+                >
+                  ↶ Undo
+                </button>
+                <button
+                  type="button"
+                  className="ft-ctx-chip"
+                  disabled={historyFuture.length === 0}
+                  onClick={handleRedo}
+                  title="Refazer (Ctrl+Y)"
+                >
+                  ↷ Redo
+                </button>
+                <div className="ft-ctx-sep" />
+                <button
+                  type="button"
+                  className={`ft-ctx-chip ${snapToGrid ? 'active' : ''}`}
+                  onClick={() => setSnapToGrid((v) => !v)}
+                  title="Ajustar coordenadas à grade (0.5cm)"
+                >
+                  Grade
+                </button>
+                <button
+                  type="button"
+                  className={`ft-ctx-chip ${snapToShapes ? 'active' : ''}`}
+                  onClick={() => setSnapToShapes((v) => !v)}
+                  title="Guias magnéticas de alinhamento entre formas"
+                >
+                  Guias
+                </button>
+
+                {selectedIds.length === 1 && selectedNode && (
+                  <>
+                    <div className="ft-ctx-sep" />
+                    <input
+                      className="ft-ctx-input"
+                      style={{ width: 92 }}
+                      value={selectedNode.label}
+                      onChange={(e) =>
+                        setNodes((p) =>
+                          p.map((n) => (n.id === selectedNode.id ? { ...n, label: e.target.value } : n))
+                        )
+                      }
+                      title="Texto / fórmula do nó"
+                    />
+                    <select
+                      className="ft-ctx-input"
+                      value={selectedNode.color}
+                      onChange={(e) => {
+                        pushHistory();
+                        setNodes((p) =>
+                          p.map((n) => (n.id === selectedNode.id ? { ...n, color: e.target.value } : n))
+                        );
+                      }}
+                      title="Cor"
+                    >
+                      <option value="blue">Azul</option>
+                      <option value="teal">Verde</option>
+                      <option value="orange">Laranja</option>
+                      <option value="purple">Roxo</option>
+                      <option value="red">Vermelho</option>
+                    </select>
+                    <select
+                      className="ft-ctx-input"
+                      value={selectedNode.dashStyle || 'solid'}
+                      onChange={(e) => {
+                        pushHistory();
+                        setNodes((p) =>
+                          p.map((n) =>
+                            n.id === selectedNode.id
+                              ? { ...n, dashStyle: e.target.value as EdgeLineStyle }
+                              : n
+                          )
+                        );
+                      }}
+                      title="Tipo de traço"
+                    >
+                      <option value="solid">Sólido</option>
+                      <option value="dashed">Tracejado</option>
+                      <option value="dotted">Pontilhado</option>
+                    </select>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <span>Op:</span>
+                      <input
+                        type="range"
+                        min={15}
+                        max={100}
+                        style={{ width: 54 }}
+                        value={selectedNode.opacity ?? 100}
+                        onChange={(e) =>
+                          setNodes((p) =>
+                            p.map((n) =>
+                              n.id === selectedNode.id ? { ...n, opacity: Number(e.target.value) } : n
+                            )
+                          )
+                        }
+                      />
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                      <span>Rot:</span>
+                      <input
+                        type="number"
+                        className="ft-ctx-input"
+                        style={{ width: 48 }}
+                        step={15}
+                        min={-180}
+                        max={180}
+                        value={selectedNode.rotation ?? 0}
+                        onChange={(e) =>
+                          setNodes((p) =>
+                            p.map((n) =>
+                              n.id === selectedNode.id ? { ...n, rotation: Number(e.target.value) } : n
+                            )
+                          )
+                        }
+                      />
+                      <span>°</span>
+                    </label>
+                  </>
+                )}
+
+                {selectedIds.length >= 2 && (
+                  <>
+                    <div className="ft-ctx-sep" />
+                    <button type="button" className="ft-ctx-chip" onClick={() => alignSelected('left')}>
+                      Alinhar Esq
+                    </button>
+                    <button type="button" className="ft-ctx-chip" onClick={() => alignSelected('centerX')}>
+                      Centro H
+                    </button>
+                    <button type="button" className="ft-ctx-chip" onClick={() => alignSelected('top')}>
+                      Alinhar Topo
+                    </button>
+                    <button type="button" className="ft-ctx-chip" onClick={() => alignSelected('centerY')}>
+                      Centro V
+                    </button>
+                    <button type="button" className="ft-ctx-chip active" onClick={createFitGroup}>
+                      Agrupar (fit)
+                    </button>
+                  </>
+                )}
+              </div>
+
+              <div className="ft-diagram-stage">
+                <div className="ft-diagram-palette">
+                  <button
+                    type="button"
+                    className="ft-pal-btn"
+                    onClick={() => addNode('text')}
+                    title="Inserir Matemática (fx) / Texto"
+                  >
+                    fx
+                  </button>
+                  <button
+                    type="button"
+                    className={`ft-pal-btn ${paletteMenu === 'shapes' ? 'active' : ''}`}
+                    onClick={() => setPaletteMenu((m) => (m === 'shapes' ? null : 'shapes'))}
+                    title="Formas Geométricas"
+                  >
+                    <Square size={15} />
+                  </button>
+                  <button
+                    type="button"
+                    className={`ft-pal-btn ${connectFrom ? 'active' : ''}`}
+                    disabled={!selectedNodeId}
+                    onClick={() => setConnectFrom((p) => (p ? null : selectedNodeId))}
+                    title="Conectar Nó Selecionado"
+                  >
+                    <ArrowRight size={15} />
+                  </button>
+
+                  {paletteMenu === 'shapes' && (
+                    <div className="ft-pal-popover">
+                      <button type="button" className="ft-ctx-chip" onClick={() => addNode('rect')}>
+                        Caixa
+                      </button>
+                      <button type="button" className="ft-ctx-chip" onClick={() => addNode('circle')}>
+                        Círculo
+                      </button>
+                      <button type="button" className="ft-ctx-chip" onClick={() => addNode('diamond')}>
+                        Losango
+                      </button>
+                      <button type="button" className="ft-ctx-chip" onClick={() => addNode('ellipse')}>
+                        Elipse
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <svg
+                  className="ft-svg"
+                  viewBox="0 0 620 420"
+                  onMouseDown={(e) => {
+                    if (e.target === e.currentTarget) {
+                      setSelectedIds([]);
+                      setSelectedNodeId(null);
+                      setPaletteMenu(null);
+                    }
+                  }}
+                  onMouseMove={handleSvgMouseMove}
+                  onMouseUp={() => {
+                    draggingRef.current = null;
+                    dragSnapshotTakenRef.current = false;
+                    setAlignGuides({});
+                  }}
+                >
                 <defs>
                   <marker
                     id="arrowHead"
@@ -1737,17 +2096,81 @@ export default function App() {
                   );
                 })}
 
+                {alignGuides.x !== undefined && (
+                  <line
+                    x1={CX + alignGuides.x * SCALE}
+                    y1={0}
+                    x2={CX + alignGuides.x * SCALE}
+                    y2={420}
+                    stroke="#38bdf8"
+                    strokeWidth={1.2}
+                    strokeDasharray="4 4"
+                  />
+                )}
+                {alignGuides.y !== undefined && (
+                  <line
+                    x1={0}
+                    y1={CY - alignGuides.y * SCALE}
+                    x2={620}
+                    y2={CY - alignGuides.y * SCALE}
+                    stroke="#38bdf8"
+                    strokeWidth={1.2}
+                    strokeDasharray="4 4"
+                  />
+                )}
+
+                {fitGroups.map((fg) => {
+                  const members = nodes.filter((n) => fg.nodeIds.includes(n.id));
+                  if (members.length < 2) return null;
+                  const xs = members.map((m) => CX + m.x * SCALE);
+                  const ys = members.map((m) => CY - m.y * SCALE);
+                  const minX = Math.min(...xs) - 42;
+                  const maxX = Math.max(...xs) + 42;
+                  const minY = Math.min(...ys) - 32;
+                  const maxY = Math.max(...ys) + 32;
+                  return (
+                    <g key={fg.id}>
+                      <rect
+                        x={minX}
+                        y={minY}
+                        width={maxX - minX}
+                        height={maxY - minY}
+                        rx={8}
+                        fill="none"
+                        stroke="#38bdf8"
+                        strokeDasharray="5 4"
+                        strokeWidth={1.4}
+                      />
+                      <text x={minX + 6} y={minY - 5} fill="#38bdf8" fontSize="10.5">
+                        {fg.label}
+                      </text>
+                    </g>
+                  );
+                })}
+
                 {nodes.map((n) => {
                   const px = CX + n.x * SCALE;
                   const py = CY - n.y * SCALE;
-                  const isSel = n.id === selectedNodeId;
+                  const isSel = selectedIds.includes(n.id) || n.id === selectedNodeId;
                   const stroke = isSel ? '#f59e0b' : COLOR_HEX[n.color] || '#38bdf8';
+                  const dash =
+                    n.dashStyle === 'dashed'
+                      ? '6 4'
+                      : n.dashStyle === 'dotted'
+                      ? '2 3'
+                      : undefined;
+                  const nodeOpacity = (n.opacity ?? 100) / 100;
+                  const rot = n.rotation ?? 0;
                   return (
                     <g
                       key={n.id}
                       style={{ cursor: 'grab' }}
-                      onMouseDown={() => {
+                      opacity={nodeOpacity}
+                      transform={rot ? `rotate(${-rot} ${px} ${py})` : undefined}
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
                         if (connectFrom && connectFrom !== n.id) {
+                          pushHistory();
                           setEdges((p) => [
                             ...p,
                             {
@@ -1761,23 +2184,42 @@ export default function App() {
                             },
                           ]);
                           setConnectFrom(null);
+                        } else if (e.shiftKey) {
+                          setSelectedIds((prev) =>
+                            prev.includes(n.id) ? prev.filter((id) => id !== n.id) : [...prev, n.id]
+                          );
+                          setSelectedNodeId(n.id);
                         } else {
                           setSelectedNodeId(n.id);
+                          setSelectedIds([n.id]);
                           draggingRef.current = n.id;
+                          dragSnapshotTakenRef.current = false;
                         }
                       }}
                     >
-                      {n.shape === 'circle' ? (
-                        <circle cx={px} cy={py} r={24} fill="#162238" stroke={stroke} strokeWidth={isSel ? 3 : 2} />
+                      {n.shape === 'text' ? (
+                        <rect
+                          x={px - 32}
+                          y={py - 14}
+                          width={64}
+                          height={28}
+                          rx={4}
+                          fill="rgba(56,189,248,0.08)"
+                          stroke={isSel ? '#f59e0b' : 'transparent'}
+                          strokeDasharray="3 3"
+                        />
+                      ) : n.shape === 'circle' ? (
+                        <circle cx={px} cy={py} r={24} fill="#162238" stroke={stroke} strokeWidth={isSel ? 3 : 2} strokeDasharray={dash} />
                       ) : n.shape === 'diamond' ? (
                         <polygon
                           points={`${px},${py - 24} ${px + 34},${py} ${px},${py + 24} ${px - 34},${py}`}
                           fill="#162238"
                           stroke={stroke}
                           strokeWidth={isSel ? 3 : 2}
+                          strokeDasharray={dash}
                         />
                       ) : n.shape === 'ellipse' ? (
-                        <ellipse cx={px} cy={py} rx={32} ry={20} fill="#162238" stroke={stroke} strokeWidth={isSel ? 3 : 2} />
+                        <ellipse cx={px} cy={py} rx={32} ry={20} fill="#162238" stroke={stroke} strokeWidth={isSel ? 3 : 2} strokeDasharray={dash} />
                       ) : (
                         <rect
                           x={px - 30}
@@ -1788,6 +2230,7 @@ export default function App() {
                           fill="#162238"
                           stroke={stroke}
                           strokeWidth={isSel ? 3 : 2}
+                          strokeDasharray={dash}
                         />
                       )}
                       <text x={px} y={py + 4} fill="#e2e8f0" fontSize="12" fontWeight="600" textAnchor="middle">
@@ -1797,6 +2240,8 @@ export default function App() {
                   );
                 })}
               </svg>
+              </div>
+              </>
             )
           ) : (
             <svg className="ft-svg" viewBox="0 0 620 420">
@@ -2145,6 +2590,12 @@ export default function App() {
                     : plotKind}
                   {'}'}
                 </code>
+              </>
+            )}
+            {mode === 'diagram' && fitGroups.length > 0 && (
+              <>
+                <br />
+                <code>\usetikzlibrary{'{fit, arrows.meta}'}</code>
               </>
             )}
           </div>
