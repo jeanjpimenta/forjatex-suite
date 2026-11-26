@@ -496,6 +496,20 @@ export default function App() {
               <option value="pt-BR">PT-BR</option>
               <option value="en">EN</option>
             </select>
+            {hasSuiteUpdate && suiteRemote && (
+              <button
+                type="button"
+                className="ac-btn-dark"
+                style={{ padding: '4px 10px', fontSize: 11 }}
+                onClick={handleSelfUpdate}
+                disabled={busyId === 'suite-self'}
+                title={`Atualizar ForjaTeX App Suite para v${suiteRemote.latestVersion}`}
+              >
+                {busyId === 'suite-self'
+                  ? (locale === 'pt-BR' ? 'BAIXANDO...' : 'DOWNLOADING...')
+                  : `${locale === 'pt-BR' ? 'ATUALIZAR SUITE' : 'UPDATE SUITE'} v${suiteRemote.latestVersion}`}
+              </button>
+            )}
             <button
               type="button"
               className="ac-donate-btn"
@@ -527,36 +541,64 @@ export default function App() {
       <div className="ac-container">
         {/* Self-Update Banner (ArtCraft style) */}
         {hasSuiteUpdate && suiteRemote && (
-          <div className="ac-banner">
-            <div className="ac-banner-left">
-              <span className="ac-banner-pill">ATUALIZAR</span>
-              <span>
-                ForjaTeX App Suite {suiteRemote.latestVersion} está disponível.
-                {suiteProg && suiteProg.total > 0 && (
-                  <strong>
-                    {' '}
-                    ({formatMb(suiteProg.downloaded)} MB / {formatMb(suiteProg.total)} MB)
-                  </strong>
-                )}
-              </span>
+          <div className="ac-banner" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+              <div className="ac-banner-left">
+                <span className="ac-banner-pill">{locale === 'pt-BR' ? 'ATUALIZAR' : 'UPDATE'}</span>
+                <span>
+                  {locale === 'pt-BR'
+                    ? `ForjaTeX App Suite ${suiteRemote.latestVersion} está disponível.`
+                    : `ForjaTeX App Suite ${suiteRemote.latestVersion} is available.`}
+                </span>
+              </div>
+              <div className="ac-banner-right">
+                <button
+                  type="button"
+                  className="ac-link-upper"
+                  onClick={() => open(`${GITHUB_REPO_URL}/releases`)}
+                >
+                  {locale === 'pt-BR' ? 'NOVIDADES' : 'RELEASE NOTES'} <ArrowUpRight size={12} />
+                </button>
+                <button
+                  type="button"
+                  className="ac-btn-dark"
+                  onClick={handleSelfUpdate}
+                  disabled={busyId === 'suite-self'}
+                >
+                  {busyId === 'suite-self'
+                    ? (locale === 'pt-BR' ? 'BAIXANDO...' : 'DOWNLOADING...')
+                    : (locale === 'pt-BR' ? 'ATUALIZAR E REINICIAR' : 'UPDATE & RESTART')}
+                </button>
+              </div>
             </div>
-            <div className="ac-banner-right">
-              <button
-                type="button"
-                className="ac-link-upper"
-                onClick={() => open(`${GITHUB_REPO_URL}/releases`)}
-              >
-                NOVIDADES <ArrowUpRight size={12} />
-              </button>
-              <button
-                type="button"
-                className="ac-btn-dark"
-                onClick={handleSelfUpdate}
-                disabled={busyId === 'suite-self'}
-              >
-                {busyId === 'suite-self' ? 'BAIXANDO...' : 'ATUALIZAR E REINICIAR'}
-              </button>
-            </div>
+
+            {busyId === 'suite-self' && (
+              <div className="ac-progress-wrap" style={{ margin: 0 }}>
+                <div className="ac-progress-text">
+                  <span>
+                    {suiteProg ? `${formatMb(suiteProg.downloaded)} MB` : '0.0 MB'}
+                    {suiteProg && suiteProg.total > 0 ? ` / ${formatMb(suiteProg.total)} MB` : ''}
+                  </span>
+                  <span>
+                    {suiteProg && suiteProg.total > 0
+                      ? `${Math.min(100, Math.round((suiteProg.downloaded / suiteProg.total) * 100))}%`
+                      : '...'}
+                  </span>
+                </div>
+                <div className="ac-progress-track">
+                  <div
+                    className="ac-progress-bar"
+                    style={{
+                      width: `${
+                        suiteProg && suiteProg.total > 0
+                          ? Math.min(100, Math.round((suiteProg.downloaded / suiteProg.total) * 100))
+                          : 20
+                      }%`,
+                    }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         )}
 
