@@ -18,6 +18,7 @@ import {
   Moon,
   Plus,
   ScatterChart,
+  Sparkles,
   Square,
   Sun,
   Trash2,
@@ -42,6 +43,7 @@ import {
   type GroupPlotConfig,
   type SpecialPlotKind,
 } from './pgfplotsExtras';
+import { ScientificFiguresModal } from './ScientificFiguresModal';
 
 type NodeShape = 'circle' | 'rect' | 'diamond' | 'ellipse' | 'text';
 type EdgeLineStyle = 'solid' | 'dashed' | 'dotted';
@@ -62,6 +64,29 @@ interface TikzNode {
 interface TikzFitGroup {
   id: string;
   nodeIds: string[];
+  label: string;
+  color: string;
+}
+
+interface TikzBezierCurve {
+  id: string;
+  x1: number;
+  y1: number;
+  cx1: number;
+  cy1: number;
+  cx2: number;
+  cy2: number;
+  x2: number;
+  y2: number;
+  color: string;
+  arrow: '->' | '--';
+}
+
+interface TikzSciPrimitive {
+  id: string;
+  kind: 'brace' | 'coil' | 'snake' | 'arc';
+  x: number;
+  y: number;
   label: string;
   color: string;
 }
@@ -309,7 +334,12 @@ export default function App() {
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [snapToShapes, setSnapToShapes] = useState(true);
   const [alignGuides, setAlignGuides] = useState<{ x?: number; y?: number }>({});
-  const [paletteMenu, setPaletteMenu] = useState<'shapes' | null>(null);
+  const [paletteMenu, setPaletteMenu] = useState<'shapes' | 'sci' | null>(null);
+  const [beziers, setBeziers] = useState<TikzBezierCurve[]>([]);
+  const [sciPrims, setSciPrims] = useState<TikzSciPrimitive[]>([]);
+  const [selectedBezierId, setSelectedBezierId] = useState<string | null>(null);
+  const [sciModalOpen, setSciModalOpen] = useState(false);
+  const bezierDragRef = useRef<{ id: string; point: 'p1' | 'c1' | 'c2' | 'p2' } | null>(null);
   const [openSec, setOpenSec] = useState<Record<string, boolean>>({
     plotType: true,
     axis: true,
@@ -467,7 +497,23 @@ export default function App() {
         const lbl = e.label.trim() ? ` node[midway, above] {${e.label}}` : '';
         return `  \\draw[${opts.join(', ')}] (${e.from}) to${lbl} (${e.to});`;
       });
-      return `\\begin{tikzpicture}[>=Stealth]\n${nodeLines.join('\n')}${fitLines.length ? `\n${fitLines.join('\n')}` : ''}\n${edgeLines.join('\n')}\n\\end{tikzpicture}`;
+      const bezierLines = beziers.map((bz) => {
+        const arrowOpt = bz.arrow === '->' ? ', ->' : '';
+        return `  \\draw[thick, color=${bz.color}${arrowOpt}] (${bz.x1.toFixed(1)}, ${bz.y1.toFixed(1)}) .. controls (${bz.cx1.toFixed(1)}, ${bz.cy1.toFixed(1)}) and (${bz.cx2.toFixed(1)}, ${bz.cy2.toFixed(1)}) .. (${bz.x2.toFixed(1)}, ${bz.y2.toFixed(1)});`;
+      });
+      const sciLines = sciPrims.map((sp) => {
+        if (sp.kind === 'brace') {
+          return `  \\draw[decorate, decoration={brace, amplitude=6pt}, thick, color=${sp.color}] (${sp.x.toFixed(1)}, ${sp.y.toFixed(1)}) -- (${(sp.x + 2.5).toFixed(1)}, ${sp.y.toFixed(1)}) node[midway, above=6pt] {${sp.label}};`;
+        }
+        if (sp.kind === 'coil') {
+          return `  \\draw[decorate, decoration={coil, aspect=0.4, segment length=4pt, amplitude=4pt}, thick, color=${sp.color}] (${sp.x.toFixed(1)}, ${sp.y.toFixed(1)}) -- (${(sp.x + 2.5).toFixed(1)}, ${sp.y.toFixed(1)});`;
+        }
+        if (sp.kind === 'snake') {
+          return `  \\draw[decorate, decoration={snake, amplitude=2.5pt, segment length=8pt}, thick, color=${sp.color}] (${sp.x.toFixed(1)}, ${sp.y.toFixed(1)}) -- (${(sp.x + 2.8).toFixed(1)}, ${sp.y.toFixed(1)});`;
+        }
+        return `  \\draw[thick, color=${sp.color}] (${sp.x.toFixed(1)}, ${sp.y.toFixed(1)}) arc (0:45:1.1) node[midway, right] {${sp.label}};`;
+      });
+      return `\\begin{tikzpicture}[>=Stealth]\n${nodeLines.join('\n')}${fitLines.length ? `\n${fitLines.join('\n')}` : ''}${bezierLines.length ? `\n${bezierLines.join('\n')}` : ''}${sciLines.length ? `\n${sciLines.join('\n')}` : ''}\n${edgeLines.join('\n')}\n\\end{tikzpicture}`;
     }
 
     const axisEnv =
@@ -587,6 +633,8 @@ export default function App() {
     nodes,
     edges,
     fitGroups,
+    beziers,
+    sciPrims,
     plotKind,
     axisScale,
     plotTitle,
@@ -715,6 +763,24 @@ export default function App() {
   };
 
   const handleSvgMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (bezierDragRef.current) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const px = ((e.clientX - rect.left) / rect.width) * 620;
+      const py = ((e.clientY - rect.top) / rect.height) * 420;
+      const xCm = Math.max(-6, Math.min(6, Math.round(((px - CX) / SCALE) * 10) / 10));
+      const yCm = Math.max(-4, Math.min(4, Math.round(((CY - py) / SCALE) * 10) / 10));
+      const { id, point } = bezierDragRef.current;
+      setBeziers((prev) =>
+        prev.map((b) => {
+          if (b.id !== id) return b;
+          if (point === 'p1') return { ...b, x1: xCm, y1: yCm };
+          if (point === 'c1') return { ...b, cx1: xCm, cy1: yCm };
+          if (point === 'c2') return { ...b, cx2: xCm, cy2: yCm };
+          return { ...b, x2: xCm, y2: yCm };
+        })
+      );
+      return;
+    }
     if (!draggingRef.current) return;
     if (!dragSnapshotTakenRef.current) {
       pushHistory();
@@ -2045,6 +2111,54 @@ export default function App() {
                   >
                     <ArrowRight size={15} />
                   </button>
+                  <button
+                    type="button"
+                    className="ft-pal-btn"
+                    onClick={() => {
+                      setCustomTikzTemplate(null);
+                      const id = `bz${Date.now().toString().slice(-4)}`;
+                      setBeziers((p) => [
+                        ...p,
+                        {
+                          id,
+                          x1: -2.5,
+                          y1: -1,
+                          cx1: -1,
+                          cy1: 1.5,
+                          cx2: 1,
+                          cy2: -2.5,
+                          x2: 2.5,
+                          y2: 0,
+                          color: 'blue',
+                          arrow: '->',
+                        },
+                      ]);
+                      setSelectedBezierId(id);
+                      setPaletteMenu(null);
+                    }}
+                    title="Adicionar Curva Bézier Interativa"
+                  >
+                    ~
+                  </button>
+                  <button
+                    type="button"
+                    className={`ft-pal-btn ${paletteMenu === 'sci' ? 'active' : ''}`}
+                    onClick={() => setPaletteMenu((m) => (m === 'sci' ? null : 'sci'))}
+                    title="Primitivas Científicas (Chave, Mola, Onda, Arco)"
+                  >
+                    Ω
+                  </button>
+                  <button
+                    type="button"
+                    className="ft-pal-btn"
+                    onClick={() => {
+                      setPaletteMenu(null);
+                      setSciModalOpen(true);
+                    }}
+                    title="Biblioteca Paramétrica de Figuras Científicas"
+                  >
+                    <Sparkles size={14} />
+                  </button>
 
                   {paletteMenu === 'shapes' && (
                     <div className="ft-pal-popover">
@@ -2062,6 +2176,42 @@ export default function App() {
                       </button>
                     </div>
                   )}
+
+                  {paletteMenu === 'sci' && (
+                    <div className="ft-pal-popover" style={{ top: 145 }}>
+                      {(
+                        [
+                          { kind: 'brace', label: 'Chave (brace)' },
+                          { kind: 'coil', label: 'Mola (coil)' },
+                          { kind: 'snake', label: 'Onda (snake)' },
+                          { kind: 'arc', label: 'Arco (α)' },
+                        ] as const
+                      ).map((item) => (
+                        <button
+                          key={item.kind}
+                          type="button"
+                          className="ft-ctx-chip"
+                          onClick={() => {
+                            setCustomTikzTemplate(null);
+                            setSciPrims((p) => [
+                              ...p,
+                              {
+                                id: `sp${Date.now().toString().slice(-4)}`,
+                                kind: item.kind,
+                                x: -1.5,
+                                y: -1.5,
+                                label: item.kind === 'arc' ? '$\\alpha$' : '$L$',
+                                color: 'teal',
+                              },
+                            ]);
+                            setPaletteMenu(null);
+                          }}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <svg
@@ -2077,6 +2227,7 @@ export default function App() {
                   onMouseMove={handleSvgMouseMove}
                   onMouseUp={() => {
                     draggingRef.current = null;
+                    bezierDragRef.current = null;
                     dragSnapshotTakenRef.current = false;
                     setAlignGuides({});
                   }}
@@ -2198,6 +2349,82 @@ export default function App() {
                       />
                       <text x={minX + 6} y={minY - 5} fill="#38bdf8" fontSize="10.5">
                         {fg.label}
+                      </text>
+                    </g>
+                  );
+                })}
+
+                {beziers.map((bz) => {
+                  const x1 = CX + bz.x1 * SCALE;
+                  const y1 = CY - bz.y1 * SCALE;
+                  const cx1 = CX + bz.cx1 * SCALE;
+                  const cy1 = CY - bz.cy1 * SCALE;
+                  const cx2 = CX + bz.cx2 * SCALE;
+                  const cy2 = CY - bz.cy2 * SCALE;
+                  const x2 = CX + bz.x2 * SCALE;
+                  const y2 = CY - bz.y2 * SCALE;
+                  const isSel = selectedBezierId === bz.id;
+                  return (
+                    <g key={bz.id}>
+                      <path
+                        d={`M ${x1} ${y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x2} ${y2}`}
+                        fill="none"
+                        stroke={COLOR_HEX[bz.color] || '#38bdf8'}
+                        strokeWidth={isSel ? 2.8 : 2.2}
+                        markerEnd={bz.arrow === '->' ? 'url(#arrowHead)' : undefined}
+                        style={{ cursor: 'pointer' }}
+                        onMouseDown={(e) => {
+                          e.stopPropagation();
+                          setSelectedBezierId(bz.id);
+                        }}
+                      />
+                      {isSel && (
+                        <>
+                          <line x1={x1} y1={y1} x2={cx1} y2={cy1} stroke="#64748b" strokeDasharray="3 3" />
+                          <line x1={x2} y1={y2} x2={cx2} y2={cy2} stroke="#64748b" strokeDasharray="3 3" />
+                          {(
+                            [
+                              { pt: 'p1', x: x1, y: y1, fill: '#38bdf8' },
+                              { pt: 'c1', x: cx1, y: cy1, fill: '#f59e0b' },
+                              { pt: 'c2', x: cx2, y: cy2, fill: '#f59e0b' },
+                              { pt: 'p2', x: x2, y: y2, fill: '#38bdf8' },
+                            ] as const
+                          ).map((h) => (
+                            <circle
+                              key={h.pt}
+                              cx={h.x}
+                              cy={h.y}
+                              r={5}
+                              fill={h.fill}
+                              style={{ cursor: 'move' }}
+                              onMouseDown={(e) => {
+                                e.stopPropagation();
+                                bezierDragRef.current = { id: bz.id, point: h.pt };
+                              }}
+                            />
+                          ))}
+                        </>
+                      )}
+                    </g>
+                  );
+                })}
+
+                {sciPrims.map((sp) => {
+                  const sx = CX + sp.x * SCALE;
+                  const sy = CY - sp.y * SCALE;
+                  return (
+                    <g key={sp.id}>
+                      <line
+                        x1={sx}
+                        y1={sy}
+                        x2={sx + 120}
+                        y2={sy}
+                        stroke={COLOR_HEX[sp.color] || '#14b8a6'}
+                        strokeWidth={2}
+                        strokeDasharray={sp.kind === 'coil' || sp.kind === 'snake' ? '4 2' : undefined}
+                      />
+                      <text x={sx + 60} y={sy - 8} fill="#e2e8f0" fontSize="11" textAnchor="middle">
+                        {sp.kind} ({sp.label})
                       </text>
                     </g>
                   );
@@ -2940,6 +3167,11 @@ export default function App() {
           </div>
         </div>
       )}
+      <ScientificFiguresModal
+        open={sciModalOpen}
+        onClose={() => setSciModalOpen(false)}
+        onApplyLatex={(code) => setCustomTikzTemplate(code)}
+      />
     </div>
   );
 }

@@ -41,7 +41,15 @@ fn compile_tikz_check(tex_snippet: String) -> Result<String, String> {
     if tex_snippet.contains("circuitikz") {
         extra_pkgs.push_str("\\usepackage{circuitikz}\n");
     }
-    let mut tikz_libs = vec!["arrows.meta", "positioning", "fit", "shapes.geometric"];
+    let mut tikz_libs = vec![
+        "arrows.meta",
+        "positioning",
+        "fit",
+        "shapes.geometric",
+        "calc",
+        "decorations.pathmorphing",
+        "decorations.pathreplacing",
+    ];
     if tex_snippet.contains("tikzcd") {
         tikz_libs.push("cd");
     }

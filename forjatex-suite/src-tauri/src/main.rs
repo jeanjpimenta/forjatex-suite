@@ -320,13 +320,13 @@ async fn download_and_run_installer(
             let installer_str = dest.to_string_lossy().to_string();
             let current_str = current_exe.to_string_lossy().to_string();
             let install_cmd = if file_name.to_lowercase().ends_with(".msi") {
-                format!("msiexec /i \"{}\" /passive", installer_str)
+                format!("start /wait \"\" msiexec /i \"{}\" /passive", installer_str)
             } else {
-                format!("\"{}\" /S", installer_str)
+                format!("start /wait \"\" \"{}\" /S", installer_str)
             };
             let bat_path = temp_dir.join("suite-self-update.cmd");
             let bat_content = format!(
-                "@echo off\r\nping 127.0.0.1 -n 2 >nul\r\n{}\r\nstart \"\" \"{}\"\r\n",
+                "@echo off\r\nping 127.0.0.1 -n 2 >nul\r\n{}\r\nping 127.0.0.1 -n 2 >nul\r\nexplorer.exe \"{}\"\r\n",
                 install_cmd, current_str
             );
             std::fs::write(&bat_path, bat_content)

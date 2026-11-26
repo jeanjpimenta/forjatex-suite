@@ -182,6 +182,72 @@ const DEFAULT_APPS: SuiteAppEntry[] = [
   },
 ];
 
+const APP_COPY: Record<
+  SuiteLocale,
+  Record<string, { subtitle: string; description: string; updatedAt?: string }>
+> = {
+  'pt-BR': {
+    forjatex: {
+      subtitle: 'Editor LaTeX profissional',
+      description:
+        'IDE completa com Monaco Editor, PDF Preview + SyncTeX, Assistentes visuais, Corretor LaTeX-Aware, Git e Markdown.',
+    },
+    forjatikz: {
+      subtitle: 'Diagramas TikZ e gráficos PGF',
+      description:
+        'Desenhe grafos, fluxogramas, figuras científicas e curvas PGFPlots visualmente e exporte código LaTeX limpo.',
+    },
+    forjasnap: {
+      subtitle: 'OCR de equações e tabelas',
+      description:
+        'Converta capturas de tela, PDFs e anotações manuscritas diretamente em código LaTeX.',
+      updatedAt: 'Em desenvolvimento',
+    },
+    forjabib: {
+      subtitle: 'Gerenciador de bibliografias',
+      description:
+        'Busque referências por DOI, ISBN ou arXiv e valide citações ABNT e BibLaTeX automaticamente.',
+      updatedAt: 'Em desenvolvimento',
+    },
+    forjadiff: {
+      subtitle: 'Comparador visual latexdiff',
+      description:
+        'Compare duas versões de um artigo .tex e gere o PDF com inserções e remoções destacadas.',
+      updatedAt: 'Em desenvolvimento',
+    },
+  },
+  en: {
+    forjatex: {
+      subtitle: 'Professional LaTeX Editor',
+      description:
+        'Full-featured IDE with Monaco Editor, PDF Preview + SyncTeX, Visual Wizards, LaTeX-Aware Spellcheck, Git, and Markdown.',
+    },
+    forjatikz: {
+      subtitle: 'TikZ Diagrams & PGFPlots Studio',
+      description:
+        'Visually build diagrams, scientific figures, and PGFPlots charts and export clean LaTeX code in seconds.',
+    },
+    forjasnap: {
+      subtitle: 'Equation & Table OCR',
+      description:
+        'Convert screenshots, PDFs, and handwritten notes directly into clean LaTeX code.',
+      updatedAt: 'In development',
+    },
+    forjabib: {
+      subtitle: 'Bibliography Manager',
+      description:
+        'Look up references via DOI, ISBN, or arXiv and validate ABNT and BibLaTeX citations automatically.',
+      updatedAt: 'In development',
+    },
+    forjadiff: {
+      subtitle: 'Visual latexdiff Comparator',
+      description:
+        'Compare two versions of a .tex paper and generate a PDF with highlighted insertions and deletions.',
+      updatedAt: 'In development',
+    },
+  },
+};
+
 const MANIFEST_KEY = 'forjatex_suite_manifest_url_v1';
 const SORT_KEY = 'forjatex_suite_sort_by_v1';
 const THEME_KEY = 'forjatex_suite_theme_v1';
@@ -219,7 +285,7 @@ export default function App() {
   });
   const [locale, setLocale] = useState<SuiteLocale>(() => detectSuiteLocale());
   const t = (key: string) => SUITE_DICT[locale][key] ?? SUITE_DICT['pt-BR'][key] ?? key;
-  const [suiteVersion, setSuiteVersion] = useState('1.2.5');
+  const [suiteVersion, setSuiteVersion] = useState('1.2.6');
   const [suiteRemote, setSuiteRemote] = useState<SuiteSelfInfo | null>(null);
   const [apps, setApps] = useState<SuiteAppEntry[]>(DEFAULT_APPS);
   const [installedMap, setInstalledMap] = useState<Record<string, InstalledAppInfo>>({});
@@ -1042,14 +1108,23 @@ export default function App() {
                   <div className="ac-card-titles">
                     <div className="ac-card-title-row">
                       <h2>{app.name}</h2>
-                      <span className="ac-by-tag">POR FORJATEX</span>
+                      <span className="ac-by-tag">
+                        {locale === 'pt-BR' ? 'POR FORJATEX' : 'BY FORJATEX'}
+                      </span>
                     </div>
-                    <p className="ac-subtitle">{app.subtitle}</p>
+                    <p className="ac-subtitle">
+                      {APP_COPY[locale]?.[app.id]?.subtitle ?? app.subtitle}
+                    </p>
                   </div>
                 </div>
 
-                <p className="ac-desc">{app.description}</p>
-                <div className="ac-updated">Última atualização: {app.updatedAt}</div>
+                <p className="ac-desc">
+                  {APP_COPY[locale]?.[app.id]?.description ?? app.description}
+                </p>
+                <div className="ac-updated">
+                  {locale === 'pt-BR' ? 'Última atualização:' : 'Last updated:'}{' '}
+                  {APP_COPY[locale]?.[app.id]?.updatedAt ?? app.updatedAt}
+                </div>
 
                 {busyId === app.id && prog && (
                   <div className="ac-progress-wrap">
