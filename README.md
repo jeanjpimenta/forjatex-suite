@@ -10,7 +10,13 @@
     <a href="#-português-brasil">Português (BR)</a> •
     <a href="#-english">English</a> •
     <a href="https://github.com/jeanjpimenta/forjatex-suite/releases">Downloads (Releases)</a> •
+    <a href="https://discord.gg/HSwh6MM9Bn">Discord</a> •
     <a href="src/i18n/README.md">Traduções / Translations</a>
+  </p>
+  <p>
+    <a href="https://discord.gg/HSwh6MM9Bn">
+      <img src="https://img.shields.io/badge/Discord-Comunidade%20ForjaTeX-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord ForjaTeX" />
+    </a>
   </p>
 </div>
 
@@ -32,11 +38,14 @@ O **ForjaTeX App Suite** reúne aplicativos desktop rápidos, offline-first e de
 | **ForjaDiff** | Comparador visual de revisões com `latexdiff`. | Em breve |
 
 ### Download
-Baixe os instaladores `.exe` (NSIS) e `.msi` diretamente na aba [**Releases**](https://github.com/jeanjpimenta/forjatex-suite/releases).
+Baixe os instaladores para **Windows** (`.exe` / `.msi`) e **Linux** (`.deb` / `.AppImage`) diretamente na aba [**Releases**](https://github.com/jeanjpimenta/forjatex-suite/releases).
 
 > **Requisito para compilação local:** tenha uma distribuição TeX instalada no sistema (**MiKTeX**, **TeX Live** ou **Tectonic**).
 >
 > **Nota sobre Assinatura Digital (Code Signing):** os instaladores atuais ainda **não possuem certificado de assinatura digital de código**, pois é um projeto independente em fase inicial. Por isso, o Windows SmartScreen pode exibir um aviso na primeira execução (basta clicar em *Mais informações → Executar assim mesmo*). Pretendo adicionar assinatura digital oficial assim que possível.
+
+### Comunidade no Discord
+Tem dúvidas sobre LaTeX/ABNT, sugestões de recursos, bugs ou quer acompanhar as novidades? Entre no servidor oficial do ForjaTeX no Discord: [**discord.gg/HSwh6MM9Bn**](https://discord.gg/HSwh6MM9Bn).
 
 ### Contribua com Traduções
 Quer ajudar a traduzir o **ForjaTeX** para Espanhol, Francês, Alemão ou outro idioma? Veja o passo a passo simples em [src/i18n/README.md](src/i18n/README.md).
@@ -76,6 +85,9 @@ Grab the latest **Windows** (`.exe` / `.msi`) and **Linux** (`.deb` / `.AppImage
 | `docs/GUIA-GITHUB-RELEASES.md` | Maintainer guide for versioning, tags, and automated GitHub Releases. |
 | `.github/workflows/` | `ci-verify.yml` (cross-platform build check on every push) & `release-suite.yml` (Windows + Linux release builds). |
 | `suite-manifest.json` | Live release manifest consumed by **ForjaTeX App Suite** on Windows and Linux. |
+
+### Discord Community
+Have questions, feature ideas, bug reports, or want to share your TikZ/PGFPlots creations? Join the official ForjaTeX Discord server: [**discord.gg/HSwh6MM9Bn**](https://discord.gg/HSwh6MM9Bn).
 
 ### Community Translations
 Want to help translate **ForjaTeX** into Spanish, French, German, or another language? Check [src/i18n/README.md](src/i18n/README.md) — translations use simple JSON files!
