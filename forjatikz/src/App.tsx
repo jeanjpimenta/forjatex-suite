@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { save } from '@tauri-apps/plugin-dialog';
+import { open, save } from '@tauri-apps/plugin-dialog';
 import { open as openExternal } from '@tauri-apps/plugin-shell';
 import {
   ArrowRight,
@@ -13,10 +13,13 @@ import {
   Copy,
   Diamond,
   Download,
+  ExternalLink,
+  FolderOpen,
   Heart,
   LineChart,
   Moon,
   Plus,
+  Save,
   ScatterChart,
   Sparkles,
   Square,
@@ -300,12 +303,181 @@ const COLOR_HEX: Record<string, string> = {
   purple: '#a855f7',
 };
 
+interface ProjectSnapshot {
+  mode: 'diagram' | 'pgfplots';
+  canvasZoom: number;
+  nodes: TikzNode[];
+  edges: TikzEdge[];
+  fitGroups: TikzFitGroup[];
+  snapToGrid: boolean;
+  snapToShapes: boolean;
+  beziers: TikzBezierCurve[];
+  sciPrims: TikzSciPrimitive[];
+  customTikzTemplate: string | null;
+  plotKind: PlotKind;
+  axisScale: AxisScaleType;
+  useRadians: boolean;
+  plotTitle: string;
+  xLabel: string;
+  yLabel: string;
+  xMin: number;
+  xMax: number;
+  yMin: number;
+  yMax: number;
+  gridMode: 'both' | 'major' | 'none';
+  curves: PlotCurve[];
+  scatterRaw: string;
+  useErrorBars: boolean;
+  barsRaw: string;
+  expr3d: string;
+  axisLines: AxisLinesMode;
+  usePiTicks: boolean;
+  legendPos: LegendPos;
+  legendColumns: number;
+  colormapName: ColormapName;
+  showColorbar: boolean;
+  showRegression: boolean;
+  histRaw: string;
+  histBins: number;
+  fillBetweenEnabled: boolean;
+  fillBetweenIdxA: number;
+  fillBetweenIdxB: number;
+  polarExpr: string;
+  ternaryCoords: string;
+  smithCoords: string;
+  groupConfig: GroupPlotConfig;
+  contourExpr: string;
+  contourLevels: number;
+  quiverU: string;
+  quiverV: string;
+}
+
+interface ProjectTab {
+  id: string;
+  title: string;
+  filePath: string | null;
+  dirty: boolean;
+  snapshot: ProjectSnapshot;
+}
+
+const WORKSPACE_STORAGE_KEY = 'forjatikz_workspace_v1';
+
+function createDefaultSnapshot(): ProjectSnapshot {
+  return {
+    mode: 'pgfplots',
+    canvasZoom: 1,
+    nodes: [
+      { id: 'n1', label: 'Início', x: -3.5, y: 1.5, shape: 'ellipse', color: 'teal' },
+      { id: 'n2', label: 'x > 0?', x: 0, y: 1.5, shape: 'diamond', color: 'orange' },
+      { id: 'n3', label: 'Executar', x: 3.5, y: 1.5, shape: 'rect', color: 'blue' },
+    ],
+    edges: [
+      { id: 'e1', from: 'n1', to: 'n2', label: '', arrow: '->', lineStyle: 'solid', bend: 'straight' },
+      { id: 'e2', from: 'n2', to: 'n3', label: 'Sim', arrow: '->', lineStyle: 'solid', bend: 'straight' },
+    ],
+    fitGroups: [],
+    snapToGrid: true,
+    snapToShapes: true,
+    beziers: [],
+    sciPrims: [],
+    customTikzTemplate: null,
+    plotKind: 'function',
+    axisScale: 'linear',
+    useRadians: true,
+    plotTitle: 'Função Senoidal e Parábola',
+    xLabel: '$x$',
+    yLabel: '$f(x)$',
+    xMin: -4,
+    xMax: 4,
+    yMin: -1.5,
+    yMax: 3.5,
+    gridMode: 'both',
+    curves: [
+      { id: 'c1', expr: 'sin(x)', color: 'blue', label: '\\sin(x)', lineStyle: 'solid', fillArea: false },
+      { id: 'c2', expr: '0.2*x^2', color: 'red', label: '0.2x^2', lineStyle: 'dashed', fillArea: false },
+    ],
+    scatterRaw: '0, 1.1, 0.2\n1, 2.3, 0.3\n2, 2.8, 0.25\n3, 4.1, 0.4',
+    useErrorBars: true,
+    barsRaw: 'Jan=15\nFev=28\nMar=22\nAbr=35',
+    expr3d: 'exp(-x^2 - y^2)',
+    axisLines: 'box',
+    usePiTicks: false,
+    legendPos: 'north west',
+    legendColumns: 1,
+    colormapName: 'viridis',
+    showColorbar: true,
+    showRegression: false,
+    histRaw: '1.2, 1.8, 2.1, 2.3, 2.4, 2.9, 3.0, 3.1, 3.5, 3.8, 4.1, 4.5, 2.7, 2.8, 3.2',
+    histBins: 6,
+    fillBetweenEnabled: false,
+    fillBetweenIdxA: 0,
+    fillBetweenIdxB: 1,
+    polarExpr: '1 + cos(x)',
+    ternaryCoords: '0.2, 0.3, 0.5\n0.5, 0.2, 0.3\n0.3, 0.5, 0.2',
+    smithCoords: '0.5, 0.2\n1.0, 0.8\n2.0, -0.5',
+    groupConfig: {
+      rows: 2,
+      cols: 2,
+      sharedAxes: true,
+      exprs: ['sin(x)', 'cos(x)', '0.2*x^2', 'exp(-x^2)'],
+    },
+    contourExpr: 'sin(x)*cos(y)',
+    contourLevels: 8,
+    quiverU: '-y',
+    quiverV: 'x',
+  };
+}
+
+function loadInitialWorkspace(): { tabs: ProjectTab[]; activeTabId: string } {
+  try {
+    const raw = localStorage.getItem(WORKSPACE_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as { tabs?: ProjectTab[]; activeTabId?: string };
+      if (Array.isArray(parsed.tabs) && parsed.tabs.length > 0) {
+        const def = createDefaultSnapshot();
+        const normalized = parsed.tabs.map((tb, idx) => ({
+          id: tb.id || `tab-${idx + 1}`,
+          title: tb.title || `Projeto ${idx + 1}`,
+          filePath: tb.filePath ?? null,
+          dirty: Boolean(tb.dirty),
+          snapshot: { ...def, ...(tb.snapshot || {}) },
+        }));
+        const activeId =
+          normalized.find((tb) => tb.id === parsed.activeTabId)?.id || normalized[0].id;
+        return { tabs: normalized, activeTabId: activeId };
+      }
+    }
+  } catch {
+    // ignore corrupted workspace cache
+  }
+  const first: ProjectTab = {
+    id: `tab-${Date.now()}`,
+    title: 'Projeto 1',
+    filePath: null,
+    dirty: false,
+    snapshot: createDefaultSnapshot(),
+  };
+  return { tabs: [first], activeTabId: first.id };
+}
+
 export default function App() {
+  const initialWs = useMemo(() => loadInitialWorkspace(), []);
+  const initialSnap = useMemo(
+    () => initialWs.tabs.find((tb) => tb.id === initialWs.activeTabId)?.snapshot ?? createDefaultSnapshot(),
+    [initialWs]
+  );
+
+  const [tabs, setTabs] = useState<ProjectTab[]>(initialWs.tabs);
+  const [activeTabId, setActiveTabId] = useState<string>(initialWs.activeTabId);
+  const [editingTabId, setEditingTabId] = useState<string | null>(null);
+  const [editingTabTitle, setEditingTabTitle] = useState('');
+
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [locale, setLocale] = useState<TikzLocale>(() => detectTikzLocale());
   const t = (key: string) => TIKZ_DICT[locale][key] ?? TIKZ_DICT['pt-BR'][key] ?? key;
-  const [mode, setMode] = useState<'diagram' | 'pgfplots'>('pgfplots');
+  const [mode, setMode] = useState<'diagram' | 'pgfplots'>(initialSnap.mode);
   const [statusMsg, setStatusMsg] = useState('');
+  const [statusPdfPath, setStatusPdfPath] = useState<string | null>(null);
   const [donateOpen, setDonateOpen] = useState(false);
   const [donateTab, setDonateTab] = useState<'donate' | 'feedback'>('donate');
   const [fbKind, setFbKind] = useState<'feature' | 'bug'>('feature');
@@ -319,26 +491,19 @@ export default function App() {
   const [copyTag, setCopyTag] = useState<string | null>(null);
 
   // TikZ Diagram State
-  const [nodes, setNodes] = useState<TikzNode[]>([
-    { id: 'n1', label: 'Início', x: -3.5, y: 1.5, shape: 'ellipse', color: 'teal' },
-    { id: 'n2', label: 'x > 0?', x: 0, y: 1.5, shape: 'diamond', color: 'orange' },
-    { id: 'n3', label: 'Executar', x: 3.5, y: 1.5, shape: 'rect', color: 'blue' },
-  ]);
-  const [edges, setEdges] = useState<TikzEdge[]>([
-    { id: 'e1', from: 'n1', to: 'n2', label: '', arrow: '->', lineStyle: 'solid', bend: 'straight' },
-    { id: 'e2', from: 'n2', to: 'n3', label: 'Sim', arrow: '->', lineStyle: 'solid', bend: 'straight' },
-  ]);
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>('n1');
-  const [selectedIds, setSelectedIds] = useState<string[]>(['n1']);
-  const [fitGroups, setFitGroups] = useState<TikzFitGroup[]>([]);
+  const [nodes, setNodes] = useState<TikzNode[]>(initialSnap.nodes);
+  const [edges, setEdges] = useState<TikzEdge[]>(initialSnap.edges);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(initialSnap.nodes[0]?.id ?? null);
+  const [selectedIds, setSelectedIds] = useState<string[]>(initialSnap.nodes[0]?.id ? [initialSnap.nodes[0].id] : []);
+  const [fitGroups, setFitGroups] = useState<TikzFitGroup[]>(initialSnap.fitGroups);
   const [historyPast, setHistoryPast] = useState<Array<{ nodes: TikzNode[]; edges: TikzEdge[]; fitGroups: TikzFitGroup[] }>>([]);
   const [historyFuture, setHistoryFuture] = useState<Array<{ nodes: TikzNode[]; edges: TikzEdge[]; fitGroups: TikzFitGroup[] }>>([]);
-  const [snapToGrid, setSnapToGrid] = useState(true);
-  const [snapToShapes, setSnapToShapes] = useState(true);
+  const [snapToGrid, setSnapToGrid] = useState(initialSnap.snapToGrid);
+  const [snapToShapes, setSnapToShapes] = useState(initialSnap.snapToShapes);
   const [alignGuides, setAlignGuides] = useState<{ x?: number; y?: number }>({});
   const [paletteMenu, setPaletteMenu] = useState<'shapes' | 'sci' | null>(null);
-  const [beziers, setBeziers] = useState<TikzBezierCurve[]>([]);
-  const [sciPrims, setSciPrims] = useState<TikzSciPrimitive[]>([]);
+  const [beziers, setBeziers] = useState<TikzBezierCurve[]>(initialSnap.beziers);
+  const [sciPrims, setSciPrims] = useState<TikzSciPrimitive[]>(initialSnap.sciPrims);
   const [selectedBezierId, setSelectedBezierId] = useState<string | null>(null);
   const [sciModalOpen, setSciModalOpen] = useState(false);
   const bezierDragRef = useRef<{ id: string; point: 'p1' | 'c1' | 'c2' | 'p2' } | null>(null);
@@ -349,59 +514,51 @@ export default function App() {
   });
   const toggleSec = (key: string) => setOpenSec((p) => ({ ...p, [key]: !p[key] }));
   const [connectFrom, setConnectFrom] = useState<string | null>(null);
-  const [customTikzTemplate, setCustomTikzTemplate] = useState<string | null>(null);
+  const [customTikzTemplate, setCustomTikzTemplate] = useState<string | null>(initialSnap.customTikzTemplate);
   const draggingRef = useRef<string | null>(null);
   const dragSnapshotTakenRef = useRef(false);
 
   // PGFPlots State
-  const [plotKind, setPlotKind] = useState<PlotKind>('function');
-  const [axisScale, setAxisScale] = useState<AxisScaleType>('linear');
-  const [useRadians, setUseRadians] = useState(true);
-  const [plotTitle, setPlotTitle] = useState('Função Senoidal e Parábola');
-  const [xLabel, setXLabel] = useState('$x$');
-  const [yLabel, setYLabel] = useState('$f(x)$');
-  const [xMin, setXMin] = useState(-4);
-  const [xMax, setXMax] = useState(4);
-  const [yMin, setYMin] = useState(-1.5);
-  const [yMax, setYMax] = useState(3.5);
-  const [gridMode, setGridMode] = useState<'both' | 'major' | 'none'>('both');
-  const [curves, setCurves] = useState<PlotCurve[]>([
-    { id: 'c1', expr: 'sin(x)', color: 'blue', label: '\\sin(x)', lineStyle: 'solid', fillArea: false },
-    { id: 'c2', expr: '0.2*x^2', color: 'red', label: '0.2x^2', lineStyle: 'dashed', fillArea: false },
-  ]);
-  const [scatterRaw, setScatterRaw] = useState('0, 1.1, 0.2\n1, 2.3, 0.3\n2, 2.8, 0.25\n3, 4.1, 0.4');
-  const [useErrorBars, setUseErrorBars] = useState(true);
-  const [barsRaw, setBarsRaw] = useState('Jan=15\nFev=28\nMar=22\nAbr=35');
-  const [expr3d, setExpr3d] = useState('exp(-x^2 - y^2)');
-  const [axisLines, setAxisLines] = useState<AxisLinesMode>('box');
-  const [usePiTicks, setUsePiTicks] = useState(false);
-  const [legendPos, setLegendPos] = useState<LegendPos>('north west');
-  const [legendColumns, setLegendColumns] = useState<number>(1);
-  const [colormapName, setColormapName] = useState<ColormapName>('viridis');
-  const [showColorbar, setShowColorbar] = useState(true);
-  const [showRegression, setShowRegression] = useState(false);
-  const [histRaw, setHistRaw] = useState('1.2, 1.8, 2.1, 2.3, 2.4, 2.9, 3.0, 3.1, 3.5, 3.8, 4.1, 4.5, 2.7, 2.8, 3.2');
-  const [histBins, setHistBins] = useState(6);
+  const [plotKind, setPlotKind] = useState<PlotKind>(initialSnap.plotKind);
+  const [axisScale, setAxisScale] = useState<AxisScaleType>(initialSnap.axisScale);
+  const [useRadians, setUseRadians] = useState(initialSnap.useRadians);
+  const [plotTitle, setPlotTitle] = useState(initialSnap.plotTitle);
+  const [xLabel, setXLabel] = useState(initialSnap.xLabel);
+  const [yLabel, setYLabel] = useState(initialSnap.yLabel);
+  const [xMin, setXMin] = useState(initialSnap.xMin);
+  const [xMax, setXMax] = useState(initialSnap.xMax);
+  const [yMin, setYMin] = useState(initialSnap.yMin);
+  const [yMax, setYMax] = useState(initialSnap.yMax);
+  const [gridMode, setGridMode] = useState<'both' | 'major' | 'none'>(initialSnap.gridMode);
+  const [curves, setCurves] = useState<PlotCurve[]>(initialSnap.curves);
+  const [scatterRaw, setScatterRaw] = useState(initialSnap.scatterRaw);
+  const [useErrorBars, setUseErrorBars] = useState(initialSnap.useErrorBars);
+  const [barsRaw, setBarsRaw] = useState(initialSnap.barsRaw);
+  const [expr3d, setExpr3d] = useState(initialSnap.expr3d);
+  const [axisLines, setAxisLines] = useState<AxisLinesMode>(initialSnap.axisLines);
+  const [usePiTicks, setUsePiTicks] = useState(initialSnap.usePiTicks);
+  const [legendPos, setLegendPos] = useState<LegendPos>(initialSnap.legendPos);
+  const [legendColumns, setLegendColumns] = useState<number>(initialSnap.legendColumns);
+  const [colormapName, setColormapName] = useState<ColormapName>(initialSnap.colormapName);
+  const [showColorbar, setShowColorbar] = useState(initialSnap.showColorbar);
+  const [showRegression, setShowRegression] = useState(initialSnap.showRegression);
+  const [histRaw, setHistRaw] = useState(initialSnap.histRaw);
+  const [histBins, setHistBins] = useState(initialSnap.histBins);
   const [csvImport, setCsvImport] = useState<{ headers: string[]; rows: string[][] } | null>(null);
   const [csvColX, setCsvColX] = useState(0);
   const [csvColY, setCsvColY] = useState(1);
   const [csvColErr, setCsvColErr] = useState<number>(-1);
-  const [fillBetweenEnabled, setFillBetweenEnabled] = useState(false);
-  const [fillBetweenIdxA, setFillBetweenIdxA] = useState(0);
-  const [fillBetweenIdxB, setFillBetweenIdxB] = useState(1);
-  const [polarExpr, setPolarExpr] = useState('1 + cos(x)');
-  const [ternaryCoords, setTernaryCoords] = useState('0.2, 0.3, 0.5\n0.5, 0.2, 0.3\n0.3, 0.5, 0.2');
-  const [smithCoords, setSmithCoords] = useState('0.5, 0.2\n1.0, 0.8\n2.0, -0.5');
-  const [groupConfig, setGroupConfig] = useState<GroupPlotConfig>({
-    rows: 2,
-    cols: 2,
-    sharedAxes: true,
-    exprs: ['sin(x)', 'cos(x)', '0.2*x^2', 'exp(-x^2)'],
-  });
-  const [contourExpr, setContourExpr] = useState('sin(x)*cos(y)');
-  const [contourLevels, setContourLevels] = useState(8);
-  const [quiverU, setQuiverU] = useState('-y');
-  const [quiverV, setQuiverV] = useState('x');
+  const [fillBetweenEnabled, setFillBetweenEnabled] = useState(initialSnap.fillBetweenEnabled);
+  const [fillBetweenIdxA, setFillBetweenIdxA] = useState(initialSnap.fillBetweenIdxA);
+  const [fillBetweenIdxB, setFillBetweenIdxB] = useState(initialSnap.fillBetweenIdxB);
+  const [polarExpr, setPolarExpr] = useState(initialSnap.polarExpr);
+  const [ternaryCoords, setTernaryCoords] = useState(initialSnap.ternaryCoords);
+  const [smithCoords, setSmithCoords] = useState(initialSnap.smithCoords);
+  const [groupConfig, setGroupConfig] = useState<GroupPlotConfig>(initialSnap.groupConfig);
+  const [contourExpr, setContourExpr] = useState(initialSnap.contourExpr);
+  const [contourLevels, setContourLevels] = useState(initialSnap.contourLevels);
+  const [quiverU, setQuiverU] = useState(initialSnap.quiverU);
+  const [quiverV, setQuiverV] = useState(initialSnap.quiverV);
   const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
     const saved = Number(localStorage.getItem('forjatikz_sidebar_w_v1'));
     return Number.isFinite(saved) && saved >= 240 ? Math.min(560, saved) : 320;
@@ -410,7 +567,7 @@ export default function App() {
     const saved = Number(localStorage.getItem('forjatikz_code_w_v1'));
     return Number.isFinite(saved) && saved >= 240 ? Math.min(620, saved) : 340;
   });
-  const [canvasZoom, setCanvasZoom] = useState<number>(1);
+  const [canvasZoom, setCanvasZoom] = useState<number>(initialSnap.canvasZoom ?? 1);
 
   const adjustZoom = (delta: number) =>
     setCanvasZoom((z) => Math.min(3, Math.max(0.4, Number((z + delta).toFixed(2)))));
@@ -858,6 +1015,7 @@ export default function App() {
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(tikzCode);
+    setStatusPdfPath(null);
     setStatusMsg('Código TikZ/PGF copiado para a área de transferência!');
   };
 
@@ -869,21 +1027,298 @@ export default function App() {
     if (!target) return;
     try {
       await invoke('save_tex_file', { path: target, content: tikzCode });
+      setStatusPdfPath(null);
       setStatusMsg(`Arquivo salvo em: ${target}`);
     } catch (e) {
+      setStatusPdfPath(null);
       setStatusMsg(String(e));
     }
   };
 
   const handleCompileCheck = async () => {
+    setStatusPdfPath(null);
     setStatusMsg('Validando com pdflatex...');
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const fileStamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
     try {
-      const msg = await invoke<string>('compile_tikz_check', { texSnippet: tikzCode });
-      setStatusMsg(msg);
+      const res = await invoke<{ message: string; pdf_path: string }>('compile_tikz_check', {
+        texSnippet: tikzCode,
+        fileStamp,
+      });
+      setStatusMsg(res.message);
+      setStatusPdfPath(res.pdf_path);
     } catch (e) {
+      setStatusPdfPath(null);
       setStatusMsg(String(e));
     }
   };
+
+  const buildCurrentSnapshot = (): ProjectSnapshot => ({
+    mode,
+    canvasZoom,
+    nodes,
+    edges,
+    fitGroups,
+    snapToGrid,
+    snapToShapes,
+    beziers,
+    sciPrims,
+    customTikzTemplate,
+    plotKind,
+    axisScale,
+    useRadians,
+    plotTitle,
+    xLabel,
+    yLabel,
+    xMin,
+    xMax,
+    yMin,
+    yMax,
+    gridMode,
+    curves,
+    scatterRaw,
+    useErrorBars,
+    barsRaw,
+    expr3d,
+    axisLines,
+    usePiTicks,
+    legendPos,
+    legendColumns,
+    colormapName,
+    showColorbar,
+    showRegression,
+    histRaw,
+    histBins,
+    fillBetweenEnabled,
+    fillBetweenIdxA,
+    fillBetweenIdxB,
+    polarExpr,
+    ternaryCoords,
+    smithCoords,
+    groupConfig,
+    contourExpr,
+    contourLevels,
+    quiverU,
+    quiverV,
+  });
+
+  const applySnapshot = (snap: ProjectSnapshot) => {
+    setMode(snap.mode);
+    setCanvasZoom(snap.canvasZoom ?? 1);
+    setNodes(snap.nodes);
+    setEdges(snap.edges);
+    setFitGroups(snap.fitGroups);
+    setSnapToGrid(snap.snapToGrid);
+    setSnapToShapes(snap.snapToShapes);
+    setBeziers(snap.beziers);
+    setSciPrims(snap.sciPrims);
+    setCustomTikzTemplate(snap.customTikzTemplate);
+    setSelectedNodeId(snap.nodes[0]?.id ?? null);
+    setSelectedIds(snap.nodes[0]?.id ? [snap.nodes[0].id] : []);
+    setSelectedBezierId(null);
+    setHistoryPast([]);
+    setHistoryFuture([]);
+    setPlotKind(snap.plotKind);
+    setAxisScale(snap.axisScale);
+    setUseRadians(snap.useRadians);
+    setPlotTitle(snap.plotTitle);
+    setXLabel(snap.xLabel);
+    setYLabel(snap.yLabel);
+    setXMin(snap.xMin);
+    setXMax(snap.xMax);
+    setYMin(snap.yMin);
+    setYMax(snap.yMax);
+    setGridMode(snap.gridMode);
+    setCurves(snap.curves);
+    setScatterRaw(snap.scatterRaw);
+    setUseErrorBars(snap.useErrorBars);
+    setBarsRaw(snap.barsRaw);
+    setExpr3d(snap.expr3d);
+    setAxisLines(snap.axisLines);
+    setUsePiTicks(snap.usePiTicks);
+    setLegendPos(snap.legendPos);
+    setLegendColumns(snap.legendColumns);
+    setColormapName(snap.colormapName);
+    setShowColorbar(snap.showColorbar);
+    setShowRegression(snap.showRegression);
+    setHistRaw(snap.histRaw);
+    setHistBins(snap.histBins);
+    setFillBetweenEnabled(snap.fillBetweenEnabled);
+    setFillBetweenIdxA(snap.fillBetweenIdxA);
+    setFillBetweenIdxB(snap.fillBetweenIdxB);
+    setPolarExpr(snap.polarExpr);
+    setTernaryCoords(snap.ternaryCoords);
+    setSmithCoords(snap.smithCoords);
+    setGroupConfig(snap.groupConfig);
+    setContourExpr(snap.contourExpr);
+    setContourLevels(snap.contourLevels);
+    setQuiverU(snap.quiverU);
+    setQuiverV(snap.quiverV);
+  };
+
+  const currentSnapshot = buildCurrentSnapshot();
+  const currentSnapshotJson = JSON.stringify(currentSnapshot);
+
+  React.useEffect(() => {
+    setTabs((prev) => {
+      let changed = false;
+      const next = prev.map((tb) => {
+        if (tb.id !== activeTabId) return tb;
+        if (JSON.stringify(tb.snapshot) === currentSnapshotJson) return tb;
+        changed = true;
+        return { ...tb, dirty: true, snapshot: JSON.parse(currentSnapshotJson) as ProjectSnapshot };
+      });
+      return changed ? next : prev;
+    });
+  }, [activeTabId, currentSnapshotJson]);
+
+  React.useEffect(() => {
+    try {
+      localStorage.setItem(WORKSPACE_STORAGE_KEY, JSON.stringify({ activeTabId, tabs }));
+    } catch {
+      // ignore storage quota errors
+    }
+  }, [activeTabId, tabs]);
+
+  const switchTab = (targetId: string) => {
+    if (targetId === activeTabId) return;
+    const snapNow = buildCurrentSnapshot();
+    setTabs((prev) =>
+      prev.map((tb) => (tb.id === activeTabId ? { ...tb, snapshot: snapNow } : tb))
+    );
+    const target = tabs.find((tb) => tb.id === targetId);
+    if (!target) return;
+    setActiveTabId(targetId);
+    applySnapshot(target.snapshot);
+  };
+
+  const createNewTab = () => {
+    const snapNow = buildCurrentSnapshot();
+    const freshSnap = createDefaultSnapshot();
+    const nextNum = tabs.length + 1;
+    const newTab: ProjectTab = {
+      id: `tab-${Date.now()}`,
+      title: `Projeto ${nextNum}`,
+      filePath: null,
+      dirty: false,
+      snapshot: freshSnap,
+    };
+    setTabs((prev) => [
+      ...prev.map((tb) => (tb.id === activeTabId ? { ...tb, snapshot: snapNow } : tb)),
+      newTab,
+    ]);
+    setActiveTabId(newTab.id);
+    applySnapshot(freshSnap);
+  };
+
+  const closeTab = (targetId: string) => {
+    if (tabs.length === 1) {
+      const freshSnap = createDefaultSnapshot();
+      setTabs((prev) => [{ ...prev[0], title: 'Projeto 1', filePath: null, dirty: false, snapshot: freshSnap }]);
+      applySnapshot(freshSnap);
+      return;
+    }
+    const idx = tabs.findIndex((tb) => tb.id === targetId);
+    const remaining = tabs.filter((tb) => tb.id !== targetId);
+    setTabs(remaining);
+    if (targetId === activeTabId) {
+      const fallback = remaining[Math.max(0, idx - 1)] || remaining[0];
+      setActiveTabId(fallback.id);
+      applySnapshot(fallback.snapshot);
+    }
+  };
+
+  const handleSaveProject = async () => {
+    const activeTab = tabs.find((tb) => tb.id === activeTabId);
+    if (!activeTab) return;
+    const snapNow = buildCurrentSnapshot();
+    let targetPath = activeTab.filePath;
+    if (!targetPath) {
+      const safeTitle = activeTab.title.replace(/[^\w\-]+/g, '_').toLowerCase() || 'projeto-forjatikz';
+      const chosen = await save({
+        filters: [{ name: 'Projeto ForjaTikZ', extensions: ['ftikz', 'json'] }],
+        defaultPath: `${safeTitle}.ftikz`,
+      });
+      if (!chosen) return;
+      targetPath = chosen;
+    }
+    const baseName = targetPath.split(/[\\/]/).pop()?.replace(/\.(ftikz|json)$/i, '') || activeTab.title;
+    const payload = JSON.stringify(
+      {
+        app: 'ForjaTikZ',
+        formatVersion: 1,
+        title: baseName,
+        savedAt: new Date().toISOString(),
+        snapshot: snapNow,
+      },
+      null,
+      2
+    );
+    try {
+      await invoke('save_tex_file', { path: targetPath, content: payload });
+      setTabs((prev) =>
+        prev.map((tb) =>
+          tb.id === activeTabId
+            ? { ...tb, title: baseName, filePath: targetPath, dirty: false, snapshot: snapNow }
+            : tb
+        )
+      );
+      setStatusPdfPath(null);
+      setStatusMsg(`Projeto salvo em: ${targetPath}`);
+    } catch (e) {
+      setStatusPdfPath(null);
+      setStatusMsg(String(e));
+    }
+  };
+
+  const handleOpenProject = async () => {
+    const selected = await open({
+      filters: [{ name: 'Projeto ForjaTikZ', extensions: ['ftikz', 'json'] }],
+      multiple: false,
+    });
+    if (!selected || Array.isArray(selected)) return;
+    try {
+      const raw = await invoke<string>('read_project_file', { path: selected });
+      const parsed = JSON.parse(raw) as { title?: string; snapshot?: Partial<ProjectSnapshot> };
+      if (!parsed.snapshot) throw new Error('Arquivo de projeto inválido.');
+      const merged: ProjectSnapshot = { ...createDefaultSnapshot(), ...parsed.snapshot };
+      const baseName =
+        parsed.title ||
+        selected.split(/[\\/]/).pop()?.replace(/\.(ftikz|json)$/i, '') ||
+        'Projeto';
+      const snapNow = buildCurrentSnapshot();
+      const newTab: ProjectTab = {
+        id: `tab-${Date.now()}`,
+        title: baseName,
+        filePath: selected,
+        dirty: false,
+        snapshot: merged,
+      };
+      setTabs((prev) => [
+        ...prev.map((tb) => (tb.id === activeTabId ? { ...tb, snapshot: snapNow } : tb)),
+        newTab,
+      ]);
+      setActiveTabId(newTab.id);
+      applySnapshot(merged);
+      setStatusPdfPath(null);
+      setStatusMsg(`Projeto aberto: ${selected}`);
+    } catch (e) {
+      setStatusPdfPath(null);
+      setStatusMsg(String(e));
+    }
+  };
+
+  React.useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        void handleSaveProject();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
 
   const insertPresetExpr = (curveId: string, expr: string, label: string) => {
     setCurves((p) => p.map((c) => (c.id === curveId ? { ...c, expr, label } : c)));
@@ -979,7 +1414,119 @@ export default function App() {
         </div>
       </header>
 
-      {statusMsg && <div className="ft-status">{statusMsg}</div>}
+      <div className="ft-tabbar">
+        <div className="ft-tabbar-list">
+          {tabs.map((tb) => {
+            const isActive = tb.id === activeTabId;
+            return (
+              <div
+                key={tb.id}
+                className={`ft-proj-tab ${isActive ? 'active' : ''}`}
+                onClick={() => switchTab(tb.id)}
+                onDoubleClick={() => {
+                  setEditingTabId(tb.id);
+                  setEditingTabTitle(tb.title);
+                }}
+                title={tb.filePath ? `${tb.title} (${tb.filePath})` : `${tb.title} — Clique duplo para renomear`}
+              >
+                <span className="ft-proj-badge">
+                  {(isActive ? mode : tb.snapshot.mode) === 'diagram' ? 'TikZ' : 'PGF'}
+                </span>
+                {editingTabId === tb.id ? (
+                  <input
+                    className="ft-ctx-input"
+                    style={{ width: 110, height: 18, fontSize: 11 }}
+                    autoFocus
+                    value={editingTabTitle}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) => setEditingTabTitle(e.target.value)}
+                    onBlur={() => {
+                      const trimmed = editingTabTitle.trim();
+                      if (trimmed) {
+                        setTabs((prev) =>
+                          prev.map((item) => (item.id === tb.id ? { ...item, title: trimmed } : item))
+                        );
+                      }
+                      setEditingTabId(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                      if (e.key === 'Escape') setEditingTabId(null);
+                    }}
+                  />
+                ) : (
+                  <span className="ft-proj-title">
+                    {tb.title}
+                    {tb.dirty ? ' •' : ''}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  className="ft-proj-close"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    closeTab(tb.id);
+                  }}
+                  title="Fechar aba"
+                >
+                  <X size={11} />
+                </button>
+              </div>
+            );
+          })}
+          <button
+            type="button"
+            className="ft-zoom-btn"
+            onClick={createNewTab}
+            title="Nova aba de projeto"
+          >
+            <Plus size={12} />
+          </button>
+        </div>
+
+        <div className="ft-tabbar-actions">
+          <button
+            type="button"
+            className="ft-ctx-chip"
+            onClick={handleOpenProject}
+            title="Abrir projeto salvo (.ftikz)"
+          >
+            <FolderOpen size={12} style={{ verticalAlign: 'middle', marginRight: 4 }} />
+            Abrir Projeto
+          </button>
+          <button
+            type="button"
+            className="ft-ctx-chip"
+            onClick={handleSaveProject}
+            title="Salvar projeto da aba atual (Ctrl+S)"
+          >
+            <Save size={12} style={{ verticalAlign: 'middle', marginRight: 4 }} />
+            Salvar Projeto
+          </button>
+        </div>
+      </div>
+
+      {statusMsg && (
+        <div className="ft-status">
+          <span>{statusMsg}</span>
+          {statusPdfPath && (
+            <button
+              type="button"
+              className="ft-status-link"
+              onClick={async () => {
+                try {
+                  await invoke('open_file_path', { path: statusPdfPath });
+                } catch (e) {
+                  setStatusMsg(String(e));
+                }
+              }}
+              title="Abrir o PDF gerado no visualizador padrão"
+            >
+              <ExternalLink size={12} /> Abrir PDF gerado
+            </button>
+          )}
+        </div>
+      )}
 
       <main
         className="ft-main"

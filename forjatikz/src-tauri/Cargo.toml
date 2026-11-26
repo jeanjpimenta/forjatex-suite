@@ -1,6 +1,6 @@
 [package]
 name = "forjatikz"
-version = "1.5.0"
+version = "1.5.1"
 description = "ForjaTikZ — Editor Visual de Diagramas TikZ e Gráficos PGFPlots"
 authors = ["Jean Pimenta <jean.pimenta@protonmail.com>", "Arkhé Code"]
 license = "GPL-3.0-or-later"

@@ -135,10 +135,119 @@ body {
 }
 
 .ft-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
   padding: 6px 14px;
   font-size: 12px;
   background: rgba(56, 189, 248, 0.12);
   border-bottom: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.ft-status-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 5px;
+  border: 1px solid var(--accent);
+  background: rgba(56, 189, 248, 0.16);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.ft-status-link:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.ft-tabbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 12px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.ft-tabbar-list {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 2px;
+}
+
+.ft-proj-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  max-width: 210px;
+}
+
+.ft-proj-tab.active {
+  background: var(--panel);
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.ft-proj-badge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: rgba(56, 189, 248, 0.15);
+  color: var(--accent);
+  text-transform: uppercase;
+}
+
+.ft-proj-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ft-proj-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.ft-proj-close:hover {
+  background: rgba(244, 63, 94, 0.18);
+  color: #f43f5e;
+}
+
+.ft-tabbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .ft-main {
