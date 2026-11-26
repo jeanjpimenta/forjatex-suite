@@ -24,6 +24,8 @@ import {
   Trash2,
   Workflow,
   X,
+  ZoomIn,
+  ZoomOut,
 } from 'lucide-react';
 import {
   generatePixQrDataUrl,
@@ -408,6 +410,17 @@ export default function App() {
     const saved = Number(localStorage.getItem('forjatikz_code_w_v1'));
     return Number.isFinite(saved) && saved >= 240 ? Math.min(620, saved) : 340;
   });
+  const [canvasZoom, setCanvasZoom] = useState<number>(1);
+
+  const adjustZoom = (delta: number) =>
+    setCanvasZoom((z) => Math.min(3, Math.max(0.4, Number((z + delta).toFixed(2)))));
+
+  const handleCanvasWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (e.ctrlKey) {
+      e.preventDefault();
+      adjustZoom(e.deltaY < 0 ? 0.15 : -0.15);
+    }
+  };
 
   const startResize = (side: 'left' | 'right', e: React.MouseEvent) => {
     e.preventDefault();
@@ -2222,10 +2235,12 @@ export default function App() {
                   )}
                 </div>
 
-                <svg
-                  className="ft-svg"
-                  viewBox="0 0 620 420"
-                  onMouseDown={(e) => {
+                <div className="ft-svg-viewport" onWheel={handleCanvasWheel}>
+                  <svg
+                    className="ft-svg"
+                    viewBox="0 0 620 420"
+                    style={{ width: `${Math.round(620 * canvasZoom)}px`, height: 'auto' }}
+                    onMouseDown={(e) => {
                     if (e.target === e.currentTarget) {
                       setSelectedIds([]);
                       setSelectedNodeId(null);
@@ -2530,11 +2545,17 @@ export default function App() {
                   );
                 })}
               </svg>
+                </div>
               </div>
               </>
             )
           ) : (
-            <svg className="ft-svg" viewBox="0 0 620 420">
+            <div className="ft-svg-viewport" onWheel={handleCanvasWheel}>
+              <svg
+                className="ft-svg"
+                viewBox="0 0 620 420"
+                style={{ width: `${Math.round(620 * canvasZoom)}px`, height: 'auto' }}
+              >
               <text x={310} y={24} fill="#e2e8f0" fontSize="14" fontWeight="600" textAnchor="middle">
                 {plotTitle}
               </text>
@@ -2900,6 +2921,36 @@ export default function App() {
                 {xLabel}
               </text>
             </svg>
+            </div>
+          )}
+
+          {!(mode === 'diagram' && customTikzTemplate) && (
+            <div className="ft-zoom-bar">
+              <button
+                type="button"
+                className="ft-zoom-btn"
+                onClick={() => adjustZoom(-0.15)}
+                title="Diminuir zoom (Ctrl + Scroll)"
+              >
+                <ZoomOut size={13} />
+              </button>
+              <button
+                type="button"
+                className="ft-zoom-btn"
+                onClick={() => setCanvasZoom(1)}
+                title="Redefinir zoom para 100%"
+              >
+                {Math.round(canvasZoom * 100)}%
+              </button>
+              <button
+                type="button"
+                className="ft-zoom-btn"
+                onClick={() => adjustZoom(0.15)}
+                title="Aumentar zoom (Ctrl + Scroll)"
+              >
+                <ZoomIn size={13} />
+              </button>
+            </div>
           )}
         </section>
 
