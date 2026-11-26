@@ -1,17 +1,17 @@
 {
   "updatedAt": "2026-11-25T00:00:00Z",
   "suite": {
-    "latestVersion": "1.2.3",
-    "installerFile": "ForjaTeX.Suite_1.2.3_x64_en-US.msi",
-    "installerUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTeX.Suite_1.2.3_x64_en-US.msi",
-    "msiFile": "ForjaTeX.Suite_1.2.3_x64_en-US.msi",
-    "msiUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTeX.Suite_1.2.3_x64_en-US.msi",
-    "exeFile": "ForjaTeX.Suite_1.2.3_x64-setup.exe",
-    "exeUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTeX.Suite_1.2.3_x64-setup.exe",
-    "debFile": "forjatex-suite_1.2.3_amd64.deb",
-    "debUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/forjatex-suite_1.2.3_amd64.deb",
-    "appImageFile": "ForjaTeX.Suite_1.2.3_amd64.AppImage",
-    "appImageUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTeX.Suite_1.2.3_amd64.AppImage"
+    "latestVersion": "1.2.4",
+    "installerFile": "ForjaTeX.Suite_1.2.4_x64_en-US.msi",
+    "installerUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTeX.Suite_1.2.4_x64_en-US.msi",
+    "msiFile": "ForjaTeX.Suite_1.2.4_x64_en-US.msi",
+    "msiUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTeX.Suite_1.2.4_x64_en-US.msi",
+    "exeFile": "ForjaTeX.Suite_1.2.4_x64-setup.exe",
+    "exeUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTeX.Suite_1.2.4_x64-setup.exe",
+    "debFile": "forjatex-suite_1.2.4_amd64.deb",
+    "debUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/forjatex-suite_1.2.4_amd64.deb",
+    "appImageFile": "ForjaTeX.Suite_1.2.4_amd64.AppImage",
+    "appImageUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTeX.Suite_1.2.4_amd64.AppImage"
   },
   "apps": [
     {
@@ -33,17 +33,17 @@
     {
       "id": "forjatikz",
       "name": "ForjaTikZ",
-      "latestVersion": "1.1.0",
-      "installerFile": "ForjaTikZ_1.1.0_x64_en-US.msi",
-      "installerUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTikZ_1.1.0_x64_en-US.msi",
-      "msiFile": "ForjaTikZ_1.1.0_x64_en-US.msi",
-      "msiUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTikZ_1.1.0_x64_en-US.msi",
-      "exeFile": "ForjaTikZ_1.1.0_x64-setup.exe",
-      "exeUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTikZ_1.1.0_x64-setup.exe",
-      "debFile": "forjatikz_1.1.0_amd64.deb",
-      "debUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/forjatikz_1.1.0_amd64.deb",
-      "appImageFile": "ForjaTikZ_1.1.0_amd64.AppImage",
-      "appImageUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTikZ_1.1.0_amd64.AppImage",
+      "latestVersion": "1.2.0",
+      "installerFile": "ForjaTikZ_1.2.0_x64_en-US.msi",
+      "installerUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTikZ_1.2.0_x64_en-US.msi",
+      "msiFile": "ForjaTikZ_1.2.0_x64_en-US.msi",
+      "msiUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTikZ_1.2.0_x64_en-US.msi",
+      "exeFile": "ForjaTikZ_1.2.0_x64-setup.exe",
+      "exeUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTikZ_1.2.0_x64-setup.exe",
+      "debFile": "forjatikz_1.2.0_amd64.deb",
+      "debUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/forjatikz_1.2.0_amd64.deb",
+      "appImageFile": "ForjaTikZ_1.2.0_amd64.AppImage",
+      "appImageUrl": "https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaTikZ_1.2.0_amd64.AppImage",
       "changelog": "v1.1.0: PGFPlots completo (Funções, Pontos/CSV, Barras, 3D, Log) + Modelos TikZ CTAN + Linux."
     }
   ]

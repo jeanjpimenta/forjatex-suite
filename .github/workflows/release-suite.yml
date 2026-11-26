@@ -169,7 +169,7 @@ jobs:
           manifest = {
               "updatedAt": datetime.now(timezone.utc).isoformat(),
               "suite": {
-                  "latestVersion": "1.2.3",
+                  "latestVersion": "1.2.4",
                   "installerFile": pick("suite", ".msi"),
                   "installerUrl": url(pick("suite", ".msi")),
                   "msiFile": pick("suite", ".msi"),
@@ -201,7 +201,7 @@ jobs:
                   {
                       "id": "forjatikz",
                       "name": "ForjaTikZ",
-                      "latestVersion": "1.1.0",
+                      "latestVersion": "1.2.0",
                       "installerFile": pick("forjatikz", ".msi"),
                       "installerUrl": url(pick("forjatikz", ".msi")),
                       "msiFile": pick("forjatikz", ".msi"),
