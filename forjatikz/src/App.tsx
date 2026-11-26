@@ -58,8 +58,97 @@ interface TikzEdge {
   bend: EdgeBend;
 }
 
-type PlotKind = 'function' | 'scatter' | 'bars' | 'surface3d';
+type PlotKind = 'function' | 'scatter' | 'bars' | 'histogram' | 'surface3d';
 type AxisScaleType = 'linear' | 'semilogx' | 'semilogy' | 'loglog';
+type AxisLinesMode = 'box' | 'middle' | 'left' | 'none';
+type LegendPos =
+  | 'north west'
+  | 'north'
+  | 'north east'
+  | 'west'
+  | 'center'
+  | 'east'
+  | 'south west'
+  | 'south'
+  | 'south east'
+  | 'outer north east';
+type ColormapName = 'viridis' | 'hot' | 'cool' | 'jet' | 'coolwarm' | 'plasma';
+
+const COLORMAP_GRADIENTS: Record<ColormapName, string> = {
+  viridis: 'linear-gradient(90deg, #440154, #3b528b, #21918c, #5ec962, #fde725)',
+  hot: 'linear-gradient(90deg, #000000, #e60000, #ffd200, #ffffff)',
+  cool: 'linear-gradient(90deg, #00ffff, #ff00ff)',
+  jet: 'linear-gradient(90deg, #00008f, #00afff, #7fff7f, #ffaf00, #8f0000)',
+  coolwarm: 'linear-gradient(90deg, #3b4cc0, #dddddd, #b40426)',
+  plasma: 'linear-gradient(90deg, #0d0887, #7e03a8, #cc4778, #f89540, #f0f921)',
+};
+
+function computeLinearRegression(pts: Array<{ x: number; y: number }>) {
+  if (pts.length < 2) return null;
+  const n = pts.length;
+  let sx = 0;
+  let sy = 0;
+  let sxx = 0;
+  let sxy = 0;
+  let syy = 0;
+  for (const p of pts) {
+    sx += p.x;
+    sy += p.y;
+    sxx += p.x * p.x;
+    sxy += p.x * p.y;
+    syy += p.y * p.y;
+  }
+  const denom = n * sxx - sx * sx;
+  if (Math.abs(denom) < 1e-12) return null;
+  const slope = (n * sxy - sx * sy) / denom;
+  const intercept = (sy - slope * sx) / n;
+  const ssTot = syy - (sy * sy) / n;
+  const ssRes = pts.reduce((acc, p) => {
+    const err = p.y - (slope * p.x + intercept);
+    return acc + err * err;
+  }, 0);
+  const r2 = ssTot > 1e-12 ? Math.max(0, 1 - ssRes / ssTot) : 1;
+  return { slope, intercept, r2 };
+}
+
+function parseHistValues(raw: string): number[] {
+  return raw
+    .split(/[\s,;]+/)
+    .map((s) => Number(s.trim()))
+    .filter((n) => Number.isFinite(n));
+}
+
+function computeHistogramBins(values: number[], numBins: number) {
+  if (values.length === 0) return [];
+  const minV = Math.min(...values);
+  const maxV = Math.max(...values);
+  const span = Math.max(1e-6, maxV - minV);
+  const bins = Math.max(2, Math.min(30, numBins));
+  const width = span / bins;
+  const counts = Array.from({ length: bins }, () => 0);
+  for (const v of values) {
+    const idx = Math.min(bins - 1, Math.floor((v - minV) / width));
+    counts[idx] += 1;
+  }
+  return counts.map((count, i) => ({
+    x0: minV + i * width,
+    x1: minV + (i + 1) * width,
+    count,
+  }));
+}
+
+function getPiTicks(xMin: number, xMax: number) {
+  const candidates = [
+    { val: -2 * Math.PI, tex: '$-2\\pi$', label: '-2π' },
+    { val: -Math.PI, tex: '$-\\pi$', label: '-π' },
+    { val: -Math.PI / 2, tex: '$-\\frac{\\pi}{2}$', label: '-π/2' },
+    { val: 0, tex: '$0$', label: '0' },
+    { val: Math.PI / 2, tex: '$\\frac{\\pi}{2}$', label: 'π/2' },
+    { val: Math.PI, tex: '$\\pi$', label: 'π' },
+    { val: 2 * Math.PI, tex: '$2\\pi$', label: '2π' },
+  ];
+  return candidates.filter((c) => c.val >= xMin - 0.05 && c.val <= xMax + 0.05);
+}
 
 interface PlotCurve {
   id: string;
@@ -185,6 +274,19 @@ export default function App() {
   const [useErrorBars, setUseErrorBars] = useState(true);
   const [barsRaw, setBarsRaw] = useState('Jan=15\nFev=28\nMar=22\nAbr=35');
   const [expr3d, setExpr3d] = useState('exp(-x^2 - y^2)');
+  const [axisLines, setAxisLines] = useState<AxisLinesMode>('box');
+  const [usePiTicks, setUsePiTicks] = useState(false);
+  const [legendPos, setLegendPos] = useState<LegendPos>('north west');
+  const [legendColumns, setLegendColumns] = useState<number>(1);
+  const [colormapName, setColormapName] = useState<ColormapName>('viridis');
+  const [showColorbar, setShowColorbar] = useState(true);
+  const [showRegression, setShowRegression] = useState(false);
+  const [histRaw, setHistRaw] = useState('1.2, 1.8, 2.1, 2.3, 2.4, 2.9, 3.0, 3.1, 3.5, 3.8, 4.1, 4.5, 2.7, 2.8, 3.2');
+  const [histBins, setHistBins] = useState(6);
+  const [csvImport, setCsvImport] = useState<{ headers: string[]; rows: string[][] } | null>(null);
+  const [csvColX, setCsvColX] = useState(0);
+  const [csvColY, setCsvColY] = useState(1);
+  const [csvColErr, setCsvColErr] = useState<number>(-1);
   const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
     const saved = Number(localStorage.getItem('forjatikz_sidebar_w_v1'));
     return Number.isFinite(saved) && saved >= 240 ? Math.min(560, saved) : 320;
@@ -233,6 +335,13 @@ export default function App() {
 
   const parsedScatter = useMemo(() => parsePoints(scatterRaw), [scatterRaw]);
   const parsedBars = useMemo(() => parseBars(barsRaw), [barsRaw]);
+  const regression = useMemo(() => computeLinearRegression(parsedScatter), [parsedScatter]);
+  const parsedHist = useMemo(() => parseHistValues(histRaw), [histRaw]);
+  const histBinsData = useMemo(
+    () => computeHistogramBins(parsedHist, histBins),
+    [parsedHist, histBins]
+  );
+  const piTicks = useMemo(() => getPiTicks(xMin, xMax), [xMin, xMax]);
 
   const tikzCode = useMemo(() => {
     if (mode === 'diagram') {
@@ -271,13 +380,40 @@ export default function App() {
         ? 'loglogaxis'
         : 'axis';
 
+    const axisLinesLine = axisLines !== 'box' ? `,\n    axis lines=${axisLines}` : '';
+    const legendColsLine = legendColumns > 1 ? `,\n    legend columns=${legendColumns}` : '';
+    const piLines =
+      usePiTicks && piTicks.length > 0
+        ? `,\n    xtick={${piTicks.map((p) => p.val.toFixed(4)).join(', ')}},\n    xticklabels={${piTicks.map((p) => p.tex).join(', ')}}`
+        : '';
+
     if (plotKind === 'bars') {
       const cats = parsedBars.map((b) => b.cat).join(', ');
       const coords = parsedBars.map((b) => `(${b.cat}, ${b.val})`).join(' ');
-      return `\\begin{tikzpicture}\n  \\begin{axis}[\n    ybar,\n    title={${plotTitle}},\n    xlabel={${xLabel}},\n    ylabel={${yLabel}},\n    symbolic x coords={${cats}},\n    xtick=data,\n    nodes near coords,\n    ymin=0,\n    grid=${gridMode}\n  ]\n    \\addplot[fill=blue!50, draw=blue!80!black] coordinates { ${coords} };\n  \\end{axis}\n\\end{tikzpicture}`;
+      return `\\begin{tikzpicture}\n  \\begin{axis}[\n    ybar,\n    title={${plotTitle}},\n    xlabel={${xLabel}},\n    ylabel={${yLabel}},\n    symbolic x coords={${cats}},\n    xtick=data,\n    nodes near coords,\n    ymin=0,\n    grid=${gridMode}${axisLinesLine}\n  ]\n    \\addplot[fill=blue!50, draw=blue!80!black] coordinates { ${coords} };\n  \\end{axis}\n\\end{tikzpicture}`;
+    }
+
+    if (plotKind === 'histogram') {
+      const rows = parsedHist.join('\n');
+      return `\\begin{tikzpicture}\n  \\begin{axis}[\n    title={${plotTitle}},\n    xlabel={${xLabel}},\n    ylabel={Frequência},\n    ymin=0,\n    grid=${gridMode}${axisLinesLine}\n  ]\n    \\addplot[hist={bins=${histBins}}, fill=blue!45, draw=blue!80!black] table[y index=0] {\n${rows}\n    };\n  \\end{axis}\n\\end{tikzpicture}`;
     }
 
     if (plotKind === 'scatter') {
+      if (showRegression) {
+        const tableRows = parsedScatter
+          .map((p) =>
+            useErrorBars && p.err !== undefined
+              ? `${p.x} ${p.y} ${p.err}`
+              : `${p.x} ${p.y}`
+          )
+          .join('\n');
+        const header = useErrorBars ? 'x y err' : 'x y';
+        const errPlotOpt = useErrorBars
+          ? ',\n      error bars/.cd, y dir=both, y explicit'
+          : '';
+        const errColOpt = useErrorBars ? ', y error=err' : '';
+        return `\\begin{tikzpicture}\n  \\pgfplotstableread{\n${header}\n${tableRows}\n  }\\scatterdata\n  \\begin{${axisEnv}}[\n    title={${plotTitle}},\n    xlabel={${xLabel}},\n    ylabel={${yLabel}},\n    grid=${gridMode}${axisLinesLine},\n    legend pos=${legendPos}${legendColsLine}\n  ]\n    \\addplot[only marks, mark=*, color=blue${errPlotOpt}] table[x=x, y=y${errColOpt}] {\\scatterdata};\n    \\addlegendentry{Dados}\n    \\addplot[thick, dashed, red] table[x=x, y={create col/linear regression={y=y}}] {\\scatterdata};\n    \\addlegendentry{Ajuste Linear}\n  \\end{${axisEnv}}\n\\end{tikzpicture}`;
+      }
       const coords = parsedScatter
         .map((p) =>
           useErrorBars && p.err !== undefined
@@ -288,11 +424,12 @@ export default function App() {
       const errOpt = useErrorBars
         ? ',\n      error bars/.cd, y dir=both, y explicit'
         : '';
-      return `\\begin{tikzpicture}\n  \\begin{${axisEnv}}[\n    title={${plotTitle}},\n    xlabel={${xLabel}},\n    ylabel={${yLabel}},\n    grid=${gridMode}\n  ]\n    \\addplot[\n      only marks,\n      mark=*,\n      color=blue${errOpt}\n    ] coordinates { ${coords} };\n  \\end{${axisEnv}}\n\\end{tikzpicture}`;
+      return `\\begin{tikzpicture}\n  \\begin{${axisEnv}}[\n    title={${plotTitle}},\n    xlabel={${xLabel}},\n    ylabel={${yLabel}},\n    grid=${gridMode}${axisLinesLine}\n  ]\n    \\addplot[\n      only marks,\n      mark=*,\n      color=blue${errOpt}\n    ] coordinates { ${coords} };\n  \\end{${axisEnv}}\n\\end{tikzpicture}`;
     }
 
     if (plotKind === 'surface3d') {
-      return `\\begin{tikzpicture}\n  \\begin{axis}[\n    title={${plotTitle}},\n    view={60}{30},\n    colormap name=viridis,\n    colorbar,\n    grid=${gridMode}\n  ]\n    \\addplot3[surf, domain=${xMin}:${xMax}, domain y=${yMin}:${yMax}, samples=24] {${expr3d}};\n  \\end{axis}\n\\end{tikzpicture}`;
+      const cbLine = showColorbar ? ',\n    colorbar' : '';
+      return `\\begin{tikzpicture}\n  \\begin{axis}[\n    title={${plotTitle}},\n    view={60}{30},\n    colormap name=${colormapName}${cbLine},\n    grid=${gridMode}\n  ]\n    \\addplot3[surf, domain=${xMin}:${xMax}, domain y=${yMin}:${yMax}, samples=24] {${expr3d}};\n  \\end{axis}\n\\end{tikzpicture}`;
     }
 
     const trigLine = useRadians ? ',\n    trig format plots=rad' : '';
@@ -305,14 +442,14 @@ export default function App() {
       const fillOpt = c.fillArea ? `, fill=${c.color}!20` : '';
       return `    \\addplot[${opts.join(', ')}${fillOpt}] {${c.expr}}${areaFill};\n    \\addlegendentry{$${c.label}$}`;
     });
-    return `\\begin{tikzpicture}\n  \\begin{${axisEnv}}[\n    title={${plotTitle}},\n    xlabel={${xLabel}},\n    ylabel={${yLabel}},\n    xmin=${xMin}, xmax=${xMax},\n    ymin=${yMin}, ymax=${yMax},\n    grid=${gridMode}${trigLine},\n    legend pos=north west\n  ]\n${curveLines.join('\n')}\n  \\end{${axisEnv}}\n\\end{tikzpicture}`;
+    return `\\begin{tikzpicture}\n  \\begin{${axisEnv}}[\n    title={${plotTitle}},\n    xlabel={${xLabel}},\n    ylabel={${yLabel}},\n    xmin=${xMin}, xmax=${xMax},\n    ymin=${yMin}, ymax=${yMax},\n    grid=${gridMode}${axisLinesLine}${piLines}${trigLine},\n    legend pos=${legendPos}${legendColsLine}\n  ]\n${curveLines.join('\n')}\n  \\end{${axisEnv}}\n\\end{tikzpicture}`;
   }, [
     mode,
     customTikzTemplate,
     nodes,
     edges,
-    axisScale,
     plotKind,
+    axisScale,
     plotTitle,
     xLabel,
     yLabel,
@@ -321,11 +458,21 @@ export default function App() {
     yMin,
     yMax,
     gridMode,
+    axisLines,
+    usePiTicks,
+    piTicks,
+    legendPos,
+    legendColumns,
+    colormapName,
+    showColorbar,
     useRadians,
     curves,
-    parsedBars,
     parsedScatter,
     useErrorBars,
+    showRegression,
+    parsedBars,
+    parsedHist,
+    histBins,
     expr3d,
   ]);
 
@@ -684,6 +831,13 @@ export default function App() {
                 </button>
                 <button
                   type="button"
+                  className={`ft-btn ${plotKind === 'histogram' ? 'primary' : ''}`}
+                  onClick={() => setPlotKind('histogram')}
+                >
+                  <BarChart3 size={13} /> Histograma
+                </button>
+                <button
+                  type="button"
                   className={`ft-btn ${plotKind === 'surface3d' ? 'primary' : ''}`}
                   onClick={() => setPlotKind('surface3d')}
                 >
@@ -768,6 +922,112 @@ export default function App() {
                     </select>
                   </label>
                 </div>
+
+                <div className="ft-grid2">
+                  <label>
+                    <span>Eixos (axis lines)</span>
+                    <select
+                      value={axisLines}
+                      onChange={(e) => setAxisLines(e.target.value as AxisLinesMode)}
+                    >
+                      <option value="box">Caixa (box)</option>
+                      <option value="middle">Cruzado (middle)</option>
+                      <option value="left">Em L (left)</option>
+                      <option value="none">Ocultar (none)</option>
+                    </select>
+                  </label>
+
+                  {(plotKind === 'function' || plotKind === 'scatter') && (
+                    <label>
+                      <span>Colunas Legenda</span>
+                      <select
+                        value={legendColumns}
+                        onChange={(e) => setLegendColumns(Number(e.target.value))}
+                      >
+                        <option value={1}>1 coluna</option>
+                        <option value={2}>2 colunas</option>
+                        <option value={3}>3 colunas</option>
+                      </select>
+                    </label>
+                  )}
+                </div>
+
+                {plotKind === 'function' && (
+                  <label className="ft-check">
+                    <input
+                      type="checkbox"
+                      checked={usePiTicks}
+                      onChange={(e) => setUsePiTicks(e.target.checked)}
+                    />
+                    <span>Ticks em múltiplos de π (xtick)</span>
+                  </label>
+                )}
+
+                {(plotKind === 'function' || plotKind === 'scatter') && (
+                  <div>
+                    <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>
+                      Posição da Legenda ({legendPos})
+                    </div>
+                    <div className="ft-legend-grid">
+                      {(
+                        [
+                          'north west',
+                          'north',
+                          'north east',
+                          'west',
+                          'center',
+                          'east',
+                          'south west',
+                          'south',
+                          'south east',
+                        ] as LegendPos[]
+                      ).map((pos) => (
+                        <button
+                          key={pos}
+                          type="button"
+                          className={`ft-legend-cell ${legendPos === pos ? 'active' : ''}`}
+                          onClick={() => setLegendPos(pos)}
+                          title={pos}
+                        >
+                          ●
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {plotKind === 'surface3d' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <div style={{ fontSize: 11, color: 'var(--muted)' }}>
+                      Colormap ({colormapName})
+                    </div>
+                    <div className="ft-colormap-list">
+                      {(Object.keys(COLORMAP_GRADIENTS) as ColormapName[]).map((cm) => (
+                        <button
+                          key={cm}
+                          type="button"
+                          className={`ft-colormap-btn ${colormapName === cm ? 'active' : ''}`}
+                          onClick={() => setColormapName(cm)}
+                          title={cm}
+                        >
+                          <span
+                            className="ft-colormap-swatch"
+                            style={{ background: COLORMAP_GRADIENTS[cm] }}
+                          />
+                          <span>{cm}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <label className="ft-check">
+                      <input
+                        type="checkbox"
+                        checked={showColorbar}
+                        onChange={(e) => setShowColorbar(e.target.checked)}
+                      />
+                      <span>Exibir barra de cores (colorbar)</span>
+                    </label>
+                  </div>
+                )}
               </div>
 
               {plotKind === 'function' && (
@@ -924,6 +1184,112 @@ export default function App() {
                   <div className="ft-help-box">
                     Um ponto por linha separado por vírgula ou espaço. Ex: <code>1, 2.3, 0.3</code>
                   </div>
+                  <label className="ft-btn" style={{ justifyContent: 'center', cursor: 'pointer' }}>
+                    Importar CSV / TSV
+                    <input
+                      type="file"
+                      accept=".csv,.tsv,.dat,.txt"
+                      style={{ display: 'none' }}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          const txt = String(reader.result || '');
+                          const lines = txt
+                            .split(/\r?\n/)
+                            .map((l) => l.trim())
+                            .filter(Boolean);
+                          if (lines.length < 2) return;
+                          const sep = lines[0].includes(';') ? ';' : lines[0].includes('\t') ? '\t' : ',';
+                          const rows = lines.map((l) => l.split(sep).map((c) => c.trim()));
+                          const firstIsHeader = rows[0].some((c) => Number.isNaN(Number(c)));
+                          const headers = firstIsHeader
+                            ? rows[0]
+                            : rows[0].map((_, i) => `Coluna ${i + 1}`);
+                          const dataRows = firstIsHeader ? rows.slice(1) : rows;
+                          setCsvImport({ headers, rows: dataRows });
+                          setCsvColX(0);
+                          setCsvColY(Math.min(1, headers.length - 1));
+                          setCsvColErr(headers.length > 2 ? 2 : -1);
+                        };
+                        reader.readAsText(file);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+
+                  {csvImport && (
+                    <div className="ft-curve-card">
+                      <div className="ft-edge-top">
+                        <strong>Mapear Colunas CSV ({csvImport.rows.length} linhas)</strong>
+                        <button
+                          type="button"
+                          className="ft-icon-del"
+                          onClick={() => setCsvImport(null)}
+                        >
+                          ×
+                        </button>
+                      </div>
+                      <div className="ft-grid2">
+                        <label>
+                          <span>Coluna X</span>
+                          <select value={csvColX} onChange={(e) => setCsvColX(Number(e.target.value))}>
+                            {csvImport.headers.map((h, i) => (
+                              <option key={i} value={i}>
+                                {h}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label>
+                          <span>Coluna Y</span>
+                          <select value={csvColY} onChange={(e) => setCsvColY(Number(e.target.value))}>
+                            {csvImport.headers.map((h, i) => (
+                              <option key={i} value={i}>
+                                {h}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
+                      <label>
+                        <span>Erro Y (opcional)</span>
+                        <select value={csvColErr} onChange={(e) => setCsvColErr(Number(e.target.value))}>
+                          <option value={-1}>Nenhum</option>
+                          {csvImport.headers.map((h, i) => (
+                            <option key={i} value={i}>
+                              {h}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <button
+                        type="button"
+                        className="ft-btn primary"
+                        onClick={() => {
+                          const mapped = csvImport.rows
+                            .map((r) => {
+                              const xv = Number(r[csvColX]);
+                              const yv = Number(r[csvColY]);
+                              if (!Number.isFinite(xv) || !Number.isFinite(yv)) return null;
+                              if (csvColErr >= 0) {
+                                const ev = Number(r[csvColErr]);
+                                if (Number.isFinite(ev)) return `${xv}, ${yv}, ${ev}`;
+                              }
+                              return `${xv}, ${yv}`;
+                            })
+                            .filter(Boolean)
+                            .join('\n');
+                          if (mapped) setScatterRaw(mapped);
+                          setCsvImport(null);
+                        }}
+                      >
+                        Aplicar Dados
+                      </button>
+                    </div>
+                  )}
+
                   <textarea
                     rows={5}
                     value={scatterRaw}
@@ -938,6 +1304,39 @@ export default function App() {
                     />
                     <span>Mostrar barras de erro (3ª coluna)</span>
                   </label>
+                  <label className="ft-check">
+                    <input
+                      type="checkbox"
+                      checked={showRegression}
+                      onChange={(e) => setShowRegression(e.target.checked)}
+                    />
+                    <span>Linha de tendência (Regressão Linear)</span>
+                  </label>
+                </div>
+              )}
+
+              {plotKind === 'histogram' && (
+                <div className="ft-props">
+                  <div className="ft-sec-title">3. Dados para Histograma (hist)</div>
+                  <div className="ft-help-box">
+                    Insira valores numéricos separados por vírgula, espaço ou quebra de linha.
+                  </div>
+                  <label>
+                    <span>Quantidade de classes (bins): {histBins}</span>
+                    <input
+                      type="range"
+                      min={3}
+                      max={20}
+                      value={histBins}
+                      onChange={(e) => setHistBins(Number(e.target.value))}
+                    />
+                  </label>
+                  <textarea
+                    rows={5}
+                    value={histRaw}
+                    onChange={(e) => setHistRaw(e.target.value)}
+                    className="ft-textarea"
+                  />
                 </div>
               )}
 
@@ -1133,8 +1532,19 @@ export default function App() {
               <text x={310} y={24} fill="#e2e8f0" fontSize="14" fontWeight="600" textAnchor="middle">
                 {plotTitle}
               </text>
-              {/* Plot Frame */}
-              <rect x={68} y={42} width={492} height={312} fill="none" stroke="#475569" strokeWidth={1.2} />
+              {/* Plot Frame according to axisLines */}
+              {axisLines === 'box' && (
+                <rect x={68} y={42} width={492} height={312} fill="none" stroke="#475569" strokeWidth={1.2} />
+              )}
+              {axisLines === 'left' && (
+                <polyline points="68,42 68,354 560,354" fill="none" stroke="#64748b" strokeWidth={1.4} />
+              )}
+              {axisLines === 'middle' && (
+                <>
+                  <line x1={68} y1={198} x2={560} y2={198} stroke="#64748b" strokeWidth={1.3} />
+                  <line x1={314} y1={42} x2={314} y2={354} stroke="#64748b" strokeWidth={1.3} />
+                </>
+              )}
               {/* Grid + Ticks */}
               {gridMode !== 'none' &&
                 Array.from({ length: 5 }, (_, i) => i).map((step) => {
@@ -1146,17 +1556,30 @@ export default function App() {
                     <g key={step}>
                       <line x1={gx} y1={42} x2={gx} y2={354} stroke="#1e293b" strokeWidth={0.9} />
                       <line x1={68} y1={gy} x2={560} y2={gy} stroke="#1e293b" strokeWidth={0.9} />
-                      {plotKind !== 'bars' && (
+                      {plotKind !== 'bars' && plotKind !== 'histogram' && (
                         <>
-                          <text x={gx} y={372} fill="#94a3b8" fontSize="10" textAnchor="middle">
-                            {xv.toFixed(1)}
-                          </text>
+                          {!usePiTicks && (
+                            <text x={gx} y={372} fill="#94a3b8" fontSize="10" textAnchor="middle">
+                              {xv.toFixed(1)}
+                            </text>
+                          )}
                           <text x={58} y={gy + 3} fill="#94a3b8" fontSize="10" textAnchor="end">
                             {yv.toFixed(1)}
                           </text>
                         </>
                       )}
                     </g>
+                  );
+                })}
+
+              {usePiTicks &&
+                plotKind === 'function' &&
+                piTicks.map((pt) => {
+                  const px = 68 + ((pt.val - xMin) / Math.max(0.001, xMax - xMin)) * 492;
+                  return (
+                    <text key={pt.label} x={px} y={372} fill="#38bdf8" fontSize="10" textAnchor="middle">
+                      {pt.label}
+                    </text>
                   );
                 })}
 
@@ -1187,11 +1610,68 @@ export default function App() {
                   );
                 })}
 
-              {plotKind === 'scatter' &&
-                parsedScatter.map((p, idx) => {
-                  const sx = 68 + ((p.x - xMin) / Math.max(0.001, xMax - xMin)) * 492;
-                  const sy = 354 - ((p.y - yMin) / Math.max(0.001, yMax - yMin)) * 312;
-                  return <circle key={idx} cx={sx} cy={sy} r={4.5} fill="#38bdf8" />;
+              {plotKind === 'scatter' && (
+                <>
+                  {parsedScatter.map((p, idx) => {
+                    const sx = 68 + ((p.x - xMin) / Math.max(0.001, xMax - xMin)) * 492;
+                    const sy = 354 - ((p.y - yMin) / Math.max(0.001, yMax - yMin)) * 312;
+                    return <circle key={idx} cx={sx} cy={sy} r={4.5} fill="#38bdf8" />;
+                  })}
+                  {showRegression && regression && (
+                    <>
+                      <line
+                        x1={68}
+                        y1={
+                          354 -
+                          ((regression.slope * xMin + regression.intercept - yMin) /
+                            Math.max(0.001, yMax - yMin)) *
+                            312
+                        }
+                        x2={560}
+                        y2={
+                          354 -
+                          ((regression.slope * xMax + regression.intercept - yMin) /
+                            Math.max(0.001, yMax - yMin)) *
+                            312
+                        }
+                        stroke="#f43f5e"
+                        strokeWidth={2}
+                        strokeDasharray="6 4"
+                      />
+                      <text x={552} y={58} fill="#f43f5e" fontSize="10.5" textAnchor="end">
+                        y = {regression.slope.toFixed(2)}x {regression.intercept >= 0 ? '+' : ''}{' '}
+                        {regression.intercept.toFixed(2)} (R² = {regression.r2.toFixed(3)})
+                      </text>
+                    </>
+                  )}
+                </>
+              )}
+
+              {plotKind === 'histogram' &&
+                histBinsData.map((b, idx) => {
+                  const maxC = Math.max(1, ...histBinsData.map((x) => x.count));
+                  const bw = 492 / Math.max(1, histBinsData.length);
+                  const bx = 68 + idx * bw;
+                  const bh = (b.count / maxC) * 280;
+                  const by = 354 - bh;
+                  return (
+                    <g key={idx}>
+                      <rect
+                        x={bx + 1}
+                        y={by}
+                        width={Math.max(2, bw - 2)}
+                        height={bh}
+                        fill="#38bdf8"
+                        fillOpacity={0.65}
+                        stroke="#0284c7"
+                      />
+                      {b.count > 0 && (
+                        <text x={bx + bw / 2} y={by - 4} fill="#e2e8f0" fontSize="9.5" textAnchor="middle">
+                          {b.count}
+                        </text>
+                      )}
+                    </g>
+                  );
                 })}
 
               {plotKind === 'bars' &&
@@ -1238,7 +1718,12 @@ export default function App() {
           <div className="ft-sec-title">{t('generatedCode')}</div>
           <pre className="ft-code">{tikzCode}</pre>
           <div className="ft-hint">
-            {t('preamble')}: <code>\usepackage{'{tikz, pgfplots}'}</code>
+            {t('preamble')}:{' '}
+            <code>
+              {showRegression && plotKind === 'scatter'
+                ? '\\usepackage{tikz, pgfplots, pgfplotstable}'
+                : '\\usepackage{tikz, pgfplots}'}
+            </code>
             <br />
             <code>\pgfplotsset{'{compat=1.18}'}</code>
           </div>
