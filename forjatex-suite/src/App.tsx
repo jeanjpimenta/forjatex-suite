@@ -183,7 +183,18 @@ const DEFAULT_APPS: SuiteAppEntry[] = [
 ];
 
 const MANIFEST_KEY = 'forjatex_suite_manifest_url_v1';
+const SORT_KEY = 'forjatex_suite_sort_by_v1';
+const THEME_KEY = 'forjatex_suite_theme_v1';
+const DOWNLOAD_DIR_KEY = 'forjatex_suite_download_dir_v1';
+const AUTOCHECK_MIN_KEY = 'forjatex_suite_autocheck_min_v1';
 const GITHUB_REPO_URL = 'https://github.com/jeanjpimenta/forjatex-suite';
+const DISCORD_INVITE_URL = 'https://discord.gg/HSwh6MM9Bn';
+
+interface CacheInfo {
+  cache_dir: string;
+  file_count: number;
+  total_bytes: number;
+}
 
 function formatMb(bytes: number): string {
   return (bytes / (1024 * 1024)).toFixed(1);
@@ -202,10 +213,13 @@ function compareSemver(a: string, b: string): number {
 }
 
 export default function App() {
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const saved = localStorage.getItem(THEME_KEY);
+    return saved === 'dark' ? 'dark' : 'light';
+  });
   const [locale, setLocale] = useState<SuiteLocale>(() => detectSuiteLocale());
   const t = (key: string) => SUITE_DICT[locale][key] ?? SUITE_DICT['pt-BR'][key] ?? key;
-  const [suiteVersion, setSuiteVersion] = useState('1.2.0');
+  const [suiteVersion, setSuiteVersion] = useState('1.2.3');
   const [suiteRemote, setSuiteRemote] = useState<SuiteSelfInfo | null>(null);
   const [apps, setApps] = useState<SuiteAppEntry[]>(DEFAULT_APPS);
   const [installedMap, setInstalledMap] = useState<Record<string, InstalledAppInfo>>({});
@@ -215,9 +229,21 @@ export default function App() {
       localStorage.getItem(MANIFEST_KEY) ||
       'https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/suite-manifest.json'
   );
+  const [downloadDir, setDownloadDir] = useState<string>(
+    () => localStorage.getItem(DOWNLOAD_DIR_KEY) || ''
+  );
+  const [autoCheckMin, setAutoCheckMin] = useState<number>(() => {
+    const raw = Number(localStorage.getItem(AUTOCHECK_MIN_KEY));
+    return Number.isFinite(raw) && raw >= 0 ? raw : 15;
+  });
+  const [cacheInfo, setCacheInfo] = useState<CacheInfo | null>(null);
+  const [settingsTab, setSettingsTab] = useState<'general' | 'updates' | 'storage' | 'about'>('general');
   const [search, setSearch] = useState('');
   const isLinux = typeof navigator !== 'undefined' && /linux/i.test(navigator.userAgent);
-  const [sortBy, setSortBy] = useState<'name' | 'status'>('name');
+  const [sortBy, setSortBy] = useState<'name' | 'status'>(() => {
+    const saved = localStorage.getItem(SORT_KEY);
+    return saved === 'status' ? 'status' : 'name';
+  });
   const [installerFormat, setInstallerFormat] = useState<'msi' | 'exe' | 'deb' | 'appimage'>(() => {
     const saved = localStorage.getItem('forjatex_suite_installer_fmt_v1');
     if (isLinux) return saved === 'appimage' ? 'appimage' : 'deb';
@@ -254,12 +280,25 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem(THEME_KEY, theme);
   }, [theme]);
+
+  const refreshCacheInfo = async (dirOverride?: string) => {
+    try {
+      const info = await invoke<CacheInfo>('get_installer_cache_info', {
+        downloadDir: (dirOverride ?? downloadDir).trim() || null,
+      });
+      setCacheInfo(info);
+    } catch {
+      // ignore in non-tauri preview
+    }
+  };
 
   useEffect(() => {
     getVersion().then(setSuiteVersion).catch(() => {});
     scanInstalled();
     void checkUpdates(true);
+    void refreshCacheInfo();
     generatePixQrDataUrl('DoacaoFjTexSuite')
       .then(({ brCode, qrUrl }) => {
         setPixBrCode(brCode);
@@ -270,15 +309,20 @@ export default function App() {
     const unlistenPromise = listen<DownloadProgress>('download-progress', (ev) => {
       setProgressMap((prev) => ({ ...prev, [ev.payload.id]: ev.payload }));
     });
-    const timer = window.setInterval(() => {
-      void checkUpdates(true);
-    }, 15 * 60 * 1000);
     return () => {
-      window.clearInterval(timer);
       unlistenPromise.then((fn) => fn());
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (autoCheckMin <= 0) return;
+    const timer = window.setInterval(() => {
+      void checkUpdates(true);
+    }, autoCheckMin * 60 * 1000);
+    return () => window.clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoCheckMin, manifestUrl]);
 
   useEffect(() => {
     const close = () => setOpenMenuId(null);
@@ -367,6 +411,7 @@ export default function App() {
         fileName: pkg.fileName,
         silent,
         selfUpdate: false,
+        downloadDir: downloadDir.trim() || null,
       });
       setBannerText(msg);
       await scanInstalled();
@@ -393,6 +438,7 @@ export default function App() {
         fileName: pkg.fileName,
         silent: true,
         selfUpdate: true,
+        downloadDir: downloadDir.trim() || null,
       });
     } catch (e) {
       setBannerText(`Erro ao atualizar ForjaTeX Suite: ${String(e)}`);
@@ -532,31 +578,311 @@ export default function App() {
         )}
 
         {showConfig && (
-          <div className="ac-config-bar">
-            <label>
-              <span>{t('manifestUrlLabel')}</span>
-              <input
-                type="text"
-                value={manifestUrl}
-                onChange={(e) => setManifestUrl(e.target.value)}
-              />
-            </label>
-            <button
-              type="button"
-              className="ac-action-main"
-              style={{ flex: 'none', padding: '0 12px', height: 30 }}
-              onClick={() =>
-                window.open(
-                  locale === 'pt-BR' ? '/manuals/manual-pt-BR.pdf' : '/manuals/manual-en-US.pdf',
-                  '_blank'
-                )
-              }
-            >
-              {locale === 'pt-BR' ? 'MANUAL (PDF · PT-BR)' : 'MANUAL (PDF · EN-US)'}
-            </button>
-            <button type="button" className="ac-btn-dark" onClick={handleCheckUpdates}>
-              {t('saveSync')}
-            </button>
+          <div className="ac-modal-backdrop" onClick={() => setShowConfig(false)}>
+            <div className="ac-modal ac-settings-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="ac-modal-head">
+                <div className="ac-modal-tabs">
+                  <button
+                    type="button"
+                    className={settingsTab === 'general' ? 'active' : ''}
+                    onClick={() => setSettingsTab('general')}
+                  >
+                    {locale === 'pt-BR' ? 'GERAL & APARÊNCIA' : 'GENERAL & APPEARANCE'}
+                  </button>
+                  <button
+                    type="button"
+                    className={settingsTab === 'updates' ? 'active' : ''}
+                    onClick={() => setSettingsTab('updates')}
+                  >
+                    {locale === 'pt-BR' ? 'ATUALIZAÇÕES' : 'UPDATES'}
+                  </button>
+                  <button
+                    type="button"
+                    className={settingsTab === 'storage' ? 'active' : ''}
+                    onClick={() => {
+                      setSettingsTab('storage');
+                      void refreshCacheInfo();
+                    }}
+                  >
+                    {locale === 'pt-BR' ? 'DOWNLOADS & CACHE' : 'DOWNLOADS & CACHE'}
+                  </button>
+                  <button
+                    type="button"
+                    className={settingsTab === 'about' ? 'active' : ''}
+                    onClick={() => setSettingsTab('about')}
+                  >
+                    {locale === 'pt-BR' ? 'SOBRE & LOGS' : 'ABOUT & LOGS'}
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  className="ac-banner-close"
+                  onClick={() => setShowConfig(false)}
+                >
+                  <X size={14} />
+                </button>
+              </div>
+
+              <div className="ac-modal-body ac-settings-body">
+                {settingsTab === 'general' && (
+                  <div className="ac-settings-grid">
+                    <label className="ac-settings-field">
+                      <span>{locale === 'pt-BR' ? 'Idioma da interface' : 'Interface language'}</span>
+                      <select
+                        className="ac-select"
+                        value={locale}
+                        onChange={(e) => {
+                          const next = e.target.value as SuiteLocale;
+                          setLocale(next);
+                          saveSuiteLocale(next);
+                        }}
+                      >
+                        <option value="pt-BR">Português (Brasil)</option>
+                        <option value="en">English (US)</option>
+                      </select>
+                    </label>
+
+                    <label className="ac-settings-field">
+                      <span>{locale === 'pt-BR' ? 'Tema visual' : 'Visual theme'}</span>
+                      <select
+                        className="ac-select"
+                        value={theme}
+                        onChange={(e) => setTheme(e.target.value as 'light' | 'dark')}
+                      >
+                        <option value="light">{locale === 'pt-BR' ? 'Claro (ArtCraft)' : 'Light (ArtCraft)'}</option>
+                        <option value="dark">{locale === 'pt-BR' ? 'Escuro' : 'Dark'}</option>
+                      </select>
+                    </label>
+
+                    <label className="ac-settings-field">
+                      <span>{locale === 'pt-BR' ? 'Ordenação padrão dos apps' : 'Default app sorting'}</span>
+                      <select
+                        className="ac-select"
+                        value={sortBy}
+                        onChange={(e) => {
+                          const next = e.target.value as 'name' | 'status';
+                          setSortBy(next);
+                          localStorage.setItem(SORT_KEY, next);
+                        }}
+                      >
+                        <option value="name">{t('sortName')}</option>
+                        <option value="status">{t('sortStatus')}</option>
+                      </select>
+                    </label>
+
+                    <label className="ac-settings-field">
+                      <span>{locale === 'pt-BR' ? 'Formato padrão de instalador' : 'Default installer format'}</span>
+                      <select
+                        className="ac-select"
+                        value={installerFormat}
+                        onChange={(e) => {
+                          const fmt = e.target.value as 'msi' | 'exe' | 'deb' | 'appimage';
+                          setInstallerFormat(fmt);
+                          localStorage.setItem('forjatex_suite_installer_fmt_v1', fmt);
+                        }}
+                      >
+                        {isLinux ? (
+                          <>
+                            <option value="deb">.DEB (Ubuntu/Debian)</option>
+                            <option value="appimage">.AppImage</option>
+                          </>
+                        ) : (
+                          <>
+                            <option value="msi">.MSI (Windows Installer)</option>
+                            <option value="exe">.EXE (NSIS)</option>
+                          </>
+                        )}
+                      </select>
+                    </label>
+                  </div>
+                )}
+
+                {settingsTab === 'updates' && (
+                  <div className="ac-settings-stack">
+                    <label className="ac-settings-field">
+                      <span>{t('manifestUrlLabel')}</span>
+                      <input
+                        type="text"
+                        className="ac-settings-input"
+                        value={manifestUrl}
+                        onChange={(e) => {
+                          setManifestUrl(e.target.value);
+                          localStorage.setItem(MANIFEST_KEY, e.target.value);
+                        }}
+                      />
+                    </label>
+
+                    <label className="ac-settings-field">
+                      <span>
+                        {locale === 'pt-BR'
+                          ? 'Frequência de verificação automática'
+                          : 'Automatic update check frequency'}
+                      </span>
+                      <select
+                        className="ac-select"
+                        value={autoCheckMin}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setAutoCheckMin(val);
+                          localStorage.setItem(AUTOCHECK_MIN_KEY, String(val));
+                        }}
+                      >
+                        <option value={5}>{locale === 'pt-BR' ? 'Ao iniciar + a cada 5 minutos' : 'On launch + every 5 minutes'}</option>
+                        <option value={15}>{locale === 'pt-BR' ? 'Ao iniciar + a cada 15 minutos (Padrão)' : 'On launch + every 15 minutes (Default)'}</option>
+                        <option value={60}>{locale === 'pt-BR' ? 'Ao iniciar + a cada 60 minutos' : 'On launch + every 60 minutes'}</option>
+                        <option value={0}>{locale === 'pt-BR' ? 'Apenas ao iniciar o Suite' : 'Only on Suite launch'}</option>
+                      </select>
+                    </label>
+
+                    <div className="ac-settings-row">
+                      <span className="ac-donate-desc">
+                        {locale === 'pt-BR' ? 'Última verificação:' : 'Last checked:'} <strong>{lastChecked}</strong>
+                      </span>
+                      <button
+                        type="button"
+                        className="ac-btn-dark"
+                        onClick={() => {
+                          void handleCheckUpdates();
+                        }}
+                      >
+                        {t('saveSync')}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {settingsTab === 'storage' && (
+                  <div className="ac-settings-stack">
+                    <label className="ac-settings-field">
+                      <span>
+                        {locale === 'pt-BR'
+                          ? 'Pasta de download dos instaladores (vazio = pasta temporária do sistema)'
+                          : 'Installer download folder (empty = system temp directory)'}
+                      </span>
+                      <div className="ac-settings-row">
+                        <input
+                          type="text"
+                          className="ac-settings-input"
+                          placeholder={cacheInfo?.cache_dir || '%TEMP%\\forjatex-suite'}
+                          value={downloadDir}
+                          onChange={(e) => {
+                            setDownloadDir(e.target.value);
+                            localStorage.setItem(DOWNLOAD_DIR_KEY, e.target.value);
+                          }}
+                          onBlur={() => void refreshCacheInfo()}
+                        />
+                        <button
+                          type="button"
+                          className="ac-btn-dark"
+                          onClick={() => {
+                            setDownloadDir('');
+                            localStorage.removeItem(DOWNLOAD_DIR_KEY);
+                            void refreshCacheInfo('');
+                          }}
+                        >
+                          {locale === 'pt-BR' ? 'Padrão' : 'Default'}
+                        </button>
+                      </div>
+                    </label>
+
+                    <div className="ac-settings-cache-box">
+                      <div>
+                        <strong>{locale === 'pt-BR' ? 'Cache de instaladores' : 'Installer cache'}</strong>
+                        <div className="ac-donate-desc">
+                          {cacheInfo
+                            ? `${cacheInfo.file_count} arquivo(s) · ${formatMb(cacheInfo.total_bytes)} MB em ${cacheInfo.cache_dir}`
+                            : '...'}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        className="ac-btn-dark"
+                        onClick={async () => {
+                          try {
+                            const freed = await invoke<number>('clear_installer_cache', {
+                              downloadDir: downloadDir.trim() || null,
+                            });
+                            await refreshCacheInfo();
+                            setBannerText(
+                              locale === 'pt-BR'
+                                ? `Cache limpo (${formatMb(freed)} MB liberados).`
+                                : `Cache cleared (${formatMb(freed)} MB freed).`
+                            );
+                          } catch (e) {
+                            setBannerText(String(e));
+                          }
+                        }}
+                      >
+                        {locale === 'pt-BR' ? 'Limpar Cache' : 'Clear Cache'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {settingsTab === 'about' && (
+                  <div className="ac-settings-stack">
+                    <div className="ac-settings-cache-box">
+                      <div>
+                        <strong>ForjaTeX App Suite v{suiteVersion}</strong>
+                        <div className="ac-donate-desc">
+                          {locale === 'pt-BR' ? 'Sistema detectado:' : 'Detected OS:'}{' '}
+                          <strong>{isLinux ? 'Linux' : 'Windows'}</strong> · GNU GPL v3.0
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        className="ac-action-main"
+                        style={{ flex: 'none', padding: '0 12px', height: 30 }}
+                        onClick={() =>
+                          window.open(
+                            locale === 'pt-BR' ? '/manuals/manual-pt-BR.pdf' : '/manuals/manual-en-US.pdf',
+                            '_blank'
+                          )
+                        }
+                      >
+                        {locale === 'pt-BR' ? 'MANUAL (PDF · PT-BR)' : 'MANUAL (PDF · EN-US)'}
+                      </button>
+                    </div>
+
+                    <div className="ac-settings-row" style={{ flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        className="ac-btn-dark"
+                        onClick={() => open('https://forjatex.com.br')}
+                      >
+                        forjatex.com.br
+                      </button>
+                      <button
+                        type="button"
+                        className="ac-btn-dark"
+                        onClick={() => open(`${GITHUB_REPO_URL}/releases`)}
+                      >
+                        GitHub Releases
+                      </button>
+                      <button
+                        type="button"
+                        className="ac-btn-dark"
+                        onClick={() => open(DISCORD_INVITE_URL)}
+                      >
+                        Discord
+                      </button>
+                    </div>
+
+                    <div className="ac-donate-desc">
+                      {apps
+                        .filter((a) => !a.comingSoon)
+                        .map((a) => {
+                          const inst = installedMap[a.id];
+                          return `${a.name}: ${
+                            inst?.installed ? `v${inst.version} (${inst.exe_path})` : 'não instalado'
+                          }`;
+                        })
+                        .join(' | ')}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
@@ -599,7 +925,11 @@ export default function App() {
             <select
               className="ac-select"
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as 'name' | 'status')}
+              onChange={(e) => {
+                const next = e.target.value as 'name' | 'status';
+                setSortBy(next);
+                localStorage.setItem(SORT_KEY, next);
+              }}
             >
               <option value="name">{t('sortName')}</option>
               <option value="status">{t('sortStatus')}</option>

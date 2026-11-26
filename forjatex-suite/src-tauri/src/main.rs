@@ -188,6 +188,76 @@ fn fetch_manifest_json(url: String) -> Result<String, String> {
     Ok(body.trim_start_matches('\u{FEFF}').trim().to_string())
 }
 
+fn resolve_download_dir(custom_dir: Option<&str>) -> std::path::PathBuf {
+    if let Some(dir) = custom_dir.map(|s| s.trim()).filter(|s| !s.is_empty()) {
+        std::path::PathBuf::from(dir)
+    } else {
+        std::env::temp_dir().join("forjatex-suite")
+    }
+}
+
+#[derive(Serialize)]
+struct CacheInfo {
+    cache_dir: String,
+    file_count: usize,
+    total_bytes: u64,
+}
+
+#[tauri::command]
+fn get_installer_cache_info(download_dir: Option<String>) -> Result<CacheInfo, String> {
+    let dir = resolve_download_dir(download_dir.as_deref());
+    let mut file_count = 0usize;
+    let mut total_bytes = 0u64;
+    if dir.exists() {
+        if let Ok(entries) = std::fs::read_dir(&dir) {
+            for entry in entries.flatten() {
+                if let Ok(meta) = entry.metadata() {
+                    if meta.is_file() {
+                        file_count += 1;
+                        total_bytes += meta.len();
+                    }
+                }
+            }
+        }
+    }
+    Ok(CacheInfo {
+        cache_dir: dir.to_string_lossy().to_string(),
+        file_count,
+        total_bytes,
+    })
+}
+
+#[tauri::command]
+fn clear_installer_cache(download_dir: Option<String>) -> Result<u64, String> {
+    let dir = resolve_download_dir(download_dir.as_deref());
+    let mut freed = 0u64;
+    if dir.exists() {
+        let entries = std::fs::read_dir(&dir).map_err(|e| e.to_string())?;
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_file() {
+                let name = path
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("")
+                    .to_lowercase();
+                if name.ends_with(".msi")
+                    || name.ends_with(".exe")
+                    || name.ends_with(".deb")
+                    || name.ends_with(".appimage")
+                    || name.ends_with(".cmd")
+                {
+                    if let Ok(meta) = entry.metadata() {
+                        freed += meta.len();
+                    }
+                    let _ = std::fs::remove_file(&path);
+                }
+            }
+        }
+    }
+    Ok(freed)
+}
+
 #[tauri::command]
 async fn download_and_run_installer(
     app: AppHandle,
@@ -196,8 +266,9 @@ async fn download_and_run_installer(
     file_name: String,
     silent: bool,
     self_update: bool,
+    download_dir: Option<String>,
 ) -> Result<String, String> {
-    let temp_dir = std::env::temp_dir().join("forjatex-suite");
+    let temp_dir = resolve_download_dir(download_dir.as_deref());
     std::fs::create_dir_all(&temp_dir).map_err(|e| e.to_string())?;
     let dest = temp_dir.join(&file_name);
 
@@ -357,7 +428,9 @@ fn main() {
             check_installed_apps,
             launch_app,
             fetch_manifest_json,
-            download_and_run_installer
+            download_and_run_installer,
+            get_installer_cache_info,
+            clear_installer_cache
         ])
         .run(tauri::generate_context!())
         .expect("error while running ForjaTeX Suite");
