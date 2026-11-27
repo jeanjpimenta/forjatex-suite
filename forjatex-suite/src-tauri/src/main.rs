@@ -293,6 +293,8 @@ async fn download_and_run_installer(
         let mut file = File::create(&dest_clone).map_err(|e| e.to_string())?;
         let mut buf = [0u8; 32768];
         let mut downloaded: u64 = 0;
+        let mut last_emit = std::time::Instant::now();
+        let mut last_pct: i64 = -1;
 
         loop {
             let n = reader.read(&mut buf).map_err(|e| e.to_string())?;
@@ -301,14 +303,25 @@ async fn download_and_run_installer(
             }
             file.write_all(&buf[..n]).map_err(|e| e.to_string())?;
             downloaded += n as u64;
-            let _ = app_clone.emit(
-                "download-progress",
-                DownloadProgressPayload {
-                    id: id_clone.clone(),
-                    downloaded,
-                    total,
-                },
-            );
+            let pct: i64 = if total > 0 {
+                ((downloaded * 100) / total) as i64
+            } else {
+                -1
+            };
+            let should_emit =
+                downloaded == total || pct != last_pct || last_emit.elapsed().as_millis() >= 100;
+            if should_emit {
+                last_pct = pct;
+                last_emit = std::time::Instant::now();
+                let _ = app_clone.emit(
+                    "download-progress",
+                    DownloadProgressPayload {
+                        id: id_clone.clone(),
+                        downloaded,
+                        total,
+                    },
+                );
+            }
         }
         Ok(())
     })
@@ -341,56 +354,59 @@ async fn download_and_run_installer(
             return Ok("Reiniciando para aplicar atualização...".to_string());
         }
 
-        if file_name.to_lowercase().ends_with(".msi") {
-            let path_str = dest.to_str().unwrap_or_default();
-            let mut args = vec!["/i", path_str];
-            if silent {
-                args.push("/passive");
-            }
-            let status = Command::new("msiexec")
-                .args(&args)
-                .status()
-                .map_err(|e| format!("Falha ao executar msiexec: {}", e))?;
-            let code = status.code().unwrap_or(-1);
-            if status.success() || code == 3010 {
-                Ok(format!("{} instalado/atualizado via MSI!", id))
-            } else if silent && code != 1602 {
-                // Fallback to interactive MSI so Windows SmartScreen/UAC prompts can be handled by the user
-                let fallback = Command::new("msiexec")
-                    .args(["/i", path_str])
+        tauri::async_runtime::spawn_blocking(move || -> Result<String, String> {
+            if file_name.to_lowercase().ends_with(".msi") {
+                let path_str = dest.to_str().unwrap_or_default();
+                let mut args = vec!["/i", path_str];
+                if silent {
+                    args.push("/passive");
+                }
+                let status = Command::new("msiexec")
+                    .args(&args)
                     .status()
-                    .map_err(|e| format!("Falha ao executar msiexec interativo: {}", e))?;
-                let fb_code = fallback.code().unwrap_or(-1);
-                if fallback.success() || fb_code == 3010 {
+                    .map_err(|e| format!("Falha ao executar msiexec: {}", e))?;
+                let code = status.code().unwrap_or(-1);
+                if status.success() || code == 3010 {
                     Ok(format!("{} instalado/atualizado via MSI!", id))
+                } else if silent && code != 1602 {
+                    let fallback = Command::new("msiexec")
+                        .args(["/i", path_str])
+                        .status()
+                        .map_err(|e| format!("Falha ao executar msiexec interativo: {}", e))?;
+                    let fb_code = fallback.code().unwrap_or(-1);
+                    if fallback.success() || fb_code == 3010 {
+                        Ok(format!("{} instalado/atualizado via MSI!", id))
+                    } else {
+                        Err(format!(
+                            "Instalador MSI cancelado ou retornou erro (código {}).",
+                            fb_code
+                        ))
+                    }
                 } else {
                     Err(format!(
                         "Instalador MSI cancelado ou retornou erro (código {}).",
-                        fb_code
+                        code
                     ))
                 }
+            } else if silent && file_name.to_lowercase().ends_with(".exe") {
+                let status = Command::new(&dest)
+                    .arg("/S")
+                    .status()
+                    .map_err(|e| format!("Falha ao executar instalador silencioso: {}", e))?;
+                if status.success() {
+                    Ok(format!("{} atualizado/instalado com sucesso!", id))
+                } else {
+                    Err("Instalador retornou erro.".to_string())
+                }
             } else {
-                Err(format!(
-                    "Instalador MSI cancelado ou retornou erro (código {}).",
-                    code
-                ))
+                Command::new(&dest)
+                    .spawn()
+                    .map_err(|e| format!("Falha ao iniciar instalador: {}", e))?;
+                Ok(format!("Instalador iniciado: {}", file_name))
             }
-        } else if silent && file_name.to_lowercase().ends_with(".exe") {
-            let status = Command::new(&dest)
-                .arg("/S")
-                .status()
-                .map_err(|e| format!("Falha ao executar instalador silencioso: {}", e))?;
-            if status.success() {
-                Ok(format!("{} atualizado/instalado com sucesso!", id))
-            } else {
-                Err("Instalador retornou erro.".to_string())
-            }
-        } else {
-            Command::new(&dest)
-                .spawn()
-                .map_err(|e| format!("Falha ao iniciar instalador: {}", e))?;
-            Ok(format!("Instalador iniciado: {}", file_name))
-        }
+        })
+        .await
+        .map_err(|e| e.to_string())?
     }
 
     #[cfg(target_os = "linux")]

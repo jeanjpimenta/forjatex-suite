@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { getVersion } from '@tauri-apps/api/app';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
@@ -371,7 +371,7 @@ export default function App() {
   });
   const [locale, setLocale] = useState<SuiteLocale>(() => detectSuiteLocale());
   const t = (key: string) => SUITE_DICT[locale][key] ?? SUITE_DICT['pt-BR'][key] ?? key;
-  const [suiteVersion, setSuiteVersion] = useState('1.2.8');
+  const [suiteVersion, setSuiteVersion] = useState('1.2.9');
   const [suiteRemote, setSuiteRemote] = useState<SuiteSelfInfo | null>(null);
   const [apps, setApps] = useState<SuiteAppEntry[]>(DEFAULT_APPS);
   const [installedMap, setInstalledMap] = useState<Record<string, InstalledAppInfo>>({});
@@ -647,17 +647,13 @@ export default function App() {
     });
   }, [apps, search, sortBy, installedMap, cardOrder]);
 
-  const handleCardDrop = (targetId: string) => {
-    if (!dragId || dragId === targetId) {
-      setDragId(null);
-      setDragOverId(null);
-      return;
-    }
+  const handleCardDrop = (fromId: string, targetId: string) => {
+    if (!fromId || fromId === targetId) return;
     const baseOrder = filteredApps.map((a) => a.id);
     for (const a of apps) {
       if (!baseOrder.includes(a.id)) baseOrder.push(a.id);
     }
-    const fromIdx = baseOrder.indexOf(dragId);
+    const fromIdx = baseOrder.indexOf(fromId);
     const toIdx = baseOrder.indexOf(targetId);
     if (fromIdx === -1 || toIdx === -1) return;
     const nextOrder = [...baseOrder];
@@ -667,9 +663,44 @@ export default function App() {
     setSortBy('custom');
     localStorage.setItem(CARD_ORDER_KEY, JSON.stringify(nextOrder));
     localStorage.setItem(SORT_KEY, 'custom');
-    setDragId(null);
-    setDragOverId(null);
   };
+
+  const pointerDragRef = useRef<{ id: string; startX: number; startY: number; active: boolean } | null>(null);
+  const dragOverRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const onPointerMove = (e: PointerEvent) => {
+      const pd = pointerDragRef.current;
+      if (!pd) return;
+      if (!pd.active) {
+        if (Math.hypot(e.clientX - pd.startX, e.clientY - pd.startY) < 6) return;
+        pd.active = true;
+        setDragId(pd.id);
+      }
+      const el = document.elementFromPoint(e.clientX, e.clientY)?.closest('[data-app-id]');
+      const targetId = el?.getAttribute('data-app-id') || null;
+      dragOverRef.current = targetId;
+      setDragOverId(targetId);
+    };
+    const onPointerUp = () => {
+      const pd = pointerDragRef.current;
+      if (pd?.active && dragOverRef.current && dragOverRef.current !== pd.id) {
+        handleCardDrop(pd.id, dragOverRef.current);
+      }
+      pointerDragRef.current = null;
+      dragOverRef.current = null;
+      setDragId(null);
+      setDragOverId(null);
+    };
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerUp);
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
+    };
+  });
 
   const suiteProg = progressMap['suite-self'];
 
@@ -1238,24 +1269,24 @@ export default function App() {
             return (
               <article
                 key={app.id}
-                draggable
-                onDragStart={() => setDragId(app.id)}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  if (dragOverId !== app.id) setDragOverId(app.id);
+                data-app-id={app.id}
+                onPointerDown={(e) => {
+                  if (e.button !== 0) return;
+                  if ((e.target as HTMLElement).closest('button, a, select, input')) return;
+                  pointerDragRef.current = {
+                    id: app.id,
+                    startX: e.clientX,
+                    startY: e.clientY,
+                    active: false,
+                  };
                 }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  handleCardDrop(app.id);
-                }}
-                onDragEnd={() => {
-                  setDragId(null);
-                  setDragOverId(null);
-                }}
-                style={{ '--card-accent': app.accentColor } as React.CSSProperties}
+                style={{
+                  '--card-accent': app.accentColor,
+                  userSelect: dragId ? 'none' : undefined,
+                } as CSSProperties}
                 className={`ac-card ${isInstalled ? 'installed' : ''} ${app.comingSoon ? 'soon' : ''} ${
                   dragId === app.id ? 'dragging' : ''
-                } ${dragOverId === app.id ? 'drag-over' : ''}`}
+                } ${dragOverId === app.id && dragId !== app.id ? 'drag-over' : ''}`}
               >
                 <div className="ac-card-meta">
                   <span className="ac-version" style={{ color: app.accentColor }}>
