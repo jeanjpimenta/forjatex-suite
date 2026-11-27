@@ -210,14 +210,26 @@ const DEFAULT_APPS: SuiteAppEntry[] = [
     subtitle: 'Gerenciador de bibliografias',
     description:
       'Busque referências por DOI, ISBN ou arXiv e valide citações ABNT e BibLaTeX automaticamente.',
-    latestVersion: '0.1.0',
-    updatedAt: 'Em desenvolvimento',
-    iconUrl: '/forjabib-icon.svg',
+    latestVersion: '1.0.0',
+    updatedAt: '27 de nov. de 2026',
+    iconUrl: '/forjabib-icon.png',
     accentColor: '#059669',
-    installerUrl: '',
-    installerFile: '',
-    changelog: 'Planejado para a próxima entrega da suíte.',
-    comingSoon: true,
+    installerUrl:
+      'https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaBib_1.0.0_x64_en-US.msi',
+    installerFile: 'ForjaBib_1.0.0_x64_en-US.msi',
+    msiUrl:
+      'https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaBib_1.0.0_x64_en-US.msi',
+    msiFile: 'ForjaBib_1.0.0_x64_en-US.msi',
+    exeUrl:
+      'https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaBib_1.0.0_x64-setup.exe',
+    exeFile: 'ForjaBib_1.0.0_x64-setup.exe',
+    debUrl:
+      'https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaBib_1.0.0_amd64.deb',
+    debFile: 'ForjaBib_1.0.0_amd64.deb',
+    appImageUrl:
+      'https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaBib_1.0.0_amd64.AppImage',
+    appImageFile: 'ForjaBib_1.0.0_amd64.AppImage',
+    changelog: 'v1.0.0: Edição bidirecional .bib, importação DOI/arXiv/ISBN, linter pre-flight, prévia ABNT e auditoria .tex.',
   },
   {
     id: 'forjadiff',
@@ -359,7 +371,7 @@ export default function App() {
   });
   const [locale, setLocale] = useState<SuiteLocale>(() => detectSuiteLocale());
   const t = (key: string) => SUITE_DICT[locale][key] ?? SUITE_DICT['pt-BR'][key] ?? key;
-  const [suiteVersion, setSuiteVersion] = useState('1.2.7');
+  const [suiteVersion, setSuiteVersion] = useState('1.2.8');
   const [suiteRemote, setSuiteRemote] = useState<SuiteSelfInfo | null>(null);
   const [apps, setApps] = useState<SuiteAppEntry[]>(DEFAULT_APPS);
   const [installedMap, setInstalledMap] = useState<Record<string, InstalledAppInfo>>({});

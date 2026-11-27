@@ -1,6 +1,6 @@
 [package]
 name = "forjabeam"
-version = "1.0.0"
+version = "1.0.1"
 description = "ForjaBeam — Construtor Visual de Apresentações LaTeX Beamer"
 authors = ["Jean Pimenta <jean.pimenta@protonmail.com>", "Arkhé Code"]
 license = "GPL-3.0-or-later"

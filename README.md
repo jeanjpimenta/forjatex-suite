@@ -36,7 +36,7 @@ O **ForjaTeX App Suite** reúne aplicativos desktop rápidos, offline-first e de
 | **ForjaBeam** | Construtor visual de apresentações **LaTeX Beamer** com galeria de temas, 2 colunas, blocos semânticos, overlays, notas `pgfpages` e edição bidirecional `.tex`. | Disponível |
 | **ForjaSlide** | Apresentador ao vivo de PDFs e slides **Beamer** em duas telas (visão do apresentador + janela do público), suporte nativo a `pgfpages`, laser, caneta e cronômetro. | Disponível |
 | **ForjaSnap** | OCR de equações e tabelas (captura de tela/PDF → LaTeX). | Em breve |
-| **ForjaBib** | Gerenciador visual de bibliografias `.bib` por DOI, ISBN e arXiv. | Em breve |
+| **ForjaBib** | Gerenciador visual de bibliografias `.bib` com importação por DOI, arXiv e ISBN, linter pre-flight, proteção de siglas/ABNT, prévia formatada e auditoria `.tex`. | Disponível |
 | **ForjaDiff** | Comparador visual de revisões com `latexdiff`. | Em breve |
 
 ### Download
@@ -68,7 +68,7 @@ Quer ajudar a traduzir o **ForjaTeX** para Espanhol, Francês, Alemão ou outro 
 | **ForjaBeam** | Visual **LaTeX Beamer** presentation builder with theme gallery, 2-column layouts, semantic blocks, overlays, `pgfpages` notes, and bidirectional `.tex` editing. | Available |
 | **ForjaSlide** | Dual-screen live PDF & **Beamer** presenter (presenter view + fullscreen audience window) with native `pgfpages` notes, laser pointer, pen ink, and timer. | Available |
 | **ForjaSnap** | Equation & table OCR (screenshot/PDF → LaTeX). | Coming soon |
-| **ForjaBib** | Visual `.bib` bibliography manager with DOI, ISBN, and arXiv lookup. | Coming soon |
+| **ForjaBib** | Visual `.bib` bibliography manager with DOI, ISBN, and arXiv lookup, pre-flight linter, acronym/ABNT helpers, live preview, and `.tex` citation audit. | Available |
 | **ForjaDiff** | Visual revision comparator powered by `latexdiff`. | Coming soon |
 
 ### Download
@@ -87,6 +87,7 @@ Grab the latest **Windows** (`.exe` / `.msi`) and **Linux** (`.deb` / `.AppImage
 | `forjatikz/` | **ForjaTikZ** — Visual TikZ & PGFPlots diagram studio (Windows & Linux). |
 | `forjabeam/` | **ForjaBeam** — Visual LaTeX Beamer presentation builder (Windows & Linux). |
 | `forjaslide/` | **ForjaSlide** — Dual-screen PDF & Beamer live presenter (Windows & Linux). |
+| `forjabib/` | **ForjaBib** — Visual BibTeX & BibLaTeX (ABNT) bibliography manager (Windows & Linux). |
 | `docs/manuals/` | Official bilingual user manuals (`PT-BR` & `EN-US`) in Markdown and PDF, bundled inside each app. |
 | `docs/GUIA-GITHUB-RELEASES.md` | Maintainer guide for versioning, tags, and automated GitHub Releases. |
 | `.github/workflows/` | `ci-verify.yml` (cross-platform build check on every push) & `release-suite.yml` (Windows + Linux release builds). |

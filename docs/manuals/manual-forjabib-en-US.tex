@@ -1,0 +1,59 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{forjatex-manual}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=fjblue,
+  urlcolor=fjblue,
+  pdftitle={User Manual - ForjaBib},
+  pdfauthor={Jean Pimenta / Arkhé Code}
+}
+
+\begin{document}
+
+\ForjaHeader{../../forjabib/src-tauri/icons/128x128@2x.png}
+  {ForjaTeX App Suite Ecosystem $\cdot$ GNU GPL v3.0}
+  {User Manual --- ForjaBib}
+  {Visual BibTeX \& BibLaTeX Bibliography Manager (ABNT)}
+  {Version 1.0.0}
+  {Jean Pimenta $\cdot$ \href{https://forjatex.com.br}{\color{fjsky}forjatex.com.br} $\cdot$ \href{https://github.com/jeanjpimenta/forjatex-suite}{\color{fjsky}GitHub}}
+
+\ForjaTOC{Table of Contents}
+
+\begin{fjcallout}[Your .bib File as the Single Source of Truth]
+\textbf{ForjaBib} edits clean, Git-friendly \code{.bib} files directly --- with no proprietary database lock-in and full preservation of \LaTeX{} macros like \code{\textbackslash apj} and math \code{\$...\$}.
+\end{fjcallout}
+
+\section{Introduction}
+\textbf{ForjaBib} is the bibliography manager of the \textbf{ForjaTeX App Suite}, designed to prevent common \code{biber} and \code{bibtex} compilation errors before they hit your \LaTeX{} build.
+
+\section{One-Click Import (DOI, arXiv, ISBN)}
+\begin{enumerate}
+  \item \textbf{DOI (CrossRef):} paste a DOI (e.g. \code{10.1103/PhysRev.76.769}) and click \textbf{Buscar}.
+  \item \textbf{arXiv ID:} enter an arXiv ID (e.g. \code{1412.6980}); ForjaBib generates a proper \code{@misc} entry with \code{eprint}, \code{archivePrefix = \{arXiv\}}, and \code{primaryClass}.
+  \item \textbf{ISBN (OpenLibrary):} enter a 10- or 13-digit ISBN to import book metadata automatically.
+\end{enumerate}
+
+\section{Pre-Flight Linter & ABNT/Title Case Helpers}
+\begin{itemize}
+  \item \textbf{Duplicate Keys:} detects colliding \code{@key} entries and generates standardized unique keys.
+  \item \textbf{Unescaped Characters & Braces:} flags raw \code{\&}, \code{\%}, \code{\#} and unbalanced \code{\{\}}.
+  \item \textbf{DOI + URL Clash:} detects redundant \code{doi.org} URLs alongside \code{doi} and strips them in one click.
+  \item \textbf{Protect Acronyms (\code{\{ABC\}}):} wraps acronyms like \code{\{COVID-19\}} without double-bracing the entire title.
+  \item \textbf{Corporate Authors (\code{\{\{...\}\}}):} wraps institutions so \code{biblatex-abnt} does not invert them as personal names.
+\end{itemize}
+
+\section{.tex Citation Audit & Live Preview}
+\begin{itemize}
+  \item \textbf{Formatted Preview:} preview citations in \textbf{ABNT}, \textbf{IEEE}, \textbf{APA}, or \textbf{Author-Year}.
+  \item \textbf{Audit .tex:} scan a \code{.tex} file to detect missing citations (\code{[?]}) and uncited orphan entries.
+  \item \textbf{Duplicate Detector:} flags entries sharing the same DOI or title for quick merging.
+\end{itemize}
+
+\section{Version History (Changelog)}
+\begin{itemize}
+  \item \textbf{v1.0.0:} Initial release with bidirectional \code{.bib} editor, DOI/arXiv/ISBN lookup, pre-flight linter, acronym & corporate author helpers, ABNT/IEEE/APA preview, duplicate detector, and \code{.tex} citation audit.
+\end{itemize}
+
+\end{document}
+

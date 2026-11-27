@@ -1,0 +1,61 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{forjatex-manual}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=fjblue,
+  urlcolor=fjblue,
+  pdftitle={Manual do Usuário - ForjaBib},
+  pdfauthor={Jean Pimenta / Arkhé Code}
+}
+
+\begin{document}
+
+\ForjaHeader{../../forjabib/src-tauri/icons/128x128@2x.png}
+  {Ecossistema ForjaTeX App Suite $\cdot$ GNU GPL v3.0}
+  {Manual do Usuário --- ForjaBib}
+  {Gerenciador Visual de Bibliografias BibTeX e BibLaTeX (ABNT)}
+  {Versão 1.0.0}
+  {Jean Pimenta $\cdot$ \href{https://forjatex.com.br}{\color{fjsky}forjatex.com.br} $\cdot$ \href{https://github.com/jeanjpimenta/forjatex-suite}{\color{fjsky}GitHub}}
+
+\ForjaTOC{Sumário}
+
+\begin{fjcallout}[Arquivo .bib como Fonte Única da Verdade]
+O \textbf{ForjaBib} edita diretamente arquivos \code{.bib} limpos e compatíveis com Git, sem banco proprietário oculto e preservando macros \LaTeX{} como \code{\textbackslash apj} e fórmulas matemáticas \code{\$...\$}.
+\end{fjcallout}
+
+\section{Introdução}
+O \textbf{ForjaBib} é o gerenciador de referências bibliográficas do ecossistema \textbf{ForjaTeX App Suite}, projetado para eliminar os erros clássicos de compilação no \code{biber} e \code{bibtex}, com foco especial no padrão brasileiro \textbf{ABNT (\code{biblatex-abnt})}.
+
+\section{Importação Automática (DOI, arXiv e ISBN)}
+\begin{enumerate}
+  \item \textbf{DOI (CrossRef):} cole um DOI (ex.: \code{10.1103/PhysRev.76.769}) e clique em \textbf{Buscar}.
+  \item \textbf{arXiv ID:} informe um identificador arXiv (ex.: \code{1412.6980}); o ForjaBib cria automaticamente uma entrada \code{@misc} com \code{eprint}, \code{archivePrefix = \{arXiv\}} e \code{primaryClass}.
+  \item \textbf{ISBN (OpenLibrary):} informe o ISBN de 10 ou 13 dígitos para preencher livros automaticamente.
+\end{enumerate}
+
+\section{Linter Pre-Flight e Proteção ABNT}
+Antes mesmo de compilar no \textbf{ForjaTeX IDE}, o ForjaBib verifica:
+\begin{itemize}
+  \item \textbf{Chaves duplicadas:} detecta conflitos de \code{@chave} e gera chaves únicas padronizadas (\code{autor2026palavra}).
+  \item \textbf{Caracteres não escapados e chaves desbalanceadas:} alerta sobre \code{\&}, \code{\%}, \code{\#} sem barra invertida ou chaves \code{\{\}} abertas.
+  \item \textbf{Conflito DOI + URL:} identifica registros que repetem o link do DOI em \code{url} e remove em 1 clique.
+  \item \textbf{Proteger Siglas (\code{\{ABC\}}):} envolve siglas como \code{\{COVID-19\}} e \code{\{USA\}} sem colocar chaves duplas no título inteiro.
+  \item \textbf{Autor Corporativo (\code{\{\{...\}\}}):} envolve instituições como \code{\{\{IBGE\}\}} para que o \code{biblatex-abnt} não inverta o nome.
+  \item \textbf{Validação \code{urldate}:} avisa quando uma referência com \code{url} está sem data de acesso exigida pela NBR 6023.
+\end{itemize}
+
+\section{Auditoria .tex e Prévia Formatada}
+\begin{itemize}
+  \item \textbf{Prévia instantânea:} visualize a referência formatada em \textbf{ABNT}, \textbf{IEEE}, \textbf{APA} ou \textbf{Author-Year}.
+  \item \textbf{Auditar .tex:} selecione um arquivo \code{.tex} do seu projeto para descobrir citações faltantes no \code{.bib} (que gerariam \code{[?]}) e entradas órfãs nunca citadas.
+  \item \textbf{Detector de Duplicatas:} compara por DOI e título semelhante para mesclar/remover cópias.
+\end{itemize}
+
+\section{Histórico de Versões (Changelog)}
+\begin{itemize}
+  \item \textbf{v1.0.0:} Lançamento inicial com edição bidirecional \code{.bib}, importador DOI/arXiv/ISBN, linter pre-flight, proteção de siglas e autor corporativo, prévia ABNT/IEEE/APA, detector de duplicatas e auditoria contra arquivos \code{.tex}.
+\end{itemize}
+
+\end{document}
+
