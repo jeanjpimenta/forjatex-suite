@@ -1,6 +1,6 @@
 [package]
 name = "forjabib"
-version = "1.0.0"
+version = "1.0.1"
 description = "ForjaBib — Gerenciador Visual de Bibliografias BibTeX & BibLaTeX (ABNT)"
 authors = ["Jean Pimenta <jean.pimenta@protonmail.com>", "Arkhé Code"]
 license = "GPL-3.0-or-later"

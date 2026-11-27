@@ -1,14 +1,148 @@
 export type BibEntryType =
   | 'article'
+  | 'periodical'
+  | 'suppperiodical'
   | 'book'
+  | 'mvbook'
+  | 'inbook'
+  | 'bookinbook'
+  | 'suppbook'
+  | 'booklet'
+  | 'collection'
+  | 'mvcollection'
+  | 'incollection'
+  | 'suppcollection'
   | 'inproceedings'
-  | 'misc'
+  | 'proceedings'
+  | 'mvproceedings'
+  | 'conference'
+  | 'thesis'
   | 'phdthesis'
   | 'mastersthesis'
+  | 'report'
   | 'techreport'
-  | 'online';
+  | 'manual'
+  | 'reference'
+  | 'mvreference'
+  | 'inreference'
+  | 'online'
+  | 'electronic'
+  | 'www'
+  | 'dataset'
+  | 'software'
+  | 'patent'
+  | 'unpublished'
+  | 'misc'
+  | 'set';
 
-export type CitationStyle = 'abnt' | 'ieee' | 'apa' | 'authoryear';
+export const BIB_TYPE_GROUPS: Array<{ label: string; types: Array<{ id: BibEntryType; desc: string }> }> = [
+  {
+    label: 'Artigos e Periódicos',
+    types: [
+      { id: 'article', desc: 'Artigo em periódico/revista' },
+      { id: 'periodical', desc: 'Edição completa de periódico' },
+      { id: 'suppperiodical', desc: 'Suplemento de periódico' },
+    ],
+  },
+  {
+    label: 'Livros e Coletâneas',
+    types: [
+      { id: 'book', desc: 'Livro completo' },
+      { id: 'mvbook', desc: 'Obra em múltiplos volumes' },
+      { id: 'inbook', desc: 'Capítulo de livro (mesmo autor)' },
+      { id: 'bookinbook', desc: 'Livro publicado dentro de outro' },
+      { id: 'suppbook', desc: 'Material suplementar de livro' },
+      { id: 'booklet', desc: 'Livreto / folheto sem editora' },
+      { id: 'collection', desc: 'Coletânea organizada por editor' },
+      { id: 'mvcollection', desc: 'Coletânea em múltiplos volumes' },
+      { id: 'incollection', desc: 'Capítulo com autor próprio em coletânea' },
+      { id: 'suppcollection', desc: 'Suplemento de coletânea' },
+    ],
+  },
+  {
+    label: 'Eventos e Anais',
+    types: [
+      { id: 'inproceedings', desc: 'Artigo em anais de congresso' },
+      { id: 'proceedings', desc: 'Anais completos de evento' },
+      { id: 'mvproceedings', desc: 'Anais em múltiplos volumes' },
+      { id: 'conference', desc: 'Alias legado de inproceedings' },
+    ],
+  },
+  {
+    label: 'Teses, Relatórios e Manuais',
+    types: [
+      { id: 'thesis', desc: 'Tese/Dissertação (BibLaTeX)' },
+      { id: 'phdthesis', desc: 'Tese de Doutorado (BibTeX)' },
+      { id: 'mastersthesis', desc: 'Dissertação de Mestrado (BibTeX)' },
+      { id: 'report', desc: 'Relatório técnico/pesquisa (BibLaTeX)' },
+      { id: 'techreport', desc: 'Relatório técnico (BibTeX)' },
+      { id: 'manual', desc: 'Manual técnico / documentação' },
+    ],
+  },
+  {
+    label: 'Obras de Referência',
+    types: [
+      { id: 'reference', desc: 'Enciclopédia / dicionário' },
+      { id: 'mvreference', desc: 'Referência em múltiplos volumes' },
+      { id: 'inreference', desc: 'Verbete de enciclopédia/dicionário' },
+    ],
+  },
+  {
+    label: 'Digitais, Dados e Outros',
+    types: [
+      { id: 'online', desc: 'Página web / recurso online' },
+      { id: 'electronic', desc: 'Alias de online' },
+      { id: 'www', desc: 'Alias de online' },
+      { id: 'dataset', desc: 'Conjunto de dados (Dataset)' },
+      { id: 'software', desc: 'Software / pacote / repositório' },
+      { id: 'patent', desc: 'Patente / pedido de patente' },
+      { id: 'unpublished', desc: 'Manuscrito não publicado' },
+      { id: 'misc', desc: 'Diversos / arXiv preprint' },
+      { id: 'set', desc: 'Conjunto agrupado (entryset)' },
+    ],
+  },
+];
+
+export type CitationStyle =
+  | 'abnt'
+  | 'abnt-num'
+  | 'ieee'
+  | 'apa'
+  | 'authoryear'
+  | 'numeric'
+  | 'alphabetic'
+  | 'chicago-authordate'
+  | 'chicago-notes'
+  | 'mla'
+  | 'vancouver'
+  | 'harvard'
+  | 'nature'
+  | 'science'
+  | 'acm'
+  | 'springer-lncs'
+  | 'aps'
+  | 'iso690';
+
+export const CITATION_STYLES: Array<{ id: CitationStyle; label: string; group: string }> = [
+  { id: 'abnt', label: 'ABNT (NBR 6023 — Autor-Data)', group: 'Brasil' },
+  { id: 'abnt-num', label: 'ABNT Numérico (NBR 6023)', group: 'Brasil' },
+  { id: 'ieee', label: 'IEEE Transactions', group: 'Engenharia' },
+  { id: 'apa', label: 'APA 7ª Edição', group: 'Psicologia / Gerais' },
+  { id: 'authoryear', label: 'BibLaTeX Author-Year', group: 'BibLaTeX' },
+  { id: 'numeric', label: 'BibLaTeX Numeric [1]', group: 'BibLaTeX' },
+  { id: 'alphabetic', label: 'BibLaTeX Alphabetic [Fey49]', group: 'BibLaTeX' },
+  { id: 'chicago-authordate', label: 'Chicago (Author-Date)', group: 'Humanidades' },
+  { id: 'chicago-notes', label: 'Chicago (Notes & Bibliography)', group: 'Humanidades' },
+  { id: 'mla', label: 'MLA 9ª Edição', group: 'Letras / Artes' },
+  { id: 'vancouver', label: 'Vancouver (Saúde / Medicina)', group: 'Biomédicas' },
+  { id: 'harvard', label: 'Harvard Referencing', group: 'Acadêmico' },
+  { id: 'nature', label: 'Nature', group: 'Ciências' },
+  { id: 'science', label: 'Science', group: 'Ciências' },
+  { id: 'acm', label: 'ACM Reference Format', group: 'Computação' },
+  { id: 'springer-lncs', label: 'Springer LNCS', group: 'Computação' },
+  { id: 'aps', label: 'APS / Physical Review', group: 'Física' },
+  { id: 'iso690', label: 'ISO 690', group: 'Internacional' },
+];
 
 export interface BibEntry {
   id: string;
@@ -173,7 +307,7 @@ export function parseBibText(raw: string): BibEntry[] {
 }
 
 export function generateStandardKey(entry: BibEntry, existingKeys: Set<string>): string {
-  const authorRaw = (entry.fields.author || 'autor').replace(/[{}]/g, '');
+  const authorRaw = (entry.fields.author || entry.fields.editor || 'autor').replace(/[{}]/g, '');
   const firstAuthor = authorRaw.split(/\s+and\s+/i)[0] || 'autor';
   const lastName = (firstAuthor.includes(',') ? firstAuthor.split(',')[0] : firstAuthor.split(/\s+/).pop() || 'autor')
     .normalize('NFD')
@@ -192,13 +326,12 @@ export function generateStandardKey(entry: BibEntry, existingKeys: Set<string>):
 
   const base = `${lastName || 'ref'}${year}${titleWord}`;
   if (!existingKeys.has(base)) return base;
-  let suffix = 97; // 'a'
+  let suffix = 97;
   while (existingKeys.has(`${base}${String.fromCharCode(suffix)}`)) suffix++;
   return `${base}${String.fromCharCode(suffix)}`;
 }
 
 export function protectAcronymsInTitle(title: string): string {
-  // Wrap standalone ALL-CAPS/mixed-case acronyms (e.g., COVID-19, USA, LaTeX, ABNT, DNA) without double-bracing the whole title
   return title.replace(/(^|\s)([A-Z]{2,}[A-Z0-9\-]*|LaTeX|BibTeX|BibLaTeX)(?=\s|$|[.,:;!?])/g, (m, pre, word) => {
     if (word.startsWith('{') && word.endsWith('}')) return m;
     return `${pre}{${word}}`;
@@ -220,15 +353,38 @@ export function lintBibEntries(entries: BibEntry[]): LintIssue[] {
     keyCounts.set(e.key, (keyCounts.get(e.key) || 0) + 1);
   }
 
-  const requiredMap: Record<BibEntryType, string[]> = {
+  const requiredMap: Partial<Record<BibEntryType, string[]>> = {
     article: ['author', 'title', 'journal', 'year'],
+    periodical: ['editor', 'title', 'year'],
     book: ['author', 'title', 'publisher', 'year'],
+    mvbook: ['author', 'title', 'year'],
+    inbook: ['author', 'title', 'booktitle', 'year'],
+    bookinbook: ['author', 'title', 'booktitle', 'year'],
+    booklet: ['title', 'year'],
+    collection: ['editor', 'title', 'publisher', 'year'],
+    mvcollection: ['editor', 'title', 'year'],
+    incollection: ['author', 'title', 'booktitle', 'year'],
     inproceedings: ['author', 'title', 'booktitle', 'year'],
-    misc: ['title'],
+    conference: ['author', 'title', 'booktitle', 'year'],
+    proceedings: ['title', 'year'],
+    mvproceedings: ['title', 'year'],
+    thesis: ['author', 'title', 'institution', 'year'],
     phdthesis: ['author', 'title', 'school', 'year'],
     mastersthesis: ['author', 'title', 'school', 'year'],
+    report: ['author', 'title', 'institution', 'year'],
     techreport: ['author', 'title', 'institution', 'year'],
+    manual: ['title', 'year'],
+    reference: ['editor', 'title', 'year'],
+    inreference: ['title', 'booktitle', 'year'],
     online: ['title', 'url', 'urldate'],
+    electronic: ['title', 'url'],
+    www: ['title', 'url'],
+    dataset: ['author', 'title', 'year'],
+    software: ['author', 'title', 'year'],
+    patent: ['author', 'title', 'number', 'year'],
+    unpublished: ['author', 'title'],
+    set: ['entryset'],
+    misc: ['title'],
   };
 
   for (const e of entries) {
@@ -244,7 +400,11 @@ export function lintBibEntries(entries: BibEntry[]): LintIssue[] {
 
     const req = requiredMap[e.type] || ['title'];
     for (const f of req) {
-      const hasAlt = f === 'journal' ? Boolean(e.fields.journal || e.fields.journaltitle) : false;
+      const hasAlt =
+        (f === 'journal' && Boolean(e.fields.journal || e.fields.journaltitle)) ||
+        (f === 'author' && Boolean(e.fields.author || e.fields.editor)) ||
+        (f === 'year' && Boolean(e.fields.year || e.fields.date)) ||
+        (f === 'institution' && Boolean(e.fields.institution || e.fields.school));
       if (!e.fields[f]?.trim() && !hasAlt) {
         issues.push({
           entryId: e.id,
@@ -328,9 +488,7 @@ export function findDuplicates(entries: BibEntry[]): DuplicateGroup[] {
   for (const e of entries) {
     const doi = e.fields.doi?.trim().toLowerCase();
     if (doi) byDoi.set(doi, [...(byDoi.get(doi) || []), e]);
-    const normTitle = (e.fields.title || '')
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, '');
+    const normTitle = (e.fields.title || '').toLowerCase().replace(/[^a-z0-9]/g, '');
     if (normTitle.length > 8) {
       byTitle.set(normTitle, [...(byTitle.get(normTitle) || []), e]);
     }
@@ -346,36 +504,72 @@ export function findDuplicates(entries: BibEntry[]): DuplicateGroup[] {
 }
 
 export function formatPreviewCitation(e: BibEntry, style: CitationStyle): string {
-  const author = (e.fields.author || 'Autor Desconhecido').replace(/[{}]/g, '');
+  const author = (e.fields.author || e.fields.editor || 'Autor Desconhecido').replace(/[{}]/g, '');
   const title = (e.fields.title || 'Sem título').replace(/[{}]/g, '');
   const year = e.fields.year || e.fields.date || 's.d.';
-  const venue = e.fields.journal || e.fields.journaltitle || e.fields.booktitle || e.fields.publisher || '';
+  const venue =
+    e.fields.journal ||
+    e.fields.journaltitle ||
+    e.fields.booktitle ||
+    e.fields.publisher ||
+    e.fields.institution ||
+    e.fields.school ||
+    '';
   const vol = e.fields.volume ? `v. ${e.fields.volume}` : '';
   const pages = e.fields.pages ? `p. ${e.fields.pages.replace('--', '-')}` : '';
+  const pagesDash = e.fields.pages ? e.fields.pages.replace('--', '-') : '';
   const doi = e.fields.doi ? `DOI: ${e.fields.doi}.` : '';
   const url = e.fields.url ? `Disponível em: ${e.fields.url}.` : '';
   const access = e.fields.urldate ? `Acesso em: ${e.fields.urldate}.` : '';
 
-  if (style === 'abnt') {
-    const abntAuth = author
-      .split(/\s+and\s+/i)
-      .map((a) => {
-        const parts = a.split(',').map((s) => s.trim());
-        return parts.length >= 2 ? `${parts[0].toUpperCase()}, ${parts[1]}` : a.toUpperCase();
-      })
-      .join('; ');
-    return `${abntAuth}. ${title}. ${venue ? venue + ', ' : ''}${vol ? vol + ', ' : ''}${pages ? pages + ', ' : ''}${year}. ${doi || url} ${access}`.replace(/\s+/g, ' ').trim();
-  }
+  const abntAuth = author
+    .split(/\s+and\s+/i)
+    .map((a) => {
+      const parts = a.split(',').map((s) => s.trim());
+      return parts.length >= 2 ? `${parts[0].toUpperCase()}, ${parts[1]}` : a.toUpperCase();
+    })
+    .join('; ');
 
-  if (style === 'ieee') {
-    return `[1] ${author}, "${title}," ${venue ? venue + ', ' : ''}${vol ? 'vol. ' + e.fields.volume + ', ' : ''}${pages ? 'pp. ' + e.fields.pages?.replace('--', '-') + ', ' : ''}${year}. ${doi}`.replace(/\s+/g, ' ').trim();
+  switch (style) {
+    case 'abnt':
+      return `${abntAuth}. ${title}. ${venue ? venue + ', ' : ''}${vol ? vol + ', ' : ''}${pages ? pages + ', ' : ''}${year}. ${doi || url} ${access}`.replace(/\s+/g, ' ').trim();
+    case 'abnt-num':
+      return `[1] ${abntAuth}. ${title}. ${venue ? venue + ', ' : ''}${year}. ${doi}`.replace(/\s+/g, ' ').trim();
+    case 'ieee':
+    case 'numeric':
+      return `[1] ${author}, "${title}," ${venue ? venue + ', ' : ''}${e.fields.volume ? 'vol. ' + e.fields.volume + ', ' : ''}${pagesDash ? 'pp. ' + pagesDash + ', ' : ''}${year}. ${doi}`.replace(/\s+/g, ' ').trim();
+    case 'alphabetic': {
+      const tag = author.slice(0, 3) + year.slice(-2);
+      return `[${tag}] ${author}. "${title}". In: ${venue} (${year}). ${pagesDash ? 'pp. ' + pagesDash : ''}`.trim();
+    }
+    case 'apa':
+      return `${author} (${year}). ${title}. ${venue ? venue + '. ' : ''}${e.fields.doi ? 'https://doi.org/' + e.fields.doi : ''}`.trim();
+    case 'chicago-authordate':
+      return `${author}. ${year}. "${title}." ${venue}${e.fields.volume ? ' ' + e.fields.volume : ''}${pagesDash ? ': ' + pagesDash : ''}. ${doi}`.replace(/\s+/g, ' ').trim();
+    case 'chicago-notes':
+      return `${author}, "${title}," ${venue}${e.fields.volume ? ' ' + e.fields.volume : ''} (${year})${pagesDash ? ': ' + pagesDash : ''}.`.replace(/\s+/g, ' ').trim();
+    case 'mla':
+      return `${author}. "${title}." ${venue}, ${year}${pagesDash ? ', pp. ' + pagesDash : ''}.`.replace(/\s+/g, ' ').trim();
+    case 'vancouver':
+      return `1. ${author}. ${title}. ${venue}. ${year}${e.fields.volume ? ';' + e.fields.volume : ''}${pagesDash ? ':' + pagesDash : ''}.`.replace(/\s+/g, ' ').trim();
+    case 'harvard':
+      return `${author} (${year}) '${title}', ${venue}${pagesDash ? ', pp. ' + pagesDash : ''}.`.replace(/\s+/g, ' ').trim();
+    case 'nature':
+      return `1. ${author} ${title}. ${venue} ${e.fields.volume || ''}, ${pagesDash} (${year}).`.replace(/\s+/g, ' ').trim();
+    case 'science':
+      return `1. ${author}, ${title}. ${venue} ${e.fields.volume || ''}, ${pagesDash} (${year}).`.replace(/\s+/g, ' ').trim();
+    case 'acm':
+      return `[1] ${author}. ${year}. ${title}. In ${venue}${pagesDash ? ', ' + pagesDash : ''}. ${e.fields.doi ? 'https://doi.org/' + e.fields.doi : ''}`.replace(/\s+/g, ' ').trim();
+    case 'springer-lncs':
+      return `1. ${author}: ${title}. ${venue} ${e.fields.volume || ''}, ${pagesDash} (${year})`.replace(/\s+/g, ' ').trim();
+    case 'aps':
+      return `[1] ${author}, ${title}, ${venue} ${e.fields.volume || ''}, ${pagesDash} (${year}).`.replace(/\s+/g, ' ').trim();
+    case 'iso690':
+      return `${abntAuth}. ${title}. ${venue}. ${year}${pagesDash ? ', p. ' + pagesDash : ''}. ${doi}`.replace(/\s+/g, ' ').trim();
+    case 'authoryear':
+    default:
+      return `${author} (${year}). ${title}. ${venue}. ${pages}`.replace(/\s+/g, ' ').trim();
   }
-
-  if (style === 'apa') {
-    return `${author} (${year}). ${title}. ${venue ? venue + '. ' : ''}${e.fields.doi ? 'https://doi.org/' + e.fields.doi : ''}`.trim();
-  }
-
-  return `${author} (${year}). ${title}. ${venue}. ${pages}`.replace(/\s+/g, ' ').trim();
 }
 
 export function auditTexAgainstBib(texContent: string, entries: BibEntry[]) {
@@ -395,12 +589,8 @@ export function auditTexAgainstBib(texContent: string, entries: BibEntry[]) {
 }
 
 export function parseArxivXmlToEntry(xml: string, arxivId: string): BibEntry {
-  const tag = (name: string) => {
-    const m = new RegExp(`<${name}[^>]*>([\\s\\S]*?)<\\/${name}>`).exec(xml);
-    return m ? m[1].replace(/\s+/g, ' ').trim() : '';
-  };
   const entryXml = /<entry>([\s\S]*?)<\/entry>/.exec(xml)?.[1] || xml;
-  const title = tag.call(null, 'title') || /<title>([\s\S]*?)<\/title>/.exec(entryXml)?.[1]?.replace(/\s+/g, ' ').trim() || 'arXiv Preprint';
+  const title = /<title>([\s\S]*?)<\/title>/.exec(entryXml)?.[1]?.replace(/\s+/g, ' ').trim() || 'arXiv Preprint';
   const authors = [...entryXml.matchAll(/<author>\s*<name>([^<]+)<\/name>/g)].map((m) => m[1].trim());
   const published = /<published>(\d{4})/.exec(entryXml)?.[1] || '2026';
   const primaryClass = /<arxiv:primary_class[^>]*term="([^"]+)"/.exec(entryXml)?.[1] || 'cs.LG';

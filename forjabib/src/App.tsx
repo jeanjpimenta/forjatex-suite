@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   BookOpen,
   Check,
+  ChevronUp,
   Copy,
   FileSearch,
   FolderOpen,
@@ -22,6 +23,8 @@ import {
 } from 'lucide-react';
 import {
   auditTexAgainstBib,
+  BIB_TYPE_GROUPS,
+  CITATION_STYLES,
   createDefaultBibEntries,
   findDuplicates,
   formatPreviewCitation,
@@ -43,22 +46,27 @@ import {
   PIX_KEY,
 } from './pixDonate';
 
-const STORAGE_KEY = 'forjabib_workspace_v1';
+const LIBRARY_KEY = 'forjabib_library_v1';
+const WORKSPACE_KEY = 'forjabib_workspace_v2';
 
-const ENTRY_TYPES: BibEntryType[] = [
-  'article',
-  'book',
-  'inproceedings',
-  'misc',
-  'phdthesis',
-  'mastersthesis',
-  'techreport',
-  'online',
-];
+interface BibTab {
+  id: string;
+  title: string;
+  filePath: string | null;
+  includedIds: string[];
+  selectedId: string;
+  citationStyle: CitationStyle;
+  texAudit: {
+    fileName: string;
+    citedCount: number;
+    missingInBib: string[];
+    unusedInTex: string[];
+  } | null;
+}
 
-function loadSavedEntries(): BibEntry[] {
+function loadSavedLibrary(): BibEntry[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(LIBRARY_KEY) || localStorage.getItem('forjabib_workspace_v1');
     if (raw) {
       const parsed = JSON.parse(raw) as BibEntry[];
       if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -69,34 +77,67 @@ function loadSavedEntries(): BibEntry[] {
   return createDefaultBibEntries();
 }
 
+function loadSavedTabs(library: BibEntry[]): { tabs: BibTab[]; activeTabId: string } {
+  try {
+    const raw = localStorage.getItem(WORKSPACE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as { tabs?: BibTab[]; activeTabId?: string };
+      if (Array.isArray(parsed.tabs) && parsed.tabs.length > 0) {
+        const activeId =
+          parsed.tabs.find((t) => t.id === parsed.activeTabId)?.id || parsed.tabs[0].id;
+        return { tabs: parsed.tabs, activeTabId: activeId };
+      }
+    }
+  } catch {
+    // ignore
+  }
+  const first: BibTab = {
+    id: `bibtab-${Date.now()}`,
+    title: 'referencias.bib',
+    filePath: null,
+    includedIds: library.map((e) => e.id),
+    selectedId: library[0]?.id || '',
+    citationStyle: 'abnt',
+    texAudit: null,
+  };
+  return { tabs: [first], activeTabId: first.id };
+}
+
 export default function App() {
   const [themeMode, setThemeMode] = useState<'dark' | 'light'>('dark');
-  const [entries, setEntries] = useState<BibEntry[]>(() => loadSavedEntries());
-  const [selectedId, setSelectedId] = useState<string>(() => entries[0]?.id || '');
-  const [bibFilePath, setBibFilePath] = useState<string | null>(null);
+  const [library, setLibrary] = useState<BibEntry[]>(() => loadSavedLibrary());
+  const initialTabs = useMemo(() => loadSavedTabs(library), []);
+  const [tabs, setTabs] = useState<BibTab[]>(initialTabs.tabs);
+  const [activeTabId, setActiveTabId] = useState<string>(initialTabs.activeTabId);
+  const [editingTabId, setEditingTabId] = useState<string | null>(null);
+  const [editingTabTitle, setEditingTabTitle] = useState('');
+
   const [search, setSearch] = useState('');
-  const [citationStyle, setCitationStyle] = useState<CitationStyle>('abnt');
   const [statusMsg, setStatusMsg] = useState('');
 
   // Lookup bar (DOI / arXiv / ISBN)
   const [lookupInput, setLookupInput] = useState('');
   const [lookupBusy, setLookupBusy] = useState(false);
 
-  // .tex audit
-  const [texAudit, setTexAudit] = useState<{
-    fileName: string;
-    citedCount: number;
-    missingInBib: string[];
-    unusedInTex: string[];
-  } | null>(null);
+  // Upward searchable style dropdown
+  const [styleOpen, setStyleOpen] = useState(false);
+  const [styleSearch, setStyleSearch] = useState('');
+  const stylePickerRef = useRef<HTMLDivElement | null>(null);
 
-  // Bidirectional raw .bib editor
-  const serialized = useMemo(() => serializeBibEntries(entries), [entries]);
+  const activeTab = tabs.find((t) => t.id === activeTabId) || tabs[0];
+  const includedSet = useMemo(() => new Set(activeTab.includedIds), [activeTab.includedIds]);
+  const tabEntries = useMemo(
+    () => library.filter((e) => includedSet.has(e.id)),
+    [library, includedSet]
+  );
+
+  // Bidirectional raw .bib editor (scoped to the active tab's checked entries)
+  const serialized = useMemo(() => serializeBibEntries(tabEntries), [tabEntries]);
   const [rawBib, setRawBib] = useState<string>(() => serialized);
   const editSourceRef = useRef<'visual' | 'code'>('visual');
   const parseTimerRef = useRef<number | null>(null);
 
-  const [sidebarWidth, setSidebarWidth] = useState(330);
+  const [sidebarWidth, setSidebarWidth] = useState(340);
   const [codeWidth, setCodeWidth] = useState(390);
   const [donateOpen, setDonateOpen] = useState(false);
   const [pixQrUrl, setPixQrUrl] = useState('');
@@ -109,18 +150,36 @@ export default function App() {
 
   React.useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+      localStorage.setItem(LIBRARY_KEY, JSON.stringify(library));
     } catch {
       // ignore
     }
-  }, [entries]);
+  }, [library]);
+
+  React.useEffect(() => {
+    try {
+      localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ activeTabId, tabs }));
+    } catch {
+      // ignore
+    }
+  }, [activeTabId, tabs]);
 
   React.useEffect(() => {
     if (editSourceRef.current === 'visual') {
       setRawBib(serialized);
     }
     editSourceRef.current = 'visual';
-  }, [serialized]);
+  }, [serialized, activeTabId]);
+
+  React.useEffect(() => {
+    const onDocClick = (e: MouseEvent) => {
+      if (stylePickerRef.current && !stylePickerRef.current.contains(e.target as Node)) {
+        setStyleOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, []);
 
   React.useEffect(() => {
     generatePixQrDataUrl('DoacaoForjaBib')
@@ -131,37 +190,50 @@ export default function App() {
       .catch(() => {});
   }, []);
 
-  const selectedEntry = entries.find((e) => e.id === selectedId) || entries[0];
-  const issues = useMemo(() => lintBibEntries(entries), [entries]);
-  const duplicates = useMemo(() => findDuplicates(entries), [entries]);
+  const updateActiveTab = (updater: (prev: BibTab) => BibTab) => {
+    setTabs((prev) => prev.map((tb) => (tb.id === activeTabId ? updater(tb) : tb)));
+  };
 
-  const filteredEntries = useMemo(() => {
+  const selectedEntry =
+    library.find((e) => e.id === activeTab.selectedId) || tabEntries[0] || library[0];
+  const issues = useMemo(() => lintBibEntries(tabEntries), [tabEntries]);
+  const duplicates = useMemo(() => findDuplicates(tabEntries), [tabEntries]);
+
+  const filteredLibrary = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return entries;
-    return entries.filter(
+    if (!q) return library;
+    return library.filter(
       (e) =>
         e.key.toLowerCase().includes(q) ||
         (e.fields.title || '').toLowerCase().includes(q) ||
         (e.fields.author || '').toLowerCase().includes(q) ||
         (e.fields.year || '').includes(q)
     );
-  }, [entries, search]);
+  }, [library, search]);
 
-  const updateEntriesVisual = (updater: (prev: BibEntry[]) => BibEntry[]) => {
+  const filteredStyles = useMemo(() => {
+    const q = styleSearch.trim().toLowerCase();
+    if (!q) return CITATION_STYLES;
+    return CITATION_STYLES.filter(
+      (s) => s.label.toLowerCase().includes(q) || s.group.toLowerCase().includes(q)
+    );
+  }, [styleSearch]);
+
+  const updateLibraryVisual = (updater: (prev: BibEntry[]) => BibEntry[]) => {
     editSourceRef.current = 'visual';
-    setEntries(updater);
+    setLibrary(updater);
   };
 
   const updateSelected = (patch: Partial<BibEntry>) => {
     if (!selectedEntry) return;
-    updateEntriesVisual((prev) =>
+    updateLibraryVisual((prev) =>
       prev.map((e) => (e.id === selectedEntry.id ? { ...e, ...patch } : e))
     );
   };
 
   const updateField = (field: string, value: string) => {
     if (!selectedEntry) return;
-    updateEntriesVisual((prev) =>
+    updateLibraryVisual((prev) =>
       prev.map((e) =>
         e.id === selectedEntry.id
           ? { ...e, fields: { ...e.fields, [field]: value } }
@@ -170,26 +242,67 @@ export default function App() {
     );
   };
 
+  const toggleIncludeInTab = (entryId: string) => {
+    editSourceRef.current = 'visual';
+    updateActiveTab((tb) => {
+      const exists = tb.includedIds.includes(entryId);
+      return {
+        ...tb,
+        includedIds: exists
+          ? tb.includedIds.filter((id) => id !== entryId)
+          : [...tb.includedIds, entryId],
+      };
+    });
+  };
+
   const handleRawBibChange = (nextText: string) => {
     editSourceRef.current = 'code';
     setRawBib(nextText);
     if (parseTimerRef.current) window.clearTimeout(parseTimerRef.current);
     parseTimerRef.current = window.setTimeout(() => {
       const parsed = parseBibText(nextText);
+      editSourceRef.current = 'code';
+      if (parsed.length === 0 && nextText.trim() === '') {
+        updateActiveTab((tb) => ({ ...tb, includedIds: [] }));
+        return;
+      }
       if (parsed.length > 0) {
-        editSourceRef.current = 'code';
-        setEntries(parsed);
-        if (!parsed.some((p) => p.id === selectedId)) {
-          setSelectedId(parsed[0].id);
-        }
+        setLibrary((prevLib) => {
+          const nextLib = [...prevLib];
+          const tabIds: string[] = [];
+          for (const p of parsed) {
+            const existingIdx = nextLib.findIndex(
+              (item) => item.id === p.id || item.key === p.key
+            );
+            if (existingIdx >= 0) {
+              const keepId = nextLib[existingIdx].id;
+              nextLib[existingIdx] = { ...p, id: keepId };
+              tabIds.push(keepId);
+            } else {
+              nextLib.push(p);
+              tabIds.push(p.id);
+            }
+          }
+          updateActiveTab((tb) => ({ ...tb, includedIds: tabIds }));
+          return nextLib;
+        });
       }
     }, 300);
   };
 
+  const addEntryAndInclude = (entry: BibEntry) => {
+    updateLibraryVisual((prev) => [...prev, entry]);
+    updateActiveTab((tb) => ({
+      ...tb,
+      includedIds: tb.includedIds.includes(entry.id) ? tb.includedIds : [...tb.includedIds, entry.id],
+      selectedId: entry.id,
+    }));
+  };
+
   const addNewEntry = (type: BibEntryType = 'article') => {
     const id = `bib-${Date.now()}`;
-    const existingKeys = new Set(entries.map((e) => e.key));
-    let key = `ref${entries.length + 1}`;
+    const existingKeys = new Set(library.map((e) => e.key));
+    let key = `ref${library.length + 1}`;
     while (existingKeys.has(key)) key += 'a';
     const next: BibEntry = {
       id,
@@ -204,17 +317,58 @@ export default function App() {
         ...(type === 'online' ? { url: 'https://', urldate: '2026-11-27' } : {}),
       },
     };
-    updateEntriesVisual((prev) => [...prev, next]);
-    setSelectedId(id);
+    addEntryAndInclude(next);
   };
 
-  const removeEntry = (id: string) => {
-    if (entries.length <= 1) return;
-    updateEntriesVisual((prev) => {
-      const rem = prev.filter((e) => e.id !== id);
-      if (selectedId === id) setSelectedId(rem[0]?.id || '');
-      return rem;
-    });
+  const removeFromLibrary = (id: string) => {
+    if (library.length <= 1) return;
+    updateLibraryVisual((prev) => prev.filter((e) => e.id !== id));
+    setTabs((prev) =>
+      prev.map((tb) => ({
+        ...tb,
+        includedIds: tb.includedIds.filter((x) => x !== id),
+        selectedId: tb.selectedId === id ? library.find((x) => x.id !== id)?.id || '' : tb.selectedId,
+      }))
+    );
+  };
+
+  const createNewTab = () => {
+    const newTab: BibTab = {
+      id: `bibtab-${Date.now()}`,
+      title: `projeto-${tabs.length + 1}.bib`,
+      filePath: null,
+      includedIds: [],
+      selectedId: library[0]?.id || '',
+      citationStyle: activeTab.citationStyle,
+      texAudit: null,
+    };
+    editSourceRef.current = 'visual';
+    setTabs((prev) => [...prev, newTab]);
+    setActiveTabId(newTab.id);
+  };
+
+  const closeTab = (id: string) => {
+    editSourceRef.current = 'visual';
+    if (tabs.length === 1) {
+      setTabs([
+        {
+          id: tabs[0].id,
+          title: 'referencias.bib',
+          filePath: null,
+          includedIds: [],
+          selectedId: library[0]?.id || '',
+          citationStyle: 'abnt',
+          texAudit: null,
+        },
+      ]);
+      return;
+    }
+    const idx = tabs.findIndex((tb) => tb.id === id);
+    const remaining = tabs.filter((tb) => tb.id !== id);
+    setTabs(remaining);
+    if (id === activeTabId) {
+      setActiveTabId((remaining[Math.max(0, idx - 1)] || remaining[0]).id);
+    }
   };
 
   const handleImportLookup = async () => {
@@ -223,7 +377,6 @@ export default function App() {
     setLookupBusy(true);
     setStatusMsg('Buscando metadados...');
     try {
-      // 1. DOI
       if (/^10\.\d{4,9}\/\S+$/i.test(q) || q.includes('doi.org/')) {
         const doi = q.replace(/^https?:\/\/(dx\.)?doi\.org\//i, '').trim();
         const bib = await invoke<string>('fetch_url_text', {
@@ -233,14 +386,12 @@ export default function App() {
         const parsed = parseBibText(bib);
         if (parsed.length === 0) throw new Error('DOI não retornou BibTeX válido.');
         const imported = { ...parsed[0], id: `bib-${Date.now()}` };
-        updateEntriesVisual((prev) => [...prev, imported]);
-        setSelectedId(imported.id);
+        addEntryAndInclude(imported);
         setLookupInput('');
-        setStatusMsg(`DOI importado: @${imported.key}`);
+        setStatusMsg(`DOI importado na biblioteca e marcado na aba: @${imported.key}`);
         return;
       }
 
-      // 2. arXiv
       if (/^arXiv:/i.test(q) || /^\d{4}\.\d{4,5}(v\d+)?$/.test(q) || q.includes('arxiv.org/')) {
         const arxivId = q
           .replace(/^https?:\/\/arxiv\.org\/(abs|pdf)\//i, '')
@@ -251,14 +402,12 @@ export default function App() {
           url: `https://export.arxiv.org/api/query?id_list=${encodeURIComponent(arxivId)}`,
         });
         const imported = parseArxivXmlToEntry(xml, arxivId);
-        updateEntriesVisual((prev) => [...prev, imported]);
-        setSelectedId(imported.id);
+        addEntryAndInclude(imported);
         setLookupInput('');
         setStatusMsg(`arXiv importado (@misc eprint): @${imported.key}`);
         return;
       }
 
-      // 3. ISBN
       const isbn = q.replace(/[-\s]/g, '');
       if (/^(\d{10}|\d{13})$/.test(isbn)) {
         const jsonStr = await invoke<string>('fetch_url_text', {
@@ -289,9 +438,8 @@ export default function App() {
             isbn,
           },
         };
-        temp.key = generateStandardKey(temp, new Set(entries.map((e) => e.key)));
-        updateEntriesVisual((prev) => [...prev, temp]);
-        setSelectedId(temp.id);
+        temp.key = generateStandardKey(temp, new Set(library.map((e) => e.key)));
+        addEntryAndInclude(temp);
         setLookupInput('');
         setStatusMsg(`ISBN importado: @${temp.key}`);
         return;
@@ -316,28 +464,49 @@ export default function App() {
       const parsed = parseBibText(content);
       if (parsed.length === 0) throw new Error('Nenhuma entrada .bib válida encontrada.');
       editSourceRef.current = 'visual';
-      setEntries(parsed);
-      setSelectedId(parsed[0].id);
-      setBibFilePath(selected);
-      setStatusMsg(`Arquivo aberto: ${selected} (${parsed.length} referências)`);
+
+      const mergedIds: string[] = [];
+      setLibrary((prevLib) => {
+        const nextLib = [...prevLib];
+        for (const p of parsed) {
+          const existing = nextLib.find((x) => x.key === p.key);
+          if (existing) {
+            mergedIds.push(existing.id);
+          } else {
+            nextLib.push(p);
+            mergedIds.push(p.id);
+          }
+        }
+        return nextLib;
+      });
+      const fileName = selected.split(/[\\/]/).pop() || 'referencias.bib';
+      updateActiveTab((tb) => ({
+        ...tb,
+        title: fileName,
+        filePath: selected,
+        includedIds: mergedIds,
+        selectedId: mergedIds[0] || tb.selectedId,
+      }));
+      setStatusMsg(`Arquivo aberto na aba: ${selected} (${parsed.length} referências)`);
     } catch (e) {
       setStatusMsg(String(e));
     }
   };
 
   const handleSaveBib = async (saveAs = false) => {
-    let target = saveAs ? null : bibFilePath;
+    let target = saveAs ? null : activeTab.filePath;
     if (!target) {
       const chosen = await save({
         filters: [{ name: 'BibTeX / BibLaTeX', extensions: ['bib'] }],
-        defaultPath: 'referencias.bib',
+        defaultPath: activeTab.title.endsWith('.bib') ? activeTab.title : `${activeTab.title}.bib`,
       });
       if (!chosen) return;
       target = chosen;
     }
     try {
       await invoke('save_text_file', { path: target, content: rawBib });
-      setBibFilePath(target);
+      const fileName = target.split(/[\\/]/).pop() || activeTab.title;
+      updateActiveTab((tb) => ({ ...tb, title: fileName, filePath: target }));
       setStatusMsg(`Arquivo .bib salvo em: ${target}`);
     } catch (e) {
       setStatusMsg(String(e));
@@ -352,11 +521,14 @@ export default function App() {
     if (!selected || Array.isArray(selected)) return;
     try {
       const texContent = await invoke<string>('read_text_file', { path: selected });
-      const res = auditTexAgainstBib(texContent, entries);
-      setTexAudit({
-        fileName: selected.split(/[\\/]/).pop() || selected,
-        ...res,
-      });
+      const res = auditTexAgainstBib(texContent, tabEntries);
+      updateActiveTab((tb) => ({
+        ...tb,
+        texAudit: {
+          fileName: selected.split(/[\\/]/).pop() || selected,
+          ...res,
+        },
+      }));
       setStatusMsg(`Auditoria concluída em ${selected}`);
     } catch (e) {
       setStatusMsg(String(e));
@@ -383,6 +555,8 @@ export default function App() {
   const entryIssues = selectedEntry
     ? issues.filter((i) => i.entryId === selectedEntry.id)
     : [];
+  const activeStyleObj =
+    CITATION_STYLES.find((s) => s.id === activeTab.citationStyle) || CITATION_STYLES[0];
 
   return (
     <div className="fbib-shell">
@@ -410,7 +584,7 @@ export default function App() {
             className="fbib-btn primary"
             onClick={async () => {
               await navigator.clipboard.writeText(rawBib);
-              setStatusMsg('Arquivo .bib completo copiado!');
+              setStatusMsg(`Código .bib da aba "${activeTab.title}" copiado!`);
             }}
           >
             <Copy size={14} /> Copiar .bib
@@ -449,13 +623,73 @@ export default function App() {
         </div>
       </header>
 
+      {/* Independent Renameable Tabs */}
+      <div className="fbib-tabbar">
+        <div className="fbib-tabbar-list">
+          {tabs.map((tb) => (
+            <div
+              key={tb.id}
+              className={`fbib-proj-tab ${tb.id === activeTabId ? 'active' : ''}`}
+              onClick={() => {
+                editSourceRef.current = 'visual';
+                setActiveTabId(tb.id);
+              }}
+              onDoubleClick={() => {
+                setEditingTabId(tb.id);
+                setEditingTabTitle(tb.title);
+              }}
+              title="Clique duplo para renomear esta aba"
+            >
+              <span className="fbib-badge">{tb.includedIds.length}</span>
+              {editingTabId === tb.id ? (
+                <input
+                  autoFocus
+                  style={{ width: 115, height: 18, fontSize: 11 }}
+                  value={editingTabTitle}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) => setEditingTabTitle(e.target.value)}
+                  onBlur={() => {
+                    const trimmed = editingTabTitle.trim();
+                    if (trimmed) {
+                      setTabs((prev) =>
+                        prev.map((item) => (item.id === tb.id ? { ...item, title: trimmed } : item))
+                      );
+                    }
+                    setEditingTabId(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                    if (e.key === 'Escape') setEditingTabId(null);
+                  }}
+                />
+              ) : (
+                <span className="fbib-proj-title">{tb.title}</span>
+              )}
+              <button
+                type="button"
+                className="fbib-proj-close"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  closeTab(tb.id);
+                }}
+              >
+                <X size={11} />
+              </button>
+            </div>
+          ))}
+          <button type="button" className="fbib-btn" style={{ padding: '3px 7px' }} onClick={createNewTab} title="Nova aba .bib">
+            <Plus size={12} />
+          </button>
+        </div>
+      </div>
+
       {statusMsg && <div className="fbib-status">{statusMsg}</div>}
 
       <main
         className="fbib-main"
         style={{ gridTemplateColumns: `${sidebarWidth}px 5px 1fr 5px ${codeWidth}px` }}
       >
-        {/* Left: Lookup + Entries List */}
+        {/* Left: Shared Global Library with Checkboxes for active tab */}
         <aside className="fbib-sidebar">
           <div className="fbib-card">
             <div className="fbib-sec-title">
@@ -490,9 +724,31 @@ export default function App() {
 
           <div className="fbib-card">
             <div className="fbib-sec-title">
-              <span>Referências ({entries.length})</span>
+              <span>Referências ({library.length} no acervo · {tabEntries.length} na aba)</span>
               <button type="button" className="fbib-chip" onClick={() => addNewEntry('article')}>
                 <Plus size={11} /> Nova
+              </button>
+            </div>
+            <div className="fbib-chip-row">
+              <button
+                type="button"
+                className="fbib-chip"
+                onClick={() => {
+                  editSourceRef.current = 'visual';
+                  updateActiveTab((tb) => ({ ...tb, includedIds: library.map((e) => e.id) }));
+                }}
+              >
+                Marcar todas
+              </button>
+              <button
+                type="button"
+                className="fbib-chip"
+                onClick={() => {
+                  editSourceRef.current = 'visual';
+                  updateActiveTab((tb) => ({ ...tb, includedIds: [] }));
+                }}
+              >
+                Desmarcar todas
               </button>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -513,24 +769,40 @@ export default function App() {
               />
             </div>
 
-            {filteredEntries.map((e) => {
-              const countIssues = issues.filter((i) => i.entryId === e.id).length;
+            {filteredLibrary.map((e) => {
+              const isChecked = includedSet.has(e.id);
+              const countIssues = isChecked
+                ? issues.filter((i) => i.entryId === e.id).length
+                : 0;
               return (
                 <div
                   key={e.id}
                   className={`fbib-entry-item ${e.id === selectedEntry?.id ? 'active' : ''}`}
-                  onClick={() => setSelectedId(e.id)}
+                  onClick={() => updateActiveTab((tb) => ({ ...tb, selectedId: e.id }))}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
-                    <strong style={{ fontSize: 12 }}>@{e.key}</strong>
+                    <label
+                      style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', minWidth: 0 }}
+                      onClick={(ev) => ev.stopPropagation()}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => toggleIncludeInTab(e.id)}
+                        title="Marcar para incluir no .bib desta aba"
+                      />
+                      <strong style={{ fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        @{e.key}
+                      </strong>
+                    </label>
                     <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                       <span className="fbib-badge">{e.type}</span>
                       {countIssues > 0 && (
-                        <span className="fbib-badge warn">{countIssues} alerta(s)</span>
+                        <span className="fbib-badge warn">{countIssues}</span>
                       )}
                     </div>
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <div style={{ fontSize: 11, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingLeft: 20 }}>
                     {e.fields.title || 'Sem título'}
                   </div>
                 </div>
@@ -541,7 +813,7 @@ export default function App() {
 
         <div className="fbib-resizer" onMouseDown={(e) => startResize('left', e)} />
 
-        {/* Center: Visual Editor + ABNT Preview + Linter + Tex Audit */}
+        {/* Center: Visual Editor + Searchable Preview + Linter + Tex Audit */}
         <section className="fbib-center">
           {selectedEntry && (
             <div className="fbib-card">
@@ -553,20 +825,19 @@ export default function App() {
                     className="fbib-chip"
                     onClick={() => {
                       const used = new Set(
-                        entries.filter((x) => x.id !== selectedEntry.id).map((x) => x.key)
+                        library.filter((x) => x.id !== selectedEntry.id).map((x) => x.key)
                       );
                       updateSelected({ key: generateStandardKey(selectedEntry, used) });
                     }}
-                    title="Gerar chave única padronizada (autor+ano+palavra)"
                   >
                     Gerar Chave Única
                   </button>
                   <button
                     type="button"
                     className="fbib-chip"
-                    onClick={() => removeEntry(selectedEntry.id)}
+                    onClick={() => removeFromLibrary(selectedEntry.id)}
                     style={{ color: '#f43f5e' }}
-                    title="Remover entrada"
+                    title="Excluir do acervo global"
                   >
                     <Trash2 size={12} />
                   </button>
@@ -575,15 +846,19 @@ export default function App() {
 
               <div className="fbib-grid2">
                 <label className="fbib-field">
-                  Tipo (@type)
+                  Tipo (@type — BibTeX & BibLaTeX)
                   <select
                     value={selectedEntry.type}
                     onChange={(e) => updateSelected({ type: e.target.value as BibEntryType })}
                   >
-                    {ENTRY_TYPES.map((tp) => (
-                      <option key={tp} value={tp}>
-                        @{tp}
-                      </option>
+                    {BIB_TYPE_GROUPS.map((grp) => (
+                      <optgroup key={grp.label} label={grp.label}>
+                        {grp.types.map((tp) => (
+                          <option key={tp.id} value={tp.id}>
+                            @{tp.id} — {tp.desc}
+                          </option>
+                        ))}
+                      </optgroup>
                     ))}
                   </select>
                 </label>
@@ -605,7 +880,6 @@ export default function App() {
                     onClick={() =>
                       updateField('author', toggleCorporateAuthor(selectedEntry.fields.author || ''))
                     }
-                    title="Envolve com {{...}} para o biblatex-abnt não inverter nome institucional"
                   >
                     Autor Corporativo {'{{...}}'}
                   </button>
@@ -625,7 +899,6 @@ export default function App() {
                     onClick={() =>
                       updateField('title', protectAcronymsInTitle(selectedEntry.fields.title || ''))
                     }
-                    title="Protege siglas (COVID-19, USA, LaTeX) com chaves individuais {SIGLA}"
                   >
                     Proteger Siglas {'{ABC}'}
                   </button>
@@ -638,21 +911,33 @@ export default function App() {
 
               <div className="fbib-grid2">
                 <label className="fbib-field">
-                  Revista / Anais / Editora
+                  Revista / Anais / Editora / Instituição
                   <input
                     value={
                       selectedEntry.fields.journal ||
                       selectedEntry.fields.journaltitle ||
                       selectedEntry.fields.booktitle ||
                       selectedEntry.fields.publisher ||
+                      selectedEntry.fields.institution ||
+                      selectedEntry.fields.school ||
                       ''
                     }
                     onChange={(e) => {
+                      const t = selectedEntry.type;
                       const key =
-                        selectedEntry.type === 'article'
+                        t === 'article' || t === 'periodical'
                           ? 'journal'
-                          : selectedEntry.type === 'inproceedings'
+                          : t === 'inproceedings' ||
+                            t === 'conference' ||
+                            t === 'incollection' ||
+                            t === 'inbook' ||
+                            t === 'bookinbook' ||
+                            t === 'inreference'
                           ? 'booktitle'
+                          : t === 'thesis' || t === 'report' || t === 'techreport'
+                          ? 'institution'
+                          : t === 'phdthesis' || t === 'mastersthesis'
+                          ? 'school'
                           : 'publisher';
                       updateField(key, e.target.value);
                     }}
@@ -667,11 +952,65 @@ export default function App() {
                 </label>
               </div>
 
+              {(selectedEntry.type === 'collection' ||
+                selectedEntry.type === 'incollection' ||
+                selectedEntry.type === 'proceedings' ||
+                selectedEntry.type === 'reference') && (
+                <label className="fbib-field">
+                  Editor(es) / Organizador(es) (editor)
+                  <input
+                    value={selectedEntry.fields.editor || ''}
+                    onChange={(e) => updateField('editor', e.target.value)}
+                  />
+                </label>
+              )}
+
+              {(selectedEntry.type === 'software' || selectedEntry.type === 'dataset') && (
+                <label className="fbib-field">
+                  Versão (version)
+                  <input
+                    placeholder="Ex: 1.4.2"
+                    value={selectedEntry.fields.version || ''}
+                    onChange={(e) => updateField('version', e.target.value)}
+                  />
+                </label>
+              )}
+
+              {selectedEntry.type === 'patent' && (
+                <div className="fbib-grid2">
+                  <label className="fbib-field">
+                    Número da Patente (number)
+                    <input
+                      value={selectedEntry.fields.number || ''}
+                      onChange={(e) => updateField('number', e.target.value)}
+                    />
+                  </label>
+                  <label className="fbib-field">
+                    Titular (holder)
+                    <input
+                      value={selectedEntry.fields.holder || ''}
+                      onChange={(e) => updateField('holder', e.target.value)}
+                    />
+                  </label>
+                </div>
+              )}
+
+              {selectedEntry.type === 'set' && (
+                <label className="fbib-field">
+                  Chaves agrupadas (entryset — separadas por vírgula)
+                  <input
+                    placeholder="chave1, chave2, chave3"
+                    value={selectedEntry.fields.entryset || ''}
+                    onChange={(e) => updateField('entryset', e.target.value)}
+                  />
+                </label>
+              )}
+
               <div className="fbib-grid2">
                 <label className="fbib-field">
-                  Volume / Páginas
+                  Páginas
                   <input
-                    placeholder="Ex: 76 | 769--789"
+                    placeholder="Ex: 769--789"
                     value={selectedEntry.fields.pages || ''}
                     onChange={(e) => updateField('pages', e.target.value)}
                   />
@@ -738,7 +1077,7 @@ export default function App() {
                   className="fbib-chip"
                   onClick={async () => {
                     await navigator.clipboard.writeText(
-                      `\\usepackage[style=abnt,backend=biber]{biblatex}\n\\addbibresource{referencias.bib}`
+                      `\\usepackage[style=abnt,backend=biber]{biblatex}\n\\addbibresource{${activeTab.title}}`
                     );
                     setStatusMsg('Preâmbulo biblatex-abnt copiado!');
                   }}
@@ -749,31 +1088,63 @@ export default function App() {
             </div>
           )}
 
-          {/* Citation Preview */}
+          {/* Formatted Preview with upward-opening searchable dropdown (max 12 visible) */}
           {selectedEntry && (
             <div className="fbib-card">
               <div className="fbib-sec-title">
                 <span>Prévia Formatada</span>
-                <select
-                  value={citationStyle}
-                  onChange={(e) => setCitationStyle(e.target.value as CitationStyle)}
-                  style={{
-                    padding: '3px 6px',
-                    borderRadius: 4,
-                    border: '1px solid var(--border)',
-                    background: 'var(--surface)',
-                    color: 'var(--text)',
-                    fontSize: 11,
-                  }}
-                >
-                  <option value="abnt">ABNT (NBR 6023)</option>
-                  <option value="ieee">IEEE</option>
-                  <option value="apa">APA</option>
-                  <option value="authoryear">Author-Year</option>
-                </select>
+                <div className="fbib-style-picker" ref={stylePickerRef}>
+                  <button
+                    type="button"
+                    className="fbib-chip"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}
+                    onClick={() => {
+                      setStyleOpen((v) => !v);
+                      setStyleSearch('');
+                    }}
+                  >
+                    <span>{activeStyleObj.label}</span>
+                    <ChevronUp size={12} />
+                  </button>
+                  {styleOpen && (
+                    <div className="fbib-style-popover">
+                      <input
+                        autoFocus
+                        className="fbib-style-search"
+                        placeholder="Pesquisar estilo (ex: ABNT, IEEE, Nature)..."
+                        value={styleSearch}
+                        onChange={(e) => setStyleSearch(e.target.value)}
+                      />
+                      <div className="fbib-style-list">
+                        {filteredStyles.length === 0 ? (
+                          <div style={{ fontSize: 11, color: 'var(--muted)', padding: 6 }}>
+                            Nenhum estilo encontrado.
+                          </div>
+                        ) : (
+                          filteredStyles.map((st) => (
+                            <button
+                              key={st.id}
+                              type="button"
+                              className={`fbib-style-opt ${
+                                st.id === activeTab.citationStyle ? 'active' : ''
+                              }`}
+                              onClick={() => {
+                                updateActiveTab((tb) => ({ ...tb, citationStyle: st.id }));
+                                setStyleOpen(false);
+                              }}
+                            >
+                              <span>{st.label}</span>
+                              <span style={{ fontSize: 9.5, opacity: 0.7 }}>{st.group}</span>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="fbib-preview-box">
-                {formatPreviewCitation(selectedEntry, citationStyle)}
+                {formatPreviewCitation(selectedEntry, activeTab.citationStyle)}
               </div>
             </div>
           )}
@@ -781,7 +1152,7 @@ export default function App() {
           {/* Pre-Flight Linter + Duplicates */}
           <div className="fbib-card">
             <div className="fbib-sec-title">
-              <span>Linter Pre-Flight & Duplicatas</span>
+              <span>Linter Pre-Flight & Duplicatas (Aba Atual)</span>
               <span className={`fbib-badge ${issues.length === 0 ? '' : 'warn'}`}>
                 {issues.length === 0 ? 'Sem erros' : `${issues.length} alerta(s)`}
               </span>
@@ -820,7 +1191,7 @@ export default function App() {
                         type="button"
                         className="fbib-chip"
                         onClick={() =>
-                          updateEntriesVisual((prev) =>
+                          updateLibraryVisual((prev) =>
                             prev.map((e) =>
                               e.id === iss.entryId
                                 ? { ...e, fields: { ...e.fields, url: '' } }
@@ -854,9 +1225,11 @@ export default function App() {
                     <button
                       type="button"
                       className="fbib-chip"
-                      onClick={() => removeEntry(dup.entries[dup.entries.length - 1].id)}
+                      onClick={() =>
+                        toggleIncludeInTab(dup.entries[dup.entries.length - 1].id)
+                      }
                     >
-                      Mesclar / Remover cópia
+                      Desmarcar cópia da aba
                     </button>
                   </div>
                 ))}
@@ -865,25 +1238,31 @@ export default function App() {
           </div>
 
           {/* .tex Audit */}
-          {texAudit && (
+          {activeTab.texAudit && (
             <div className="fbib-card">
               <div className="fbib-sec-title">
-                <span>Auditoria .tex ({texAudit.fileName})</span>
-                <button type="button" className="fbib-chip" onClick={() => setTexAudit(null)}>
+                <span>Auditoria .tex ({activeTab.texAudit.fileName})</span>
+                <button
+                  type="button"
+                  className="fbib-chip"
+                  onClick={() => updateActiveTab((tb) => ({ ...tb, texAudit: null }))}
+                >
                   Fechar
                 </button>
               </div>
               <div style={{ fontSize: 12 }}>
-                Citações únicas encontradas no texto: <strong>{texAudit.citedCount}</strong>
+                Citações únicas encontradas no texto: <strong>{activeTab.texAudit.citedCount}</strong>
               </div>
-              {texAudit.missingInBib.length > 0 && (
+              {activeTab.texAudit.missingInBib.length > 0 && (
                 <div style={{ fontSize: 11.5, color: '#f43f5e' }}>
-                  <strong>Faltam no .bib ([?]):</strong> {texAudit.missingInBib.join(', ')}
+                  <strong>Faltam no .bib desta aba ([?]):</strong>{' '}
+                  {activeTab.texAudit.missingInBib.join(', ')}
                 </div>
               )}
-              {texAudit.unusedInTex.length > 0 && (
+              {activeTab.texAudit.unusedInTex.length > 0 && (
                 <div style={{ fontSize: 11.5, color: '#f59e0b' }}>
-                  <strong>Órfãs (não citadas no .tex):</strong> {texAudit.unusedInTex.join(', ')}
+                  <strong>Marcadas na aba mas não citadas:</strong>{' '}
+                  {activeTab.texAudit.unusedInTex.join(', ')}
                 </div>
               )}
             </div>
@@ -892,12 +1271,12 @@ export default function App() {
 
         <div className="fbib-resizer" onMouseDown={(e) => startResize('right', e)} />
 
-        {/* Right: Editable .bib code */}
+        {/* Right: Editable .bib code for active tab */}
         <aside className="fbib-code-pane">
           <div className="fbib-sec-title">
             <span>
               <BookOpen size={12} style={{ verticalAlign: 'middle', marginRight: 4 }} />
-              Código .bib (Edição Bidirecional)
+              Código .bib — {activeTab.title}
             </span>
           </div>
           <textarea
@@ -905,6 +1284,7 @@ export default function App() {
             spellCheck={false}
             value={rawBib}
             onChange={(e) => handleRawBibChange(e.target.value)}
+            placeholder="Marque referências à esquerda para incluí-las neste arquivo .bib..."
             title="Edite o .bib diretamente — macros LaTeX como \\apj ou $...$ são preservadas"
           />
         </aside>
