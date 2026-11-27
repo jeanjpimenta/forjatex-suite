@@ -136,6 +136,60 @@ const DEFAULT_APPS: SuiteAppEntry[] = [
     changelog: 'v1.0.0: Canvas interativo TikZ + Gerador PGFPlots + Validação via pdflatex.',
   },
   {
+    id: 'forjabeam',
+    name: 'ForjaBeam',
+    subtitle: 'Construtor visual Beamer',
+    description:
+      'Crie apresentações LaTeX Beamer visualmente com galeria de temas, 2 colunas, blocos, overlays e notas de 2ª tela.',
+    latestVersion: '1.0.0',
+    updatedAt: '27 de nov. de 2026',
+    iconUrl: '/forjatikz-icon.png',
+    accentColor: '#0284C7',
+    installerUrl:
+      'https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaBeam_1.0.0_x64_en-US.msi',
+    installerFile: 'ForjaBeam_1.0.0_x64_en-US.msi',
+    msiUrl:
+      'https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaBeam_1.0.0_x64_en-US.msi',
+    msiFile: 'ForjaBeam_1.0.0_x64_en-US.msi',
+    exeUrl:
+      'https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaBeam_1.0.0_x64-setup.exe',
+    exeFile: 'ForjaBeam_1.0.0_x64-setup.exe',
+    debUrl:
+      'https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaBeam_1.0.0_amd64.deb',
+    debFile: 'ForjaBeam_1.0.0_amd64.deb',
+    appImageUrl:
+      'https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaBeam_1.0.0_amd64.AppImage',
+    appImageFile: 'ForjaBeam_1.0.0_amd64.AppImage',
+    changelog: 'v1.0.0: Galeria de temas Beamer, navegador de slides, blocos, overlays e notas pgfpages.',
+  },
+  {
+    id: 'forjaslide',
+    name: 'ForjaSlide',
+    subtitle: 'Apresentador PDF & Beamer',
+    description:
+      'Apresente PDFs e slides Beamer em duas telas com notas (pgfpages), próximo slide, laser, caneta e cronômetro.',
+    latestVersion: '1.0.0',
+    updatedAt: '27 de nov. de 2026',
+    iconUrl: '/forjatikz-icon.png',
+    accentColor: '#0EA5E9',
+    installerUrl:
+      'https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaSlide_1.0.0_x64_en-US.msi',
+    installerFile: 'ForjaSlide_1.0.0_x64_en-US.msi',
+    msiUrl:
+      'https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaSlide_1.0.0_x64_en-US.msi',
+    msiFile: 'ForjaSlide_1.0.0_x64_en-US.msi',
+    exeUrl:
+      'https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaSlide_1.0.0_x64-setup.exe',
+    exeFile: 'ForjaSlide_1.0.0_x64-setup.exe',
+    debUrl:
+      'https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaSlide_1.0.0_amd64.deb',
+    debFile: 'ForjaSlide_1.0.0_amd64.deb',
+    appImageUrl:
+      'https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaSlide_1.0.0_amd64.AppImage',
+    appImageFile: 'ForjaSlide_1.0.0_amd64.AppImage',
+    changelog: 'v1.0.0: Visão do apresentador + janela do público, suporte nativo pgfpages, laser, caneta e atalhos.',
+  },
+  {
     id: 'forjasnap',
     name: 'ForjaSnap',
     subtitle: 'OCR de equações e tabelas',
@@ -197,6 +251,16 @@ const APP_COPY: Record<
       description:
         'Desenhe grafos, fluxogramas, figuras científicas e curvas PGFPlots visualmente e exporte código LaTeX limpo.',
     },
+    forjabeam: {
+      subtitle: 'Construtor visual Beamer',
+      description:
+        'Crie apresentações LaTeX Beamer visualmente com galeria de temas, 2 colunas, blocos, overlays e notas de 2ª tela.',
+    },
+    forjaslide: {
+      subtitle: 'Apresentador PDF & Beamer',
+      description:
+        'Apresente PDFs e slides Beamer em duas telas com notas (pgfpages), próximo slide, laser, caneta e cronômetro.',
+    },
     forjasnap: {
       subtitle: 'OCR de equações e tabelas',
       description:
@@ -226,6 +290,16 @@ const APP_COPY: Record<
       subtitle: 'TikZ Diagrams & PGFPlots Studio',
       description:
         'Visually build diagrams, scientific figures, and PGFPlots charts and export clean LaTeX code in seconds.',
+    },
+    forjabeam: {
+      subtitle: 'Visual Beamer Builder',
+      description:
+        'Visually build LaTeX Beamer presentations with theme gallery, columns, semantic blocks, overlays, and 2nd-screen notes.',
+    },
+    forjaslide: {
+      subtitle: 'PDF & Beamer Presenter',
+      description:
+        'Present PDF and Beamer slides across dual displays with native pgfpages notes, next slide preview, laser, pen, and timer.',
     },
     forjasnap: {
       subtitle: 'Equation & Table OCR',

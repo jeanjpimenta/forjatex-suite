@@ -1,0 +1,21 @@
+[package]
+name = "forjaslide"
+version = "1.0.0"
+description = "ForjaSlide — Apresentador Profissional de Slides PDF & LaTeX Beamer"
+authors = ["Jean Pimenta <jean.pimenta@protonmail.com>", "Arkhé Code"]
+license = "GPL-3.0-or-later"
+homepage = "https://forjatex.com.br"
+repository = "https://github.com/jeanjpimenta/forjatex-suite"
+edition = "2024"
+rust-version = "1.90"
+
+[build-dependencies]
+tauri-build = { version = "2.7.6", features = [] }
+
+[dependencies]
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+tauri = { version = "2.12.7", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-shell = "2"
+

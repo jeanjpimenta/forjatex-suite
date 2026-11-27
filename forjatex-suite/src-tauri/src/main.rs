@@ -146,6 +146,8 @@ fn check_installed_apps() -> Vec<InstalledAppInfo> {
     let specs = [
         ("forjatex", vec!["ForjaTeX"], vec!["forjatex.exe", "ForjaTeX.exe"], vec!["forjatex"]),
         ("forjatikz", vec!["ForjaTikZ"], vec!["forjatikz.exe", "ForjaTikZ.exe"], vec!["forjatikz"]),
+        ("forjabeam", vec!["ForjaBeam"], vec!["forjabeam.exe", "ForjaBeam.exe"], vec!["forjabeam"]),
+        ("forjaslide", vec!["ForjaSlide"], vec!["forjaslide.exe", "ForjaSlide.exe"], vec!["forjaslide"]),
         ("forjasnap", vec!["ForjaSnap"], vec!["forjasnap.exe"], vec!["forjasnap"]),
         ("forjabib", vec!["ForjaBib"], vec!["forjabib.exe"], vec!["forjabib"]),
         ("forjadiff", vec!["ForjaDiff"], vec!["forjadiff.exe"], vec!["forjadiff"]),

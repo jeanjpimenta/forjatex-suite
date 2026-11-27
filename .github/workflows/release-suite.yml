@@ -41,16 +41,32 @@ jobs:
           npm install
           npx tauri build --bundles msi,nsis
 
+      - name: Build ForjaBeam (Windows)
+        working-directory: forjabeam
+        run: |
+          npm install
+          npx tauri build --bundles msi,nsis
+
+      - name: Build ForjaSlide (Windows)
+        working-directory: forjaslide
+        run: |
+          npm install
+          npx tauri build --bundles msi,nsis
+
       - name: Collect Windows bundles
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path dist-windows/forjatex, dist-windows/suite, dist-windows/forjatikz | Out-Null
+          New-Item -ItemType Directory -Force -Path dist-windows/forjatex, dist-windows/suite, dist-windows/forjatikz, dist-windows/forjabeam, dist-windows/forjaslide | Out-Null
           Copy-Item src-tauri/target/release/bundle/msi/*.msi dist-windows/forjatex/ -ErrorAction SilentlyContinue
           Copy-Item src-tauri/target/release/bundle/nsis/*.exe dist-windows/forjatex/ -ErrorAction SilentlyContinue
           Copy-Item forjatex-suite/src-tauri/target/release/bundle/msi/*.msi dist-windows/suite/ -ErrorAction SilentlyContinue
           Copy-Item forjatex-suite/src-tauri/target/release/bundle/nsis/*.exe dist-windows/suite/ -ErrorAction SilentlyContinue
           Copy-Item forjatikz/src-tauri/target/release/bundle/msi/*.msi dist-windows/forjatikz/ -ErrorAction SilentlyContinue
           Copy-Item forjatikz/src-tauri/target/release/bundle/nsis/*.exe dist-windows/forjatikz/ -ErrorAction SilentlyContinue
+          Copy-Item forjabeam/src-tauri/target/release/bundle/msi/*.msi dist-windows/forjabeam/ -ErrorAction SilentlyContinue
+          Copy-Item forjabeam/src-tauri/target/release/bundle/nsis/*.exe dist-windows/forjabeam/ -ErrorAction SilentlyContinue
+          Copy-Item forjaslide/src-tauri/target/release/bundle/msi/*.msi dist-windows/forjaslide/ -ErrorAction SilentlyContinue
+          Copy-Item forjaslide/src-tauri/target/release/bundle/nsis/*.exe dist-windows/forjaslide/ -ErrorAction SilentlyContinue
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v7
@@ -104,16 +120,32 @@ jobs:
           npm install
           npx tauri build --bundles deb,appimage
 
+      - name: Build ForjaBeam (Linux)
+        working-directory: forjabeam
+        run: |
+          npm install
+          npx tauri build --bundles deb,appimage
+
+      - name: Build ForjaSlide (Linux)
+        working-directory: forjaslide
+        run: |
+          npm install
+          npx tauri build --bundles deb,appimage
+
       - name: Collect Linux bundles
         run: |
-          mkdir -p dist-linux/forjatex dist-linux/suite dist-linux/forjatikz
+          mkdir -p dist-linux/forjatex dist-linux/suite dist-linux/forjatikz dist-linux/forjabeam dist-linux/forjaslide
           cp src-tauri/target/release/bundle/deb/*.deb dist-linux/forjatex/ 2>/dev/null || true
           cp src-tauri/target/release/bundle/appimage/*.AppImage dist-linux/forjatex/ 2>/dev/null || true
           cp forjatex-suite/src-tauri/target/release/bundle/deb/*.deb dist-linux/suite/ 2>/dev/null || true
           cp forjatex-suite/src-tauri/target/release/bundle/appimage/*.AppImage dist-linux/suite/ 2>/dev/null || true
           cp forjatikz/src-tauri/target/release/bundle/deb/*.deb dist-linux/forjatikz/ 2>/dev/null || true
           cp forjatikz/src-tauri/target/release/bundle/appimage/*.AppImage dist-linux/forjatikz/ 2>/dev/null || true
-          ls -la dist-linux/forjatex dist-linux/suite dist-linux/forjatikz
+          cp forjabeam/src-tauri/target/release/bundle/deb/*.deb dist-linux/forjabeam/ 2>/dev/null || true
+          cp forjabeam/src-tauri/target/release/bundle/appimage/*.AppImage dist-linux/forjabeam/ 2>/dev/null || true
+          cp forjaslide/src-tauri/target/release/bundle/deb/*.deb dist-linux/forjaslide/ 2>/dev/null || true
+          cp forjaslide/src-tauri/target/release/bundle/appimage/*.AppImage dist-linux/forjaslide/ 2>/dev/null || true
+          ls -la dist-linux/forjatex dist-linux/suite dist-linux/forjatikz dist-linux/forjabeam dist-linux/forjaslide
 
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v7
@@ -213,6 +245,38 @@ jobs:
                       "appImageFile": pick("forjatikz", ".AppImage"),
                       "appImageUrl": url(pick("forjatikz", ".AppImage")),
                       "changelog": f"Studio Visual TikZ & PGFPlots Windows + Linux ({tag})",
+                  },
+                  {
+                      "id": "forjabeam",
+                      "name": "ForjaBeam",
+                      "latestVersion": "1.0.0",
+                      "installerFile": pick("forjabeam", ".msi"),
+                      "installerUrl": url(pick("forjabeam", ".msi")),
+                      "msiFile": pick("forjabeam", ".msi"),
+                      "msiUrl": url(pick("forjabeam", ".msi")),
+                      "exeFile": pick("forjabeam", ".exe"),
+                      "exeUrl": url(pick("forjabeam", ".exe")),
+                      "debFile": pick("forjabeam", ".deb"),
+                      "debUrl": url(pick("forjabeam", ".deb")),
+                      "appImageFile": pick("forjabeam", ".AppImage"),
+                      "appImageUrl": url(pick("forjabeam", ".AppImage")),
+                      "changelog": f"Construtor Visual de Apresentações Beamer ({tag})",
+                  },
+                  {
+                      "id": "forjaslide",
+                      "name": "ForjaSlide",
+                      "latestVersion": "1.0.0",
+                      "installerFile": pick("forjaslide", ".msi"),
+                      "installerUrl": url(pick("forjaslide", ".msi")),
+                      "msiFile": pick("forjaslide", ".msi"),
+                      "msiUrl": url(pick("forjaslide", ".msi")),
+                      "exeFile": pick("forjaslide", ".exe"),
+                      "exeUrl": url(pick("forjaslide", ".exe")),
+                      "debFile": pick("forjaslide", ".deb"),
+                      "debUrl": url(pick("forjaslide", ".deb")),
+                      "appImageFile": pick("forjaslide", ".AppImage"),
+                      "appImageUrl": url(pick("forjaslide", ".AppImage")),
+                      "changelog": f"Apresentador PDF & Beamer em Duas Telas ({tag})",
                   },
               ],
           }
