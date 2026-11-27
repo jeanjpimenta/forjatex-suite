@@ -27,6 +27,7 @@ import {
   CITATION_STYLES,
   createDefaultBibEntries,
   findDuplicates,
+  formatNatbibInText,
   formatPreviewCitation,
   generateStandardKey,
   lintBibEntries,
@@ -35,6 +36,7 @@ import {
   protectAcronymsInTitle,
   serializeBibEntries,
   toggleCorporateAuthor,
+  type BibEngineMode,
   type BibEntry,
   type BibEntryType,
   type CitationStyle,
@@ -56,6 +58,7 @@ interface BibTab {
   includedIds: string[];
   selectedId: string;
   citationStyle: CitationStyle;
+  bibEngine?: BibEngineMode;
   texAudit: {
     fileName: string;
     citedCount: number;
@@ -132,7 +135,11 @@ export default function App() {
   );
 
   // Bidirectional raw .bib editor (scoped to the active tab's checked entries)
-  const serialized = useMemo(() => serializeBibEntries(tabEntries), [tabEntries]);
+  const activeEngine: BibEngineMode = activeTab.bibEngine || 'biblatex';
+  const serialized = useMemo(
+    () => serializeBibEntries(tabEntries, activeEngine),
+    [tabEntries, activeEngine]
+  );
   const [rawBib, setRawBib] = useState<string>(() => serialized);
   const editSourceRef = useRef<'visual' | 'code'>('visual');
   const parseTimerRef = useRef<number | null>(null);
@@ -196,7 +203,10 @@ export default function App() {
 
   const selectedEntry =
     library.find((e) => e.id === activeTab.selectedId) || tabEntries[0] || library[0];
-  const issues = useMemo(() => lintBibEntries(tabEntries), [tabEntries]);
+  const issues = useMemo(
+    () => lintBibEntries(tabEntries, activeEngine),
+    [tabEntries, activeEngine]
+  );
   const duplicates = useMemo(() => findDuplicates(tabEntries), [tabEntries]);
 
   const filteredLibrary = useMemo(() => {
@@ -681,6 +691,30 @@ export default function App() {
             <Plus size={12} />
           </button>
         </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+          <span style={{ fontSize: 11, color: 'var(--muted)' }}>Motor:</span>
+          <select
+            value={activeEngine}
+            onChange={(e) => {
+              editSourceRef.current = 'visual';
+              updateActiveTab((tb) => ({ ...tb, bibEngine: e.target.value as BibEngineMode }));
+            }}
+            style={{
+              padding: '3px 7px',
+              borderRadius: 5,
+              border: '1px solid var(--border)',
+              background: 'var(--panel)',
+              color: 'var(--text)',
+              fontSize: 11,
+              fontWeight: 600,
+            }}
+            title="Escolha entre BibLaTeX (Biber) ou natbib (BibTeX clássico)"
+          >
+            <option value="biblatex">BibLaTeX (Biber)</option>
+            <option value="natbib">natbib (BibTeX Clássico)</option>
+          </select>
+        </div>
       </div>
 
       {statusMsg && <div className="fbib-status">{statusMsg}</div>}
@@ -1062,28 +1096,101 @@ export default function App() {
               )}
 
               <div className="fbib-chip-row">
-                <button
-                  type="button"
-                  className="fbib-chip"
-                  onClick={async () => {
-                    await navigator.clipboard.writeText(`\\cite{${selectedEntry.key}}`);
-                    setStatusMsg(`Copiado: \\cite{${selectedEntry.key}}`);
-                  }}
-                >
-                  Copiar \cite{'{' + selectedEntry.key + '}'}
-                </button>
-                <button
-                  type="button"
-                  className="fbib-chip"
-                  onClick={async () => {
-                    await navigator.clipboard.writeText(
-                      `\\usepackage[style=abnt,backend=biber]{biblatex}\n\\addbibresource{${activeTab.title}}`
-                    );
-                    setStatusMsg('Preâmbulo biblatex-abnt copiado!');
-                  }}
-                >
-                  Copiar Preâmbulo ABNT
-                </button>
+                {activeEngine === 'natbib' ? (
+                  <>
+                    <button
+                      type="button"
+                      className="fbib-chip"
+                      onClick={async () => {
+                        await navigator.clipboard.writeText(`\\citep{${selectedEntry.key}}`);
+                        setStatusMsg(`Copiado: \\citep{${selectedEntry.key}}`);
+                      }}
+                    >
+                      Copiar \citep{'{' + selectedEntry.key + '}'}
+                    </button>
+                    <button
+                      type="button"
+                      className="fbib-chip"
+                      onClick={async () => {
+                        await navigator.clipboard.writeText(`\\citet{${selectedEntry.key}}`);
+                        setStatusMsg(`Copiado: \\citet{${selectedEntry.key}}`);
+                      }}
+                    >
+                      Copiar \citet{'{' + selectedEntry.key + '}'}
+                    </button>
+                    <button
+                      type="button"
+                      className="fbib-chip"
+                      onClick={async () => {
+                        const base = activeTab.title.replace(/\.bib$/i, '');
+                        await navigator.clipboard.writeText(
+                          `\\usepackage[round,authoryear]{natbib}\n\\bibliographystyle{plainnat}\n\\bibliography{${base}}`
+                        );
+                        setStatusMsg('Preâmbulo natbib (plainnat) copiado!');
+                      }}
+                    >
+                      Preâmbulo natbib
+                    </button>
+                    <button
+                      type="button"
+                      className="fbib-chip"
+                      onClick={async () => {
+                        const base = activeTab.title.replace(/\.bib$/i, '');
+                        await navigator.clipboard.writeText(
+                          `\\usepackage[alf]{abntex2cite}\n\\bibliography{${base}}`
+                        );
+                        setStatusMsg('Preâmbulo abntex2cite copiado!');
+                      }}
+                    >
+                      Preâmbulo abntex2cite
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      className="fbib-chip"
+                      onClick={async () => {
+                        await navigator.clipboard.writeText(`\\cite{${selectedEntry.key}}`);
+                        setStatusMsg(`Copiado: \\cite{${selectedEntry.key}}`);
+                      }}
+                    >
+                      Copiar \cite{'{' + selectedEntry.key + '}'}
+                    </button>
+                    <button
+                      type="button"
+                      className="fbib-chip"
+                      onClick={async () => {
+                        await navigator.clipboard.writeText(`\\parencite{${selectedEntry.key}}`);
+                        setStatusMsg(`Copiado: \\parencite{${selectedEntry.key}}`);
+                      }}
+                    >
+                      Copiar \parencite
+                    </button>
+                    <button
+                      type="button"
+                      className="fbib-chip"
+                      onClick={async () => {
+                        await navigator.clipboard.writeText(`\\textcite{${selectedEntry.key}}`);
+                        setStatusMsg(`Copiado: \\textcite{${selectedEntry.key}}`);
+                      }}
+                    >
+                      Copiar \textcite
+                    </button>
+                    <button
+                      type="button"
+                      className="fbib-chip"
+                      onClick={async () => {
+                        await navigator.clipboard.writeText(
+                          `\\usepackage[style=abnt,backend=biber]{biblatex}\n\\addbibresource{${activeTab.title}}`
+                        );
+                        setStatusMsg('Preâmbulo biblatex-abnt copiado!');
+                      }}
+                    >
+                      Copiar Preâmbulo ABNT
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -1145,6 +1252,14 @@ export default function App() {
               </div>
               <div className="fbib-preview-box">
                 {formatPreviewCitation(selectedEntry, activeTab.citationStyle)}
+                {activeEngine === 'natbib' && (() => {
+                  const nt = formatNatbibInText(selectedEntry);
+                  return (
+                    <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px dashed var(--border)', fontSize: 11, color: 'var(--muted)' }}>
+                      <strong>natbib no texto:</strong> <code>\citet</code> → {nt.citet} &nbsp;|&nbsp; <code>\citep</code> → {nt.citep}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           )}

@@ -103,6 +103,8 @@ export const BIB_TYPE_GROUPS: Array<{ label: string; types: Array<{ id: BibEntry
   },
 ];
 
+export type BibEngineMode = 'biblatex' | 'natbib';
+
 export type CitationStyle =
   | 'abnt'
   | 'abnt-num'
@@ -218,14 +220,85 @@ export function createDefaultBibEntries(): BibEntry[] {
   ];
 }
 
-export function serializeBibEntries(entries: BibEntry[]): string {
+export function serializeBibEntries(
+  entries: BibEntry[],
+  engine: BibEngineMode = 'biblatex'
+): string {
+  const natbibTypeMap: Partial<Record<BibEntryType, BibEntryType>> = {
+    online: 'misc',
+    electronic: 'misc',
+    www: 'misc',
+    software: 'misc',
+    dataset: 'misc',
+    periodical: 'misc',
+    suppperiodical: 'article',
+    mvbook: 'book',
+    bookinbook: 'inbook',
+    suppbook: 'inbook',
+    mvcollection: 'collection',
+    suppcollection: 'incollection',
+    mvproceedings: 'proceedings',
+    reference: 'book',
+    mvreference: 'book',
+    inreference: 'incollection',
+    thesis: 'phdthesis',
+    report: 'techreport',
+  };
+
   return entries
     .map((e) => {
-      const orderedKeys = Object.keys(e.fields).filter((k) => e.fields[k]?.trim() !== '');
-      const lines = orderedKeys.map((k) => `  ${k.padEnd(13, ' ')} = {${e.fields[k]}}`);
-      return `@${e.type}{${e.key},\n${lines.join(',\n')}\n}`;
+      if (engine === 'biblatex') {
+        const orderedKeys = Object.keys(e.fields).filter((k) => e.fields[k]?.trim() !== '');
+        const lines = orderedKeys.map((k) => `  ${k.padEnd(13, ' ')} = {${e.fields[k]}}`);
+        return `@${e.type}{${e.key},\n${lines.join(',\n')}\n}`;
+      }
+
+      const outType = natbibTypeMap[e.type] ?? e.type;
+      const outFields: Record<string, string> = { ...e.fields };
+      if (!outFields.journal && outFields.journaltitle) {
+        outFields.journal = outFields.journaltitle;
+        delete outFields.journaltitle;
+      }
+      if (!outFields.address && outFields.location) {
+        outFields.address = outFields.location;
+        delete outFields.location;
+      }
+      if (!outFields.year && outFields.date) {
+        const ym = /\d{4}/.exec(outFields.date);
+        if (ym) outFields.year = ym[0];
+      }
+      if (outFields.url && !outFields.howpublished && outType === 'misc') {
+        outFields.howpublished = `\\url{${outFields.url}}`;
+      }
+      if (outFields.urldate && !outFields.note) {
+        outFields.note = `Acesso em: ${outFields.urldate}`;
+      }
+      const orderedKeys = Object.keys(outFields).filter((k) => outFields[k]?.trim() !== '');
+      const lines = orderedKeys.map((k) => `  ${k.padEnd(13, ' ')} = {${outFields[k]}}`);
+      return `@${outType}{${e.key},\n${lines.join(',\n')}\n}`;
     })
     .join('\n\n');
+}
+
+export function formatNatbibInText(e: BibEntry): { citet: string; citep: string } {
+  const raw = (e.fields.author || e.fields.editor || 'Autor').replace(/[{}]/g, '');
+  const parts = raw.split(/\s+and\s+/i).map((a) => {
+    const trimmed = a.trim();
+    return trimmed.includes(',')
+      ? trimmed.split(',')[0].trim()
+      : trimmed.split(/\s+/).pop() || trimmed;
+  });
+  const authLabel =
+    parts.length === 1
+      ? parts[0]
+      : parts.length === 2
+      ? `${parts[0]} & ${parts[1]}`
+      : `${parts[0]} et al.`;
+  const year = (e.fields.year || e.fields.date || 's.d.').slice(0, 4);
+  return {
+    citet: `${authLabel} (${year})`,
+    citep: `(${authLabel}, ${year})`,
+  };
 }
 
 function readBalanced(src: string, startIdx: number): { value: string; nextIdx: number } {
@@ -346,7 +419,10 @@ export function toggleCorporateAuthor(author: string): string {
   return `{{${trimmed.replace(/^\{+|\}+$/g, '')}}}`;
 }
 
-export function lintBibEntries(entries: BibEntry[]): LintIssue[] {
+export function lintBibEntries(
+  entries: BibEntry[],
+  engine: BibEngineMode = 'biblatex'
+): LintIssue[] {
   const issues: LintIssue[] = [];
   const keyCounts = new Map<string, number>();
   for (const e of entries) {
@@ -474,6 +550,16 @@ export function lintBibEntries(entries: BibEntry[]): LintIssue[] {
         severity: 'warn',
         code: 'abnt-urldate',
         message: 'Padrão ABNT: entradas com "url" exigem "urldate" (data de acesso).',
+      });
+    }
+
+    if (engine === 'natbib' && e.fields.date?.trim() && !e.fields.year?.trim()) {
+      issues.push({
+        entryId: e.id,
+        entryKey: e.key,
+        severity: 'warn',
+        code: 'missing-field',
+        message: 'Modo natbib: estilos .bst clássicos usam "year" em vez de "date" (convertido na exportação).',
       });
     }
   }
