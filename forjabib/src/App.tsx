@@ -6,12 +6,15 @@ import {
   AlertTriangle,
   BookOpen,
   Check,
+  CheckCircle2,
   ChevronUp,
   Copy,
+  ExternalLink,
   FileSearch,
   FolderOpen,
   Heart,
   Moon,
+  Palette,
   Plus,
   RotateCcw,
   Save,
@@ -42,6 +45,13 @@ import {
   type BibEntryType,
   type CitationStyle,
 } from './bibEngine';
+import {
+  buildStyledPreview,
+  createDefaultStyleConfig,
+  generateBiblatexCfg,
+  generateStyleLatex,
+  type CustomBibStyleConfig,
+} from './styleEngine';
 import {
   generatePixQrDataUrl,
   getPayPalDonateUrl,
@@ -85,6 +95,8 @@ interface BibTab {
   selectedId: string;
   citationStyle: CitationStyle;
   bibEngine?: BibEngineMode;
+  tabView?: 'entries' | 'style';
+  styleConfig?: CustomBibStyleConfig;
   texAudit: {
     fileName: string;
     citedCount: number;
@@ -143,6 +155,7 @@ export default function App() {
 
   const [search, setSearch] = useState('');
   const [statusMsg, setStatusMsg] = useState('');
+  const [statusPdfPath, setStatusPdfPath] = useState<string | null>(null);
 
   // Lookup bar (DOI / arXiv / ISBN)
   const [lookupInput, setLookupInput] = useState('');
@@ -162,6 +175,54 @@ export default function App() {
 
   // Bidirectional raw .bib editor (scoped to the active tab's checked entries)
   const activeEngine: BibEngineMode = activeTab.bibEngine || 'biblatex';
+  const activeTabView: 'entries' | 'style' = activeTab.tabView || 'entries';
+  const activeStyleCfg: CustomBibStyleConfig =
+    activeTab.styleConfig || createDefaultStyleConfig(activeEngine);
+  const styleLatexCode = useMemo(
+    () => generateStyleLatex(activeStyleCfg, activeTab.title, true),
+    [activeStyleCfg, activeTab.title]
+  );
+
+  const updateStyleCfg = (patch: Partial<CustomBibStyleConfig>) => {
+    updateActiveTab((tb) => ({
+      ...tb,
+      styleConfig: { ...(tb.styleConfig || createDefaultStyleConfig(activeEngine)), ...patch },
+    }));
+  };
+
+  const handleCompileStyleTest = async () => {
+    setStatusPdfPath(null);
+    setStatusMsg('Compilando PDF de teste do estilo (pdflatex + biber/bibtex)...');
+    const preambleNoResource = generateStyleLatex(activeStyleCfg, activeTab.title, false);
+    try {
+      const res = await invoke<{ message: string; pdf_path: string }>('compile_bib_style_test', {
+        bibContent: rawBib || serializeBibEntries(library.slice(0, 2), activeStyleCfg.engine),
+        stylePreamble: preambleNoResource,
+        useBiber: activeStyleCfg.engine === 'biblatex',
+        bibStyleName: activeStyleCfg.baseStyle,
+      });
+      setStatusMsg(res.message);
+      setStatusPdfPath(res.pdf_path);
+    } catch (e) {
+      setStatusPdfPath(null);
+      setStatusMsg(String(e));
+    }
+  };
+
+  const handleExportBiblatexCfg = async () => {
+    const target = await save({
+      filters: [{ name: 'BibLaTeX Config', extensions: ['cfg'] }],
+      defaultPath: 'biblatex.cfg',
+    });
+    if (!target) return;
+    try {
+      await invoke('save_text_file', { path: target, content: generateBiblatexCfg(activeStyleCfg) });
+      setStatusPdfPath(null);
+      setStatusMsg(`Arquivo biblatex.cfg salvo em: ${target}`);
+    } catch (e) {
+      setStatusMsg(String(e));
+    }
+  };
   const serialized = useMemo(
     () => serializeBibEntries(tabEntries, activeEngine),
     [tabEntries, activeEngine]
@@ -768,12 +829,47 @@ export default function App() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-          <span style={{ fontSize: 11, color: 'var(--muted)' }}>Motor:</span>
+          <button
+            type="button"
+            className={`fbib-chip ${activeTabView === 'entries' ? 'primary' : ''}`}
+            style={
+              activeTabView === 'entries'
+                ? { background: 'var(--accent)', color: '#fff', borderColor: 'var(--accent)' }
+                : undefined
+            }
+            onClick={() => updateActiveTab((tb) => ({ ...tb, tabView: 'entries' }))}
+          >
+            <BookOpen size={11} style={{ verticalAlign: 'middle', marginRight: 4 }} />
+            Referências (.bib)
+          </button>
+          <button
+            type="button"
+            className={`fbib-chip ${activeTabView === 'style' ? 'primary' : ''}`}
+            style={
+              activeTabView === 'style'
+                ? { background: 'var(--accent)', color: '#fff', borderColor: 'var(--accent)' }
+                : undefined
+            }
+            onClick={() => updateActiveTab((tb) => ({ ...tb, tabView: 'style' }))}
+          >
+            <Palette size={11} style={{ verticalAlign: 'middle', marginRight: 4 }} />
+            Criador de Estilo
+          </button>
+          <span style={{ fontSize: 11, color: 'var(--muted)', marginLeft: 4 }}>Motor:</span>
           <select
             value={activeEngine}
             onChange={(e) => {
+              const eng = e.target.value as BibEngineMode;
               editSourceRef.current = 'visual';
-              updateActiveTab((tb) => ({ ...tb, bibEngine: e.target.value as BibEngineMode }));
+              updateActiveTab((tb) => ({
+                ...tb,
+                bibEngine: eng,
+                styleConfig: {
+                  ...(tb.styleConfig || createDefaultStyleConfig(eng)),
+                  engine: eng,
+                  baseStyle: eng === 'natbib' ? 'plainnat' : 'authoryear',
+                },
+              }));
             }}
             style={{
               padding: '3px 7px',
@@ -792,8 +888,393 @@ export default function App() {
         </div>
       </div>
 
-      {statusMsg && <div className="fbib-status">{statusMsg}</div>}
+      {statusMsg && (
+        <div className="fbib-status" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <span>{statusMsg}</span>
+          {statusPdfPath && (
+            <button
+              type="button"
+              className="fbib-chip"
+              onClick={() => invoke('open_file_path', { path: statusPdfPath })}
+            >
+              <ExternalLink size={12} style={{ verticalAlign: 'middle', marginRight: 4 }} />
+              Abrir PDF gerado
+            </button>
+          )}
+        </div>
+      )}
 
+      {activeTabView === 'style' ? (
+        <main
+          className="fbib-main"
+          style={{ gridTemplateColumns: `${sidebarWidth}px 5px 1fr 5px ${codeWidth}px` }}
+        >
+          {/* Style Studio Left: Visual Controls */}
+          <aside className="fbib-sidebar">
+            <div className="fbib-card">
+              <div className="fbib-sec-title">
+                <span>1. Estilo Base e Motor</span>
+              </div>
+              <div className="fbib-grid2">
+                <label className="fbib-field">
+                  Motor
+                  <select
+                    value={activeStyleCfg.engine}
+                    onChange={(e) => {
+                      const eng = e.target.value as BibEngineMode;
+                      updateStyleCfg({
+                        engine: eng,
+                        baseStyle: eng === 'natbib' ? 'plainnat' : 'authoryear',
+                      });
+                    }}
+                  >
+                    <option value="biblatex">BibLaTeX (Biber)</option>
+                    <option value="natbib">natbib (BibTeX)</option>
+                  </select>
+                </label>
+                <label className="fbib-field">
+                  Estilo Base
+                  <select
+                    value={activeStyleCfg.baseStyle}
+                    onChange={(e) =>
+                      updateStyleCfg({
+                        baseStyle: e.target.value as CustomBibStyleConfig['baseStyle'],
+                      })
+                    }
+                  >
+                    {activeStyleCfg.engine === 'biblatex' ? (
+                      <>
+                        <option value="authoryear">authoryear</option>
+                        <option value="numeric">numeric</option>
+                        <option value="alphabetic">alphabetic</option>
+                        <option value="abnt">abnt</option>
+                        <option value="ieee">ieee</option>
+                        <option value="apa">apa</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="plainnat">plainnat</option>
+                        <option value="abbrvnat">abbrvnat</option>
+                        <option value="unsrtnat">unsrtnat</option>
+                        <option value="abntex2-alf">abntex2-alf</option>
+                      </>
+                    )}
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            {activeStyleCfg.engine === 'biblatex' ? (
+              <div className="fbib-card">
+                <div className="fbib-sec-title">
+                  <span>2. Opções do Pacote (TeX.SX #12806)</span>
+                </div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={activeStyleCfg.givenInits}
+                    onChange={(e) => updateStyleCfg({ givenInits: e.target.checked })}
+                  />
+                  Iniciais nos prenomes (giveninits)
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={!activeStyleCfg.dashed}
+                    onChange={(e) => updateStyleCfg({ dashed: !e.target.checked })}
+                  />
+                  Repetir nome do autor (dashed=false)
+                </label>
+                <div className="fbib-grid2">
+                  <label className="fbib-field">
+                    Máx. autores na lista
+                    <input
+                      type="number"
+                      min={1}
+                      max={99}
+                      value={activeStyleCfg.maxBibNames}
+                      onChange={(e) => updateStyleCfg({ maxBibNames: Math.max(1, Number(e.target.value)) })}
+                    />
+                  </label>
+                  <label className="fbib-field">
+                    Máx. autores no texto
+                    <input
+                      type="number"
+                      min={1}
+                      max={10}
+                      value={activeStyleCfg.maxCiteNames}
+                      onChange={(e) => updateStyleCfg({ maxCiteNames: Math.max(1, Number(e.target.value)) })}
+                    />
+                  </label>
+                </div>
+                <div className="fbib-chip-row">
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11.5 }}>
+                    <input
+                      type="checkbox"
+                      checked={activeStyleCfg.showDoi}
+                      onChange={(e) => updateStyleCfg({ showDoi: e.target.checked })}
+                    />
+                    DOI
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11.5 }}>
+                    <input
+                      type="checkbox"
+                      checked={activeStyleCfg.showUrl}
+                      onChange={(e) => updateStyleCfg({ showUrl: e.target.checked })}
+                    />
+                    URL
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11.5 }}>
+                    <input
+                      type="checkbox"
+                      checked={activeStyleCfg.showIsbn}
+                      onChange={(e) => updateStyleCfg({ showIsbn: e.target.checked })}
+                    />
+                    ISBN
+                  </label>
+                </div>
+              </div>
+            ) : (
+              <div className="fbib-card">
+                <div className="fbib-sec-title">
+                  <span>2. Delimitadores natbib (\setcitestyle)</span>
+                </div>
+                <div className="fbib-grid2">
+                  <label className="fbib-field">
+                    Delimitador
+                    <select
+                      value={activeStyleCfg.natbibBrackets}
+                      onChange={(e) =>
+                        updateStyleCfg({ natbibBrackets: e.target.value as 'round' | 'square' })
+                      }
+                    >
+                      <option value="round">Parênteses (...)</option>
+                      <option value="square">Colchetes [...]</option>
+                    </select>
+                  </label>
+                  <label className="fbib-field">
+                    Separador
+                    <select
+                      value={activeStyleCfg.natbibSep}
+                      onChange={(e) =>
+                        updateStyleCfg({ natbibSep: e.target.value as 'semicolon' | 'comma' })
+                      }
+                    >
+                      <option value="semicolon">Ponto e vírgula (;)</option>
+                      <option value="comma">Vírgula (,)</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+            )}
+
+            <div className="fbib-card">
+              <div className="fbib-sec-title">
+                <span>3. Tipografia & Pontuação</span>
+              </div>
+              <label className="fbib-field">
+                Ordem dos Nomes (\DeclareNameAlias)
+                <select
+                  value={activeStyleCfg.nameOrder}
+                  onChange={(e) =>
+                    updateStyleCfg({
+                      nameOrder: e.target.value as CustomBibStyleConfig['nameOrder'],
+                    })
+                  }
+                >
+                  <option value="family-given">Sobrenome, Nome (family-given)</option>
+                  <option value="given-family">Nome Sobrenome (given-family)</option>
+                  <option value="default">Padrão do estilo</option>
+                </select>
+              </label>
+              <div className="fbib-grid2">
+                <label className="fbib-field">
+                  Título (\DeclareFieldFormat)
+                  <select
+                    value={activeStyleCfg.titleFormat}
+                    onChange={(e) =>
+                      updateStyleCfg({
+                        titleFormat: e.target.value as CustomBibStyleConfig['titleFormat'],
+                      })
+                    }
+                  >
+                    <option value="quote">Entre aspas (“...”)</option>
+                    <option value="italic">Itálico</option>
+                    <option value="bold">Negrito</option>
+                    <option value="default">Normal</option>
+                  </select>
+                </label>
+                <label className="fbib-field">
+                  Revista / Livro
+                  <select
+                    value={activeStyleCfg.venueFormat}
+                    onChange={(e) =>
+                      updateStyleCfg({
+                        venueFormat: e.target.value as CustomBibStyleConfig['venueFormat'],
+                      })
+                    }
+                  >
+                    <option value="italic">Itálico</option>
+                    <option value="bold">Negrito</option>
+                    <option value="normal">Normal</option>
+                  </select>
+                </label>
+              </div>
+              <div className="fbib-grid2">
+                <label className="fbib-field">
+                  Volume
+                  <select
+                    value={activeStyleCfg.volumeFormat}
+                    onChange={(e) =>
+                      updateStyleCfg({
+                        volumeFormat: e.target.value as CustomBibStyleConfig['volumeFormat'],
+                      })
+                    }
+                  >
+                    <option value="bold">Negrito</option>
+                    <option value="parens-bold">Negrito (parênteses)</option>
+                    <option value="normal">Normal</option>
+                  </select>
+                </label>
+                <label className="fbib-field">
+                  Separador (\newunitpunct)
+                  <select
+                    value={activeStyleCfg.unitPunct}
+                    onChange={(e) =>
+                      updateStyleCfg({
+                        unitPunct: e.target.value as CustomBibStyleConfig['unitPunct'],
+                      })
+                    }
+                  >
+                    <option value="period">Ponto (.)</option>
+                    <option value="comma">Vírgula (,)</option>
+                    <option value="semicolon">Ponto e vírgula (;)</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+          </aside>
+
+          <div className="fbib-resizer" onMouseDown={(e) => startResize('left', e)} />
+
+          {/* Style Studio Center: Live Rendered Document Preview */}
+          <section className="fbib-center">
+            <div className="fbib-card" style={{ background: '#ffffff', color: '#0f172a', padding: 20, gap: 14 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #cbd5e1', paddingBottom: 8 }}>
+                <strong style={{ fontSize: 13 }}>Prévia de Compilação ({activeStyleCfg.baseStyle})</strong>
+                <button
+                  type="button"
+                  className="fbib-btn primary"
+                  onClick={handleCompileStyleTest}
+                >
+                  <CheckCircle2 size={13} /> Compilar PDF de Teste
+                </button>
+              </div>
+
+              {(() => {
+                const sample = (tabEntries.length > 0 ? tabEntries : library).slice(0, 3);
+                const previews = sample.map((item, idx) => buildStyledPreview(item, activeStyleCfg, idx + 1));
+                return (
+                  <>
+                    <div style={{ fontSize: 13, lineHeight: 1.65 }}>
+                      <strong>No texto:</strong> Conforme demonstrado por{' '}
+                      <span style={{ color: '#0369a1', fontWeight: 600 }}>{previews[0]?.textcite}</span>,
+                      o método converge rapidamente{' '}
+                      <span style={{ color: '#0369a1', fontWeight: 600 }}>{previews[1]?.parencite || previews[0]?.parencite}</span>.
+                    </div>
+
+                    <div style={{ borderTop: '1px dashed #cbd5e1', paddingTop: 10 }}>
+                      <strong style={{ fontSize: 13, display: 'block', marginBottom: 8 }}>Referências</strong>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12.5, lineHeight: 1.55 }}>
+                        {previews.map((pv, idx) => (
+                          <div key={idx}>
+                            <span>{pv.authors}</span>
+                            {pv.punct}
+                            <span
+                              style={{
+                                fontStyle: activeStyleCfg.titleFormat === 'italic' ? 'italic' : 'normal',
+                                fontWeight: activeStyleCfg.titleFormat === 'bold' ? 700 : 400,
+                              }}
+                            >
+                              {pv.title}
+                            </span>
+                            {pv.venue && (
+                              <>
+                                {pv.punct}
+                                <span
+                                  style={{
+                                    fontStyle: activeStyleCfg.venueFormat === 'italic' ? 'italic' : 'normal',
+                                    fontWeight: activeStyleCfg.venueFormat === 'bold' ? 700 : 400,
+                                  }}
+                                >
+                                  {pv.venue}
+                                </span>
+                              </>
+                            )}
+                            {pv.volume && (
+                              <>
+                                {', '}
+                                <span
+                                  style={{
+                                    fontWeight: activeStyleCfg.volumeFormat !== 'normal' ? 700 : 400,
+                                  }}
+                                >
+                                  {pv.volume}
+                                </span>
+                              </>
+                            )}
+                            {pv.pages && `, ${pv.pages}`}
+                            {`, ${pv.year}. `}
+                            {pv.extras.length > 0 && (
+                              <span style={{ color: '#475569' }}>{pv.extras.join('. ')}.</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          </section>
+
+          <div className="fbib-resizer" onMouseDown={(e) => startResize('right', e)} />
+
+          {/* Style Studio Right: Generated Preamble & biblatex.cfg */}
+          <aside className="fbib-code-pane">
+            <div className="fbib-sec-title">
+              <span>Código do Estilo (Preâmbulo)</span>
+            </div>
+            <div className="fbib-chip-row">
+              <button
+                type="button"
+                className="fbib-btn primary"
+                onClick={async () => {
+                  await navigator.clipboard.writeText(styleLatexCode);
+                  setStatusPdfPath(null);
+                  setStatusMsg('Preâmbulo do estilo copiado para colar no ForjaTeX IDE!');
+                }}
+              >
+                <Copy size={12} /> Copiar Preâmbulo
+              </button>
+              {activeStyleCfg.engine === 'biblatex' && (
+                <button
+                  type="button"
+                  className="fbib-btn"
+                  onClick={handleExportBiblatexCfg}
+                >
+                  <Save size={12} /> Exportar biblatex.cfg
+                </button>
+              )}
+            </div>
+            <textarea
+              className="fbib-code-editor"
+              readOnly
+              value={styleLatexCode}
+            />
+          </aside>
+        </main>
+      ) : (
       <main
         className="fbib-main"
         style={{ gridTemplateColumns: `${sidebarWidth}px 5px 1fr 5px ${codeWidth}px` }}
@@ -1500,6 +1981,7 @@ export default function App() {
           />
         </aside>
       </main>
+      )}
 
       {confirmDeleteEntry && (
         <div className="fbib-modal-backdrop" onClick={() => setConfirmDeleteEntry(null)}>

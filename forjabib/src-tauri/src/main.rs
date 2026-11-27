@@ -4,6 +4,15 @@ use std::fs;
 use std::path::Path;
 use std::process::Command;
 
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
+
+#[derive(serde::Serialize)]
+struct CompileStyleResult {
+    message: String,
+    pdf_path: String,
+}
+
 fn launch_os_path(path: &Path) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
@@ -51,6 +60,68 @@ fn fetch_url_text(url: String, accept: Option<String>) -> Result<String, String>
 }
 
 #[tauri::command]
+fn open_file_path(path: String) -> Result<(), String> {
+    let target = Path::new(&path);
+    if !target.exists() {
+        return Err(format!("Arquivo não encontrado: {}", path));
+    }
+    launch_os_path(target)
+}
+
+#[tauri::command]
+fn compile_bib_style_test(
+    bib_content: String,
+    style_preamble: String,
+    use_biber: bool,
+    bib_style_name: Option<String>,
+) -> Result<CompileStyleResult, String> {
+    let dir = std::env::temp_dir().join("forjabib-style-test");
+    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    fs::write(dir.join("ref_test.bib"), &bib_content).map_err(|e| e.to_string())?;
+
+    let body = if use_biber {
+        format!(
+            "\\documentclass[11pt,a4paper]{{article}}\n\\usepackage[utf8]{{inputenc}}\n\\usepackage[T1]{{fontenc}}\n{}\n\\addbibresource{{ref_test.bib}}\n\\begin{{document}}\n\\section*{{Teste de Estilo Bibliográfico}}\nExemplo de citação no texto: \\cite{{*}}\\nocite{{*}}\n\\printbibliography\n\\end{{document}}\n",
+            style_preamble
+        )
+    } else {
+        let bst = bib_style_name.unwrap_or_else(|| "plainnat".to_string());
+        format!(
+            "\\documentclass[11pt,a4paper]{{article}}\n\\usepackage[utf8]{{inputenc}}\n\\usepackage[T1]{{fontenc}}\n\\usepackage{{url}}\n{}\n\\begin{{document}}\n\\section*{{Teste de Estilo Bibliográfico (natbib)}}\n\\nocite{{*}}\n\\bibliographystyle{{{}}}\n\\bibliography{{ref_test}}\n\\end{{document}}\n",
+            style_preamble, bst
+        )
+    };
+    fs::write(dir.join("style_test.tex"), body).map_err(|e| e.to_string())?;
+
+    let run_cmd = |prog: &str, args: &[&str]| -> Result<std::process::Output, String> {
+        let mut cmd = Command::new(prog);
+        #[cfg(target_os = "windows")]
+        cmd.creation_flags(0x08000000);
+        cmd.args(args)
+            .current_dir(&dir)
+            .output()
+            .map_err(|e| format!("{} não encontrado: {}", prog, e))
+    };
+
+    let _ = run_cmd("pdflatex", &["-interaction=nonstopmode", "style_test.tex"])?;
+    let backend = if use_biber { "biber" } else { "bibtex" };
+    let _ = run_cmd(backend, &["style_test"])?;
+    let _ = run_cmd("pdflatex", &["-interaction=nonstopmode", "style_test.tex"])?;
+    let out = run_cmd("pdflatex", &["-interaction=nonstopmode", "style_test.tex"])?;
+
+    let pdf_path = dir.join("style_test.pdf");
+    if out.status.success() && pdf_path.exists() {
+        let pdf_str = pdf_path.to_string_lossy().to_string();
+        Ok(CompileStyleResult {
+            message: format!("Estilo compilado com sucesso! PDF gerado em: {}", pdf_str),
+            pdf_path: pdf_str,
+        })
+    } else {
+        Err("Erro ao compilar teste de estilo (verifique se biber/biblatex/natbib estão instalados).".to_string())
+    }
+}
+
+#[tauri::command]
 fn open_manual_pdf(file_name: String, bytes: Vec<u8>) -> Result<(), String> {
     let dir = std::env::temp_dir().join("forjatex-manuals");
     fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
@@ -71,6 +142,8 @@ fn main() {
             save_text_file,
             read_text_file,
             fetch_url_text,
+            open_file_path,
+            compile_bib_style_test,
             open_manual_pdf
         ])
         .run(tauri::generate_context!())
