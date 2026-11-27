@@ -13,6 +13,7 @@ import {
   Heart,
   Moon,
   Plus,
+  RotateCcw,
   Save,
   Search,
   ShieldCheck,
@@ -50,6 +51,31 @@ import {
 
 const LIBRARY_KEY = 'forjabib_library_v1';
 const WORKSPACE_KEY = 'forjabib_workspace_v2';
+const TRASH_KEY = 'forjabib_trash_v1';
+const TRASH_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+
+interface TrashItem {
+  entry: BibEntry;
+  deletedAt: number;
+}
+
+function loadSavedTrash(): TrashItem[] {
+  try {
+    const raw = localStorage.getItem(TRASH_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as TrashItem[];
+      if (Array.isArray(parsed)) {
+        const now = Date.now();
+        return parsed.filter(
+          (item) => item?.entry && typeof item.deletedAt === 'number' && now - item.deletedAt < TRASH_RETENTION_MS
+        );
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return [];
+}
 
 interface BibTab {
   id: string;
@@ -146,6 +172,9 @@ export default function App() {
 
   const [sidebarWidth, setSidebarWidth] = useState(340);
   const [codeWidth, setCodeWidth] = useState(390);
+  const [trash, setTrash] = useState<TrashItem[]>(() => loadSavedTrash());
+  const [trashOpen, setTrashOpen] = useState(false);
+  const [confirmDeleteEntry, setConfirmDeleteEntry] = useState<BibEntry | null>(null);
   const [donateOpen, setDonateOpen] = useState(false);
   const [pixQrUrl, setPixQrUrl] = useState('');
   const [pixBrCode, setPixBrCode] = useState('');
@@ -156,20 +185,43 @@ export default function App() {
   }, [themeMode]);
 
   React.useEffect(() => {
-    try {
-      localStorage.setItem(LIBRARY_KEY, JSON.stringify(library));
-    } catch {
-      // ignore
-    }
+    const timer = window.setTimeout(() => {
+      try {
+        localStorage.setItem(LIBRARY_KEY, JSON.stringify(library));
+      } catch {
+        // ignore
+      }
+    }, 400);
+    return () => window.clearTimeout(timer);
   }, [library]);
 
   React.useEffect(() => {
-    try {
-      localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ activeTabId, tabs }));
-    } catch {
-      // ignore
-    }
+    const timer = window.setTimeout(() => {
+      try {
+        localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ activeTabId, tabs }));
+      } catch {
+        // ignore
+      }
+    }, 400);
+    return () => window.clearTimeout(timer);
   }, [activeTabId, tabs]);
+
+  React.useEffect(() => {
+    const timer = window.setTimeout(() => {
+      try {
+        localStorage.setItem(TRASH_KEY, JSON.stringify(trash));
+      } catch {
+        // ignore
+      }
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [trash]);
+
+  React.useEffect(() => {
+    return () => {
+      if (parseTimerRef.current) window.clearTimeout(parseTimerRef.current);
+    };
+  }, []);
 
   React.useEffect(() => {
     if (editSourceRef.current === 'visual') {
@@ -330,16 +382,39 @@ export default function App() {
     addEntryAndInclude(next);
   };
 
-  const removeFromLibrary = (id: string) => {
-    if (library.length <= 1) return;
-    updateLibraryVisual((prev) => prev.filter((e) => e.id !== id));
+  const confirmMoveToTrash = () => {
+    const target = confirmDeleteEntry;
+    if (!target) return;
+    editSourceRef.current = 'visual';
+    const remaining = library.filter((e) => e.id !== target.id);
+    setLibrary(remaining);
+    setTrash((prev) => [{ entry: target, deletedAt: Date.now() }, ...prev]);
     setTabs((prev) =>
       prev.map((tb) => ({
         ...tb,
-        includedIds: tb.includedIds.filter((x) => x !== id),
-        selectedId: tb.selectedId === id ? library.find((x) => x.id !== id)?.id || '' : tb.selectedId,
+        includedIds: tb.includedIds.filter((x) => x !== target.id),
+        selectedId: tb.selectedId === target.id ? remaining[0]?.id || '' : tb.selectedId,
       }))
     );
+    setConfirmDeleteEntry(null);
+    setStatusMsg(`Referência "@${target.key}" movida para a Lixeira (será apagada definitivamente em 30 dias).`);
+  };
+
+  const restoreFromTrash = (item: TrashItem) => {
+    editSourceRef.current = 'visual';
+    setTrash((prev) => prev.filter((t) => t.entry.id !== item.entry.id));
+    setLibrary((prev) => {
+      if (prev.some((e) => e.id === item.entry.id)) return prev;
+      return [item.entry, ...prev];
+    });
+    updateActiveTab((tb) => ({
+      ...tb,
+      includedIds: tb.includedIds.includes(item.entry.id)
+        ? tb.includedIds
+        : [...tb.includedIds, item.entry.id],
+      selectedId: item.entry.id,
+    }));
+    setStatusMsg(`Referência "@${item.entry.key}" restaurada para o acervo!`);
   };
 
   const createNewTab = () => {
@@ -759,9 +834,19 @@ export default function App() {
           <div className="fbib-card">
             <div className="fbib-sec-title">
               <span>Referências ({library.length} no acervo · {tabEntries.length} na aba)</span>
-              <button type="button" className="fbib-chip" onClick={() => addNewEntry('article')}>
-                <Plus size={11} /> Nova
-              </button>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <button
+                  type="button"
+                  className="fbib-chip"
+                  onClick={() => setTrashOpen(true)}
+                  title="Ver referências apagadas (retidas por 30 dias)"
+                >
+                  <Trash2 size={11} /> Lixeira ({trash.length})
+                </button>
+                <button type="button" className="fbib-chip" onClick={() => addNewEntry('article')}>
+                  <Plus size={11} /> Nova
+                </button>
+              </div>
             </div>
             <div className="fbib-chip-row">
               <button
@@ -834,6 +919,17 @@ export default function App() {
                       {countIssues > 0 && (
                         <span className="fbib-badge warn">{countIssues}</span>
                       )}
+                      <button
+                        type="button"
+                        className="fbib-proj-close"
+                        onClick={(ev) => {
+                          ev.stopPropagation();
+                          setConfirmDeleteEntry(e);
+                        }}
+                        title="Apagar referência (mover para a Lixeira)"
+                      >
+                        <Trash2 size={11} />
+                      </button>
                     </div>
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingLeft: 20 }}>
@@ -869,9 +965,9 @@ export default function App() {
                   <button
                     type="button"
                     className="fbib-chip"
-                    onClick={() => removeFromLibrary(selectedEntry.id)}
+                    onClick={() => setConfirmDeleteEntry(selectedEntry)}
                     style={{ color: '#f43f5e' }}
-                    title="Excluir do acervo global"
+                    title="Mover referência para a Lixeira"
                   >
                     <Trash2 size={12} />
                   </button>
@@ -1404,6 +1500,127 @@ export default function App() {
           />
         </aside>
       </main>
+
+      {confirmDeleteEntry && (
+        <div className="fbib-modal-backdrop" onClick={() => setConfirmDeleteEntry(null)}>
+          <div className="fbib-modal" style={{ width: 440 }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <strong>Apagar Referência (@{confirmDeleteEntry.key})?</strong>
+              <button type="button" className="fbib-btn" onClick={() => setConfirmDeleteEntry(null)}>
+                <X size={13} />
+              </button>
+            </div>
+            <p style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--text)' }}>
+              Tem certeza que deseja apagar a referência{' '}
+              <strong>{confirmDeleteEntry.fields.title || `@${confirmDeleteEntry.key}`}</strong>?
+            </p>
+            <p style={{ fontSize: 12, lineHeight: 1.45, color: 'var(--muted)' }}>
+              Ela será removida das abas e movida para a <strong>Lixeira</strong>, onde poderá ser
+              recuperada a qualquer momento. Após <strong>1 mês (30 dias)</strong>, será apagada
+              definitivamente.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button type="button" className="fbib-btn" onClick={() => setConfirmDeleteEntry(null)}>
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="fbib-btn"
+                style={{ background: '#e11d48', borderColor: '#e11d48', color: '#fff' }}
+                onClick={confirmMoveToTrash}
+              >
+                <Trash2 size={13} /> Sim, mover para Lixeira
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {trashOpen && (
+        <div className="fbib-modal-backdrop" onClick={() => setTrashOpen(false)}>
+          <div className="fbib-modal" style={{ width: 620, maxHeight: '82vh' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <strong>Lixeira de Referências ({trash.length}) — Retenção de 30 dias</strong>
+              <div style={{ display: 'flex', gap: 6 }}>
+                {trash.length > 0 && (
+                  <button
+                    type="button"
+                    className="fbib-btn"
+                    style={{ color: '#f43f5e' }}
+                    onClick={() => setTrash([])}
+                  >
+                    Esvaziar Lixeira
+                  </button>
+                )}
+                <button type="button" className="fbib-btn" onClick={() => setTrashOpen(false)}>
+                  <X size={13} />
+                </button>
+              </div>
+            </div>
+            {trash.length === 0 ? (
+              <div style={{ padding: 20, textAlign: 'center', fontSize: 12.5, color: 'var(--muted)' }}>
+                A lixeira está vazia. Referências apagadas ficam aqui por 30 dias antes da exclusão definitiva.
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, overflowY: 'auto', maxHeight: '58vh' }}>
+                {trash.map((item) => {
+                  const daysLeft = Math.max(
+                    1,
+                    Math.ceil((item.deletedAt + TRASH_RETENTION_MS - Date.now()) / (24 * 60 * 60 * 1000))
+                  );
+                  return (
+                    <div
+                      key={item.entry.id}
+                      style={{
+                        padding: 10,
+                        borderRadius: 6,
+                        background: 'var(--panel)',
+                        border: '1px solid var(--border)',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        gap: 10,
+                      }}
+                    >
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 12.5, fontWeight: 700 }}>
+                          @{item.entry.key}{' '}
+                          <span style={{ fontSize: 10.5, fontWeight: 400, color: 'var(--muted)' }}>
+                            · Expira em {daysLeft} dia(s)
+                          </span>
+                        </div>
+                        <div style={{ fontSize: 11.5, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {item.entry.fields.title || 'Sem título'}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                        <button
+                          type="button"
+                          className="fbib-btn primary"
+                          onClick={() => restoreFromTrash(item)}
+                        >
+                          <RotateCcw size={12} /> Restaurar
+                        </button>
+                        <button
+                          type="button"
+                          className="fbib-btn"
+                          style={{ color: '#f43f5e' }}
+                          onClick={() =>
+                            setTrash((prev) => prev.filter((t) => t.entry.id !== item.entry.id))
+                          }
+                          title="Apagar definitivamente agora"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {donateOpen && (
         <div className="fbib-modal-backdrop" onClick={() => setDonateOpen(false)}>

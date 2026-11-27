@@ -281,7 +281,7 @@ jobs:
                   {
                       "id": "forjaslide",
                       "name": "ForjaSlide",
-                      "latestVersion": "1.0.1",
+                      "latestVersion": "1.0.2",
                       "installerFile": pick("forjaslide", ".msi"),
                       "installerUrl": url(pick("forjaslide", ".msi")),
                       "msiFile": pick("forjaslide", ".msi"),
@@ -297,7 +297,7 @@ jobs:
                   {
                       "id": "forjabib",
                       "name": "ForjaBib",
-                      "latestVersion": "1.0.2",
+                      "latestVersion": "1.0.3",
                       "installerFile": pick("forjabib", ".msi"),
                       "installerUrl": url(pick("forjabib", ".msi")),
                       "msiFile": pick("forjabib", ".msi"),

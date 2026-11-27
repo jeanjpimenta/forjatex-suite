@@ -1,6 +1,6 @@
 [package]
 name = "forjaslide"
-version = "1.0.1"
+version = "1.0.2"
 description = "ForjaSlide — Apresentador Profissional de Slides PDF & LaTeX Beamer"
 authors = ["Jean Pimenta <jean.pimenta@protonmail.com>", "Arkhé Code"]
 license = "GPL-3.0-or-later"

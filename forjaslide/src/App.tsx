@@ -150,7 +150,10 @@ export default function App() {
     const bytes = await invoke<number[]>('read_pdf_bytes', { path });
     const data = new Uint8Array(bytes);
     const doc = await pdfjsLib.getDocument({ data }).promise;
-    setPdfDoc(doc);
+    setPdfDoc((prev) => {
+      void prev?.destroy();
+      return doc;
+    });
     setPdfPath(path);
     const name = path.split(/[\\/]/).pop() || path;
     setPdfName(name);
