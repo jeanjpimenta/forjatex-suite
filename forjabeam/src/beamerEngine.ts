@@ -109,7 +109,7 @@ export function createDefaultBeamerSnapshot(): BeamerProjectSnapshot {
     aspect: '169',
     docTitle: 'Introdução à Modelagem Matemática',
     docSubtitle: 'Seminário de Pesquisa',
-    author: 'Prof. Jean Pimenta',
+    author: 'Dr. Richard Feynman',
     institute: 'ForjaTeX / Instituto de Ciências',
     dateText: '\\today',
     includeTitleSlide: true,
@@ -270,5 +270,214 @@ export function generateBeamerLatex(snap: BeamerProjectSnapshot): string {
 
   lines.push('\\end{document}');
   return lines.join('\n');
+}
+
+function extractBalancedBrace(src: string, openBraceIdx: number): { value: string; endIdx: number } | null {
+  if (src[openBraceIdx] !== '{') return null;
+  let depth = 0;
+  for (let i = openBraceIdx; i < src.length; i++) {
+    const ch = src[i];
+    if (ch === '\\') {
+      i++;
+      continue;
+    }
+    if (ch === '{') depth++;
+    else if (ch === '}') {
+      depth--;
+      if (depth === 0) {
+        return { value: src.slice(openBraceIdx + 1, i), endIdx: i };
+      }
+    }
+  }
+  return null;
+}
+
+function extractCmdArg(src: string, cmd: string): string | null {
+  const re = new RegExp(`\\\\${cmd}\\s*\\{`);
+  const m = re.exec(src);
+  if (!m) return null;
+  const braceIdx = src.indexOf('{', m.index);
+  if (braceIdx === -1) return null;
+  return extractBalancedBrace(src, braceIdx)?.value ?? null;
+}
+
+function unformatBullets(raw: string): { text: string; incremental: boolean } {
+  const incremental = /\\begin\{itemize\}\s*\[<\+->\]/.test(raw);
+  let cleaned = raw
+    .replace(/\\begin\{itemize\}(?:\s*\[<\+->\])?/g, '')
+    .replace(/\\end\{itemize\}/g, '')
+    .replace(/^\s*\\item\s+/gm, '- ')
+    .replace(/\\textbf\{([^}]*)\}/g, '**$1**');
+  cleaned = cleaned
+    .split('\n')
+    .map((l) => l.replace(/^\s{2,4}(?=- )/, ''))
+    .join('\n')
+    .trim();
+  return { text: cleaned, incremental };
+}
+
+const VALID_THEMES: BeamerTheme[] = ['Madrid', 'Boadilla', 'Berlin', 'Warsaw', 'Singapore', 'metropolis'];
+const VALID_COLORS: BeamerColorTheme[] = ['default', 'beaver', 'dolphin', 'seahorse', 'crane'];
+
+export function parseBeamerLatexToSnapshot(
+  tex: string,
+  prev: BeamerProjectSnapshot
+): BeamerProjectSnapshot {
+  const next: BeamerProjectSnapshot = { ...prev };
+
+  const aspectMatch = /\\documentclass\[[^\]]*aspectratio=(169|43)[^\]]*\]\{beamer\}/.exec(tex);
+  if (aspectMatch) next.aspect = aspectMatch[1] as BeamerAspect;
+
+  const themeArg = extractCmdArg(tex, 'usetheme');
+  if (themeArg && VALID_THEMES.includes(themeArg.trim() as BeamerTheme)) {
+    next.theme = themeArg.trim() as BeamerTheme;
+  }
+
+  const colorArg = extractCmdArg(tex, 'usecolortheme');
+  if (colorArg && VALID_COLORS.includes(colorArg.trim() as BeamerColorTheme)) {
+    next.colorTheme = colorArg.trim() as BeamerColorTheme;
+  } else if (!/\\usecolortheme\{/.test(tex)) {
+    next.colorTheme = 'default';
+  }
+
+  next.notesSecondScreen = /show notes on second screen\s*=\s*right/.test(tex);
+
+  const docTitle = extractCmdArg(tex, 'title');
+  if (docTitle !== null) next.docTitle = docTitle;
+  const docSub = extractCmdArg(tex, 'subtitle');
+  if (docSub !== null) next.docSubtitle = docSub;
+  const author = extractCmdArg(tex, 'author');
+  if (author !== null) next.author = author;
+  const inst = extractCmdArg(tex, 'institute');
+  if (inst !== null) next.institute = inst;
+  const dateVal = extractCmdArg(tex, 'date');
+  if (dateVal !== null) next.dateText = dateVal;
+
+  const frameMatches = [...tex.matchAll(/\\begin\{frame\}([\s\S]*?)\\end\{frame\}/g)];
+  if (frameMatches.length > 0) {
+    const parsedSlides: BeamerSlide[] = frameMatches.map((m, idx) => {
+      const existing = prev.slides[idx];
+      let inner = m[1];
+      let isFragile = false;
+      if (/^\s*\[fragile\]/.test(inner)) {
+        isFragile = true;
+        inner = inner.replace(/^\s*\[fragile\]/, '');
+      }
+
+      let frameTitle = existing?.title ?? `Slide ${idx + 1}`;
+      const trimmedStart = inner.trimStart();
+      if (trimmedStart.startsWith('{')) {
+        const bracePos = inner.indexOf('{');
+        const extracted = extractBalancedBrace(inner, bracePos);
+        if (extracted) {
+          frameTitle = extracted.value;
+          inner = inner.slice(extracted.endIdx + 1);
+        }
+      }
+
+      let subtitle = '';
+      const subMatch = /\\framesubtitle\s*\{/.exec(inner);
+      if (subMatch) {
+        const bPos = inner.indexOf('{', subMatch.index);
+        const extracted = extractBalancedBrace(inner, bPos);
+        if (extracted) {
+          subtitle = extracted.value;
+          inner = inner.slice(0, subMatch.index) + inner.slice(extracted.endIdx + 1);
+        }
+      }
+
+      let notes = '';
+      const noteMatch = /\\note\s*\{/.exec(inner);
+      if (noteMatch) {
+        const bPos = inner.indexOf('{', noteMatch.index);
+        const extracted = extractBalancedBrace(inner, bPos);
+        if (extracted) {
+          notes = extracted.value.trim();
+          inner = inner.slice(0, noteMatch.index) + inner.slice(extracted.endIdx + 1);
+        }
+      }
+
+      const base: BeamerSlide = {
+        id: existing?.id ?? `s-parsed-${idx + 1}`,
+        layout: existing?.layout ?? 'single',
+        title: frameTitle,
+        subtitle,
+        body: '',
+        rightBody: '',
+        leftRatio: existing?.leftRatio ?? 50,
+        incremental: false,
+        blockType: existing?.blockType ?? 'block',
+        blockTitle: existing?.blockTitle ?? '',
+        codeLang: existing?.codeLang ?? 'python',
+        notes,
+      };
+
+      if (/\\titlepage\b/.test(inner)) {
+        return { ...base, layout: 'title', title: frameTitle || 'Capa da Apresentação' };
+      }
+      if (/\\tableofcontents\b/.test(inner)) {
+        return { ...base, layout: 'toc', title: frameTitle || 'Roteiro' };
+      }
+
+      const lstMatch = /\\begin\{lstlisting\}(?:\[language=([^\]]+)\])?([\s\S]*?)\\end\{lstlisting\}/.exec(inner);
+      if (isFragile || lstMatch) {
+        return {
+          ...base,
+          layout: 'code',
+          codeLang: lstMatch?.[1]?.trim() || base.codeLang,
+          body: (lstMatch?.[2] ?? inner).trim(),
+        };
+      }
+
+      const colsMatch = /\\begin\{columns\}(?:\[[^\]]*\])?([\s\S]*?)\\end\{columns\}/.exec(inner);
+      if (colsMatch) {
+        const colMatches = [...colsMatch[1].matchAll(/\\begin\{column\}\{([0-9.]+)\\textwidth\}([\s\S]*?)\\end\{column\}/g)];
+        const leftRaw = colMatches[0]?.[2] ?? '';
+        const rightRaw = colMatches[1]?.[2] ?? '';
+        const ratio = colMatches[0] ? Math.round(Number(colMatches[0][1]) * 100) : 50;
+        const leftParsed = unformatBullets(leftRaw);
+        const rightParsed = unformatBullets(rightRaw);
+        return {
+          ...base,
+          layout: 'two-col',
+          leftRatio: Math.min(70, Math.max(30, Number.isFinite(ratio) ? ratio : 50)),
+          body: leftParsed.text,
+          rightBody: rightParsed.text,
+          incremental: leftParsed.incremental,
+        };
+      }
+
+      const blkMatch = /\\begin\{(block|alertblock|exampleblock|theorem|proof)\}(?:\{([^}]*)\})?([\s\S]*?)\\end\{\1\}/.exec(inner);
+      if (blkMatch) {
+        const blkParsed = unformatBullets(blkMatch[3]);
+        const afterBlk = inner.slice(blkMatch.index + blkMatch[0].length);
+        const alertExtra = /\\begin\{alertblock\}\{[^}]*\}([\s\S]*?)\\end\{alertblock\}/.exec(afterBlk);
+        return {
+          ...base,
+          layout: 'blocks',
+          blockType: blkMatch[1] as BeamerSlide['blockType'],
+          blockTitle: blkMatch[2] ?? '',
+          body: blkParsed.text,
+          rightBody: alertExtra ? unformatBullets(alertExtra[1]).text : '',
+          incremental: blkParsed.incremental,
+        };
+      }
+
+      const singleParsed = unformatBullets(inner);
+      return {
+        ...base,
+        layout: 'single',
+        body: singleParsed.text,
+        incremental: singleParsed.incremental,
+      };
+    });
+
+    next.slides = parsedSlides;
+    if (!parsedSlides.some((s) => s.id === next.selectedSlideId)) {
+      next.selectedSlideId = parsedSlides[0]?.id ?? '';
+    }
+  }
+
+  return next;
 }
 

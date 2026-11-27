@@ -153,6 +153,19 @@ fn launch_forjaslide_with_pdf(pdf_path: String) -> Result<(), String> {
     Err("ForjaSlide não encontrado no sistema. Instale-o pelo ForjaTeX App Suite ou abra o PDF manualmente no ForjaSlide.".to_string())
 }
 
+#[tauri::command]
+fn open_manual_pdf(file_name: String, bytes: Vec<u8>) -> Result<(), String> {
+    let dir = std::env::temp_dir().join("forjatex-manuals");
+    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let safe_name = Path::new(&file_name)
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("manual.pdf");
+    let dest = dir.join(safe_name);
+    fs::write(&dest, bytes).map_err(|e| format!("Falha ao salvar manual: {}", e))?;
+    launch_os_path(&dest)
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
@@ -162,7 +175,8 @@ fn main() {
             read_text_file,
             open_file_path,
             compile_beamer_pdf,
-            launch_forjaslide_with_pdf
+            launch_forjaslide_with_pdf,
+            open_manual_pdf
         ])
         .run(tauri::generate_context!())
         .expect("error while running ForjaBeam");

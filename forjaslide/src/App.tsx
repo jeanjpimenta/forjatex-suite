@@ -567,6 +567,28 @@ export default function App() {
           >
             <Eraser size={14} />
           </button>
+          <button
+            type="button"
+            className="fs-btn"
+            onClick={async () => {
+              const isPt = (navigator.language || '').toLowerCase().startsWith('pt');
+              const url = isPt ? '/manuals/manual-pt-BR.pdf' : '/manuals/manual-en-US.pdf';
+              const fileName = isPt ? 'manual-forjaslide-pt-BR.pdf' : 'manual-forjaslide-en-US.pdf';
+              try {
+                const resp = await fetch(url);
+                const buf = await resp.arrayBuffer();
+                await invoke('open_manual_pdf', {
+                  fileName,
+                  bytes: Array.from(new Uint8Array(buf)),
+                });
+              } catch {
+                window.open(url, '_blank');
+              }
+            }}
+            title="Abrir Manual do Usuário (PDF)"
+          >
+            Manual (PDF)
+          </button>
           <button type="button" className="fs-btn" onClick={() => setDonateOpen(true)}>
             <Heart size={14} color="#f43f5e" />
           </button>

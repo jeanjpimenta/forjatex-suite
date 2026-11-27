@@ -143,8 +143,8 @@ const DEFAULT_APPS: SuiteAppEntry[] = [
       'Crie apresentações LaTeX Beamer visualmente com galeria de temas, 2 colunas, blocos, overlays e notas de 2ª tela.',
     latestVersion: '1.0.0',
     updatedAt: '27 de nov. de 2026',
-    iconUrl: '/forjatikz-icon.png',
-    accentColor: '#0284C7',
+    iconUrl: '/forjabeam-icon.png',
+    accentColor: '#0EA5E9',
     installerUrl:
       'https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaBeam_1.0.0_x64_en-US.msi',
     installerFile: 'ForjaBeam_1.0.0_x64_en-US.msi',
@@ -170,8 +170,8 @@ const DEFAULT_APPS: SuiteAppEntry[] = [
       'Apresente PDFs e slides Beamer em duas telas com notas (pgfpages), próximo slide, laser, caneta e cronômetro.',
     latestVersion: '1.0.0',
     updatedAt: '27 de nov. de 2026',
-    iconUrl: '/forjatikz-icon.png',
-    accentColor: '#0EA5E9',
+    iconUrl: '/forjaslide-icon.png',
+    accentColor: '#8B5CF6',
     installerUrl:
       'https://github.com/jeanjpimenta/forjatex-suite/releases/latest/download/ForjaSlide_1.0.0_x64_en-US.msi',
     installerFile: 'ForjaSlide_1.0.0_x64_en-US.msi',
@@ -380,9 +380,29 @@ export default function App() {
   const [settingsTab, setSettingsTab] = useState<'general' | 'updates' | 'storage' | 'about'>('general');
   const [search, setSearch] = useState('');
   const isLinux = typeof navigator !== 'undefined' && /linux/i.test(navigator.userAgent);
-  const [sortBy, setSortBy] = useState<'name' | 'status'>(() => {
+  const CARD_ORDER_KEY = 'forjatex_suite_card_order_v1';
+  const [cardOrder, setCardOrder] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem(CARD_ORDER_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<'name' | 'status' | 'custom'>(() => {
     const saved = localStorage.getItem(SORT_KEY);
-    return saved === 'status' ? 'status' : 'name';
+    if (saved === 'custom') return 'custom';
+    if (saved === 'status') return 'status';
+    try {
+      const rawOrder = localStorage.getItem(CARD_ORDER_KEY);
+      if (rawOrder && JSON.parse(rawOrder).length > 0) return 'custom';
+    } catch {
+      // ignore
+    }
+    return 'name';
   });
   const [installerFormat, setInstallerFormat] = useState<'msi' | 'exe' | 'deb' | 'appimage'>(() => {
     const saved = localStorage.getItem('forjatex_suite_installer_fmt_v1');
@@ -599,6 +619,13 @@ export default function App() {
         a.description.toLowerCase().includes(q)
     );
     return [...list].sort((a, b) => {
+      if (sortBy === 'custom' && cardOrder.length > 0) {
+        const idxA = cardOrder.indexOf(a.id);
+        const idxB = cardOrder.indexOf(b.id);
+        const posA = idxA === -1 ? 999 : idxA;
+        const posB = idxB === -1 ? 999 : idxB;
+        if (posA !== posB) return posA - posB;
+      }
       if (sortBy === 'status') {
         const ia = installedMap[a.id]?.installed ? 0 : a.comingSoon ? 2 : 1;
         const ib = installedMap[b.id]?.installed ? 0 : b.comingSoon ? 2 : 1;
@@ -606,7 +633,31 @@ export default function App() {
       }
       return a.name.localeCompare(b.name);
     });
-  }, [apps, search, sortBy, installedMap]);
+  }, [apps, search, sortBy, installedMap, cardOrder]);
+
+  const handleCardDrop = (targetId: string) => {
+    if (!dragId || dragId === targetId) {
+      setDragId(null);
+      setDragOverId(null);
+      return;
+    }
+    const baseOrder = filteredApps.map((a) => a.id);
+    for (const a of apps) {
+      if (!baseOrder.includes(a.id)) baseOrder.push(a.id);
+    }
+    const fromIdx = baseOrder.indexOf(dragId);
+    const toIdx = baseOrder.indexOf(targetId);
+    if (fromIdx === -1 || toIdx === -1) return;
+    const nextOrder = [...baseOrder];
+    const [moved] = nextOrder.splice(fromIdx, 1);
+    nextOrder.splice(toIdx, 0, moved);
+    setCardOrder(nextOrder);
+    setSortBy('custom');
+    localStorage.setItem(CARD_ORDER_KEY, JSON.stringify(nextOrder));
+    localStorage.setItem(SORT_KEY, 'custom');
+    setDragId(null);
+    setDragOverId(null);
+  };
 
   const suiteProg = progressMap['suite-self'];
 
@@ -842,13 +893,16 @@ export default function App() {
                         className="ac-select"
                         value={sortBy}
                         onChange={(e) => {
-                          const next = e.target.value as 'name' | 'status';
+                          const next = e.target.value as 'name' | 'status' | 'custom';
                           setSortBy(next);
                           localStorage.setItem(SORT_KEY, next);
                         }}
                       >
                         <option value="name">{t('sortName')}</option>
                         <option value="status">{t('sortStatus')}</option>
+                        <option value="custom">
+                          {locale === 'pt-BR' ? 'Personalizada (Arrastar)' : 'Custom (Drag)'}
+                        </option>
                       </select>
                     </label>
 
@@ -1116,13 +1170,16 @@ export default function App() {
               className="ac-select"
               value={sortBy}
               onChange={(e) => {
-                const next = e.target.value as 'name' | 'status';
+                const next = e.target.value as 'name' | 'status' | 'custom';
                 setSortBy(next);
                 localStorage.setItem(SORT_KEY, next);
               }}
             >
               <option value="name">{t('sortName')}</option>
               <option value="status">{t('sortStatus')}</option>
+              <option value="custom">
+                {locale === 'pt-BR' ? 'Personalizada (Arrastar)' : 'Custom (Drag)'}
+              </option>
             </select>
             <input
               type="text"
@@ -1169,7 +1226,24 @@ export default function App() {
             return (
               <article
                 key={app.id}
-                className={`ac-card ${isInstalled ? 'installed' : ''} ${app.comingSoon ? 'soon' : ''}`}
+                draggable
+                onDragStart={() => setDragId(app.id)}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (dragOverId !== app.id) setDragOverId(app.id);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  handleCardDrop(app.id);
+                }}
+                onDragEnd={() => {
+                  setDragId(null);
+                  setDragOverId(null);
+                }}
+                style={{ '--card-accent': app.accentColor } as React.CSSProperties}
+                className={`ac-card ${isInstalled ? 'installed' : ''} ${app.comingSoon ? 'soon' : ''} ${
+                  dragId === app.id ? 'dragging' : ''
+                } ${dragOverId === app.id ? 'drag-over' : ''}`}
               >
                 <div className="ac-card-meta">
                   <span className="ac-version" style={{ color: app.accentColor }}>

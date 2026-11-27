@@ -1,0 +1,70 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{forjatex-manual}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=fjblue,
+  urlcolor=fjblue,
+  pdftitle={User Manual - ForjaSlide},
+  pdfauthor={Jean Pimenta / Arkhé Code}
+}
+
+\begin{document}
+
+\ForjaHeader{../../forjaslide/src-tauri/icons/128x128@2x.png}
+  {ForjaTeX App Suite Ecosystem $\cdot$ GNU GPL v3.0}
+  {User Manual --- ForjaSlide}
+  {Professional PDF \& \LaTeX{} Beamer Slide Presenter}
+  {Version 1.0.0}
+  {Jean Pimenta $\cdot$ \href{https://forjatex.com.br}{\color{fjsky}forjatex.com.br} $\cdot$ \href{https://github.com/jeanjpimenta/forjatex-suite}{\color{fjsky}GitHub}}
+
+\ForjaTOC{Table of Contents}
+
+\begin{fjcallout}[Built for Academic Talks and Lectures]
+\textbf{ForjaSlide} separates the \textbf{Presenter View} (speaker notes, next slide, timer, and thumbnails) from the clean fullscreen \textbf{Audience Window} --- 100\% offline.
+\end{fjcallout}
+
+\section{Introduction}
+\textbf{ForjaSlide} is the native PDF and Beamer slide presenter of the \textbf{ForjaTeX} ecosystem. It works seamlessly with PDFs compiled by \textbf{ForjaBeam}, \textbf{ForjaTeX IDE}, or any standard PDF generator.
+
+\section{Dual-Screen Presenter & Audience Windows}
+\begin{enumerate}
+  \item Click \textbf{Abrir PDF} (Open PDF) and choose your presentation \code{.pdf}.
+  \item Select the output display in the monitor dropdown (e.g. \textbf{Tela 2} for the projector).
+  \item Click \textbf{Apresentar (F5)} to launch the fullscreen \textbf{Audience Window} on the selected display.
+\end{enumerate}
+
+\section{Native Beamer Notes Support (pgfpages)}
+When a PDF is compiled in Beamer with \code{\textbackslash setbeameroption\{show notes on second screen=right\}}:
+\begin{itemize}
+  \item In \textbf{Beamer Notas: Auto} mode (default), ForjaSlide automatically detects the wide dual-page aspect ratio.
+  \item The \textbf{left half} (slide) is shown to the audience and in the \textbf{Current Slide} pane.
+  \item The \textbf{right half} (notes) is rendered directly inside the \textbf{Beamer Notes (2nd Screen)} panel.
+  \item For standard single-page PDFs, you can type custom per-slide notes, automatically saved locally.
+\end{itemize}
+
+\section{Live Tools and Timer}
+\begin{itemize}
+  \item \textbf{Laser Pointer (\code{L}):} move your cursor over the current slide to project a synchronized laser dot on the audience screen.
+  \item \textbf{Pen Annotations (\code{P}):} draw live highlights on the slide; press \code{C} to clear ink strokes.
+  \item \textbf{Black Screen (\code{B}) \& White Screen (\code{W}):} temporarily hide slides during Q\&A or discussions.
+  \item \textbf{Timer:} set your target duration in minutes, start/pause, and track visual alerts (amber at $85\%$, red at $100\%$).
+\end{itemize}
+
+\section{Market-Standard Keyboard Shortcuts}
+Fully compatible with USB/Bluetooth presentation clickers:
+\begin{itemize}
+  \item \code{$\rightarrow$}, \code{Space}, \code{PageDown}, \code{Enter}: next slide.
+  \item \code{$\leftarrow$}, \code{PageUp}, \code{Backspace}: previous slide.
+  \item \code{Home} / \code{End}: first / last slide.
+  \item \code{F5}: start fullscreen presentation; \code{Esc}: exit curtain or close audience window.
+  \item \code{B} / \code{W}: black / white screen; \code{L}: laser; \code{P}: pen; \code{C}: clear ink; \code{R}: reset timer.
+\end{itemize}
+
+\section{Version History (Changelog)}
+\begin{itemize}
+  \item \textbf{v1.0.0:} Initial release with presenter view, multi-monitor audience window, automatic \code{pgfpages} detection, next-slide preview, laser pointer, pen ink, black/white screen, timer, and slide thumbnails.
+\end{itemize}
+
+\end{document}
+

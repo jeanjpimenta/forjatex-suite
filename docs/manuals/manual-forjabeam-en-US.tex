@@ -1,0 +1,67 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{forjatex-manual}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=fjblue,
+  urlcolor=fjblue,
+  pdftitle={User Manual - ForjaBeam},
+  pdfauthor={Jean Pimenta / Arkhé Code}
+}
+
+\begin{document}
+
+\ForjaHeader{../../forjabeam/src-tauri/icons/128x128@2x.png}
+  {ForjaTeX App Suite Ecosystem $\cdot$ GNU GPL v3.0}
+  {User Manual --- ForjaBeam}
+  {Visual \LaTeX{} Beamer Presentation Builder}
+  {Version 1.0.0}
+  {Jean Pimenta $\cdot$ \href{https://forjatex.com.br}{\color{fjsky}forjatex.com.br} $\cdot$ \href{https://github.com/jeanjpimenta/forjatex-suite}{\color{fjsky}GitHub}}
+
+\ForjaTOC{Table of Contents}
+
+\begin{fjcallout}[Native Integration with ForjaSlide]
+\textbf{ForjaBeam} builds complete \code{beamer} presentations visually and compiles PDFs with \textbf{2nd-screen Speaker Notes (\code{pgfpages})} ready to present directly in \textbf{ForjaSlide}.
+\end{fjcallout}
+
+\section{Introduction}
+\textbf{ForjaBeam} is the visual presentation builder of the \textbf{ForjaTeX App Suite}. It removes the friction of memorizing Beamer preambles and environments, providing an instant slide preview alongside clean, real-time \LaTeX{} code.
+
+\section{Visual Theme, Palette, and Metadata}
+\begin{enumerate}
+  \item \textbf{Classic Themes:} pick from \code{Madrid}, \code{Boadilla}, \code{Berlin}, \code{Warsaw}, \code{Singapore}, and \code{metropolis} using visual thumbnail cards.
+  \item \textbf{Color Scheme \& Aspect Ratio:} switch color themes (\code{dolphin}, \code{default}, \code{beaver}, \code{seahorse}, \code{crane}) and choose \textbf{16:9 Widescreen} (\code{aspectratio=169}) or \textbf{4:3 Classic}.
+  \item \textbf{2nd-Screen Notes:} enabling \textbf{Notas em 2ª tela} automatically inserts \code{\textbackslash usepackage\{pgfpages\}} and \code{\textbackslash setbeameroption\{show notes on second screen=right\}}.
+  \item \textbf{Cover \& Metadata:} configure title, subtitle, author, and institute to populate \code{\textbackslash titlepage} and slide footers automatically.
+\end{enumerate}
+
+\section{Slide Navigator and Layouts}
+Use the \textbf{Slides} section to organize your deck:
+\begin{itemize}
+  \item \textbf{Title (\code{\textbackslash titlepage})} and \textbf{Outline (\code{\textbackslash tableofcontents})}.
+  \item \textbf{Content:} lines starting with \code{- } are converted automatically into \code{itemize} lists.
+  \item \textbf{Two Columns (\code{columns}):} adjust the left/right split ($30\%$ to $70\%$) with a slider --- ideal for bullets paired with equations or \textbf{TikZ} figures.
+  \item \textbf{Semantic Blocks:} insert \code{block}, \code{exampleblock}, \code{alertblock}, \code{theorem}, and \code{proof} environments.
+  \item \textbf{Source Code (\code{fragile}):} automatically adds \code{[fragile]} and \code{lstlisting}.
+\end{itemize}
+
+\section{Overlays, Notes, and Projects (.fbeam)}
+\begin{itemize}
+  \item \textbf{Step-by-step Overlays:} toggle \code{[<+->]} for incremental bullets or insert \code{\textbackslash pause} in one click.
+  \item \textbf{Speaker Notes (\code{\textbackslash note\{...\}}):} every slide includes a dedicated speaker-notes field.
+  \item \textbf{Multi-tab Workspace:} work on multiple decks independently, double-click tabs to rename, save/open \code{.fbeam} files, and auto-restore open tabs on relaunch.
+\end{itemize}
+
+\section{Compilation and Export}
+\begin{itemize}
+  \item \textbf{Compile PDF:} runs \code{pdflatex} locally, generates a timestamped PDF, and provides clickable \textbf{Open PDF} and \textbf{Present in ForjaSlide} buttons.
+  \item \textbf{Export .tex / Copy Code:} save or copy the complete \LaTeX{} file for further editing in \textbf{ForjaTeX IDE}.
+\end{itemize}
+
+\section{Version History (Changelog)}
+\begin{itemize}
+  \item \textbf{v1.0.0:} Initial release featuring Beamer theme gallery, slide navigator, 2-column/block/code layouts, \code{\textbackslash pause} overlays, \code{pgfpages} notes, persistent \code{.fbeam} tabs, \code{pdflatex} compilation, and \textbf{ForjaSlide} launch integration.
+\end{itemize}
+
+\end{document}
+

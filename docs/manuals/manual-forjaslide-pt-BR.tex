@@ -1,0 +1,70 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{forjatex-manual}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=fjblue,
+  urlcolor=fjblue,
+  pdftitle={Manual do Usuário - ForjaSlide},
+  pdfauthor={Jean Pimenta / Arkhé Code}
+}
+
+\begin{document}
+
+\ForjaHeader{../../forjaslide/src-tauri/icons/128x128@2x.png}
+  {Ecossistema ForjaTeX App Suite $\cdot$ GNU GPL v3.0}
+  {Manual do Usuário --- ForjaSlide}
+  {Apresentador Profissional de Slides PDF e \LaTeX{} Beamer}
+  {Versão 1.0.0}
+  {Jean Pimenta $\cdot$ \href{https://forjatex.com.br}{\color{fjsky}forjatex.com.br} $\cdot$ \href{https://github.com/jeanjpimenta/forjatex-suite}{\color{fjsky}GitHub}}
+
+\ForjaTOC{Sumário}
+
+\begin{fjcallout}[Feito para Palestras Acadêmicas e Aulas]
+O \textbf{ForjaSlide} separa a \textbf{Visão do Apresentador} (notas, próximo slide, cronômetro e miniaturas) da \textbf{Janela do Público} em tela cheia no projetor --- 100\% offline.
+\end{fjcallout}
+
+\section{Introdução}
+O \textbf{ForjaSlide} é o apresentador nativo de PDFs e apresentações Beamer do ecossistema \textbf{ForjaTeX}. Ele funciona com qualquer PDF gerado pelo \textbf{ForjaBeam}, pelo \textbf{ForjaTeX IDE} ou por outras ferramentas.
+
+\section{Duas Telas: Apresentador e Público}
+\begin{enumerate}
+  \item Clique em \textbf{Abrir PDF} e selecione o arquivo \code{.pdf} da apresentação.
+  \item Escolha o monitor de saída no seletor de telas (ex.: \textbf{Tela 2} para o projetor/TV).
+  \item Clique em \textbf{Apresentar (F5)} para abrir a \textbf{Janela do Público} em tela cheia no monitor escolhido.
+\end{enumerate}
+
+\section{Suporte Nativo a Notas do Beamer (pgfpages)}
+Quando um PDF foi compilado no Beamer com \code{\textbackslash setbeameroption\{show notes on second screen=right\}}:
+\begin{itemize}
+  \item No modo \textbf{Beamer Notas: Auto} (padrão), o ForjaSlide detecta automaticamente a proporção dupla da página.
+  \item A \textbf{metade esquerda} (slide) é exibida para o público e no painel \textbf{Slide Atual}.
+  \item A \textbf{metade direita} (notas) é exibida diretamente no painel \textbf{Notas do Beamer (2ª Tela)}.
+  \item Para PDFs comuns de página inteira, você pode escrever suas próprias anotações por slide, salvas automaticamente.
+\end{itemize}
+
+\section{Ferramentas ao Vivo e Cronômetro}
+\begin{itemize}
+  \item \textbf{Ponteiro Laser (\code{L}):} movimente o mouse sobre o slide atual para projetar um ponto laser sincronizado na tela do público.
+  \item \textbf{Caneta / Anotação (\code{P}):} desenhe destaques ao vivo sobre o slide; pressione \code{C} para limpar os traços.
+  \item \textbf{Tela Preta (\code{B}) e Tela Branca (\code{W}):} oculte temporariamente o slide no projetor durante discussões.
+  \item \textbf{Cronômetro:} defina a meta em minutos, inicie/pause e acompanhe alertas visuais de tempo (amarelo em $85\%$ e vermelho ao atingir a meta).
+\end{itemize}
+
+\section{Atalhos de Teclado (Padrão de Mercado)}
+Compatível com passadores de slide USB/Bluetooth:
+\begin{itemize}
+  \item \code{$\rightarrow$}, \code{Espaço}, \code{PageDown}, \code{Enter}: próximo slide.
+  \item \code{$\leftarrow$}, \code{PageUp}, \code{Backspace}: slide anterior.
+  \item \code{Home} / \code{End}: primeiro / último slide.
+  \item \code{F5}: iniciar apresentação em tela cheia; \code{Esc}: sair da cortina ou fechar a janela do público.
+  \item \code{B} / \code{W}: tela preta / branca; \code{L}: laser; \code{P}: caneta; \code{C}: limpar traços; \code{R}: reiniciar cronômetro.
+\end{itemize}
+
+\section{Histórico de Versões (Changelog)}
+\begin{itemize}
+  \item \textbf{v1.0.0:} Lançamento inicial com visão do apresentador, janela do público multi-monitor, detecção automática de \code{pgfpages}, próximo slide, laser, caneta, tela preta/branca, cronômetro e miniaturas.
+\end{itemize}
+
+\end{document}
+

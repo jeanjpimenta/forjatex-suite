@@ -1,0 +1,67 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{forjatex-manual}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=fjblue,
+  urlcolor=fjblue,
+  pdftitle={Manual do Usuário - ForjaBeam},
+  pdfauthor={Jean Pimenta / Arkhé Code}
+}
+
+\begin{document}
+
+\ForjaHeader{../../forjabeam/src-tauri/icons/128x128@2x.png}
+  {Ecossistema ForjaTeX App Suite $\cdot$ GNU GPL v3.0}
+  {Manual do Usuário --- ForjaBeam}
+  {Construtor Visual de Apresentações \LaTeX{} Beamer}
+  {Versão 1.0.0}
+  {Jean Pimenta $\cdot$ \href{https://forjatex.com.br}{\color{fjsky}forjatex.com.br} $\cdot$ \href{https://github.com/jeanjpimenta/forjatex-suite}{\color{fjsky}GitHub}}
+
+\ForjaTOC{Sumário}
+
+\begin{fjcallout}[Integração Nativa com o ForjaSlide]
+O \textbf{ForjaBeam} gera apresentações \code{beamer} completas com um clique e permite compilar PDFs com suporte a \textbf{Notas em 2ª tela (\code{pgfpages})}, abrindo diretamente no \textbf{ForjaSlide}.
+\end{fjcallout}
+
+\section{Introdução}
+O \textbf{ForjaBeam} é o construtor visual de apresentações acadêmicas do ecossistema \textbf{ForjaTeX App Suite}. Ele elimina a necessidade de decorar o preâmbulo e os ambientes do pacote \code{beamer}, oferecendo pré-visualização instantânea do slide e código \LaTeX{} limpo em tempo real.
+
+\section{Tema Visual, Paleta e Metadados}
+\begin{enumerate}
+  \item \textbf{Temas Clássicos:} escolha entre \code{Madrid}, \code{Boadilla}, \code{Berlin}, \code{Warsaw}, \code{Singapore} e \code{metropolis} com miniaturas visuais.
+  \item \textbf{Esquema de Cor e Proporção:} alterne entre paletas (\code{dolphin}, \code{default}, \code{beaver}, \code{seahorse}, \code{crane}) e escolha entre \textbf{16:9 Widescreen} (\code{aspectratio=169}) ou \textbf{4:3 Clássico}.
+  \item \textbf{Notas em 2ª Tela:} ao marcar \textbf{Notas em 2ª tela}, o preâmbulo inclui \code{\textbackslash usepackage\{pgfpages\}} e \code{\textbackslash setbeameroption\{show notes on second screen=right\}}.
+  \item \textbf{Capa \& Metadados:} preencha título, subtítulo, autor e instituição para atualizar automaticamente o slide de capa (\code{\textbackslash titlepage}) e o rodapé dos slides.
+\end{enumerate}
+
+\section{Navegador de Slides e Layouts}
+Use a seção \textbf{Slides} para gerenciar a ordem e a estrutura da apresentação:
+\begin{itemize}
+  \item \textbf{Capa (\code{\textbackslash titlepage})} e \textbf{Sumário (\code{\textbackslash tableofcontents})}.
+  \item \textbf{Conteúdo:} tópicos com \code{- } convertidos automaticamente para \code{itemize}.
+  \item \textbf{2 Colunas (\code{columns}):} ajuste a proporção entre coluna esquerda e direita ($30\%$ a $70\%$) com um controle deslizante; ideal para texto ao lado de equações ou código \textbf{TikZ}.
+  \item \textbf{Blocos Semânticos:} crie quadros \code{block}, \code{exampleblock}, \code{alertblock}, \code{theorem} e \code{proof}.
+  \item \textbf{Código-Fonte (\code{fragile}):} insere automaticamente \code{[fragile]} e o ambiente \code{lstlisting}.
+\end{itemize}
+
+\section{Overlays, Notas e Projetos (.fbeam)}
+\begin{itemize}
+  \item \textbf{Animação passo a passo:} ative \code{[<+->]} para revelar itens sequencialmente ou insira \code{\textbackslash pause} com o botão de atalho.
+  \item \textbf{Notas do Apresentador (\code{\textbackslash note\{...\}}):} cada slide possui um campo exclusivo para sua cola de apresentação.
+  \item \textbf{Múltiplas Abas e Projetos:} trabalhe em várias apresentações simultaneamente, renomeie abas com clique duplo, salve/abra arquivos \code{.fbeam} e retome de onde parou ao reabrir o app.
+\end{itemize}
+
+\section{Compilação e Exportação}
+\begin{itemize}
+  \item \textbf{Compilar PDF:} executa o \code{pdflatex} localmente, gera um PDF datado e exibe os botões clicáveis \textbf{Abrir PDF gerado} e \textbf{Apresentar no ForjaSlide}.
+  \item \textbf{Exportar .tex / Copiar Código:} exporte o arquivo completo para abrir ou refinar no \textbf{ForjaTeX IDE}.
+\end{itemize}
+
+\section{Histórico de Versões (Changelog)}
+\begin{itemize}
+  \item \textbf{v1.0.0:} Lançamento inicial com galeria de temas Beamer, navegador de slides, layouts em 2 colunas/blocos/código, overlays \code{\textbackslash pause}, notas \code{pgfpages}, abas persistentes (\code{.fbeam}), compilação via \code{pdflatex} e integração com o \textbf{ForjaSlide}.
+\end{itemize}
+
+\end{document}
+

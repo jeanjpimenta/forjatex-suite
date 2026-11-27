@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { open, save } from '@tauri-apps/plugin-dialog';
 import { open as openExternal } from '@tauri-apps/plugin-shell';
@@ -28,6 +28,7 @@ import {
 import {
   createDefaultBeamerSnapshot,
   generateBeamerLatex,
+  parseBeamerLatexToSnapshot,
   THEME_COLORS,
   type BeamerAspect,
   type BeamerColorTheme,
@@ -152,6 +153,7 @@ export default function App() {
   }, []);
 
   const updateSnap = (updater: (prev: BeamerProjectSnapshot) => BeamerProjectSnapshot) => {
+    editSourceRef.current = 'visual';
     setTabs((prev) =>
       prev.map((tb) =>
         tb.id === activeTabId
@@ -243,10 +245,36 @@ export default function App() {
     });
   };
 
-  const latexCode = useMemo(() => generateBeamerLatex(snap), [snap]);
+  const generatedLatex = useMemo(() => generateBeamerLatex(snap), [snap]);
+  const [rawTex, setRawTex] = useState<string>(() => generateBeamerLatex(snap));
+  const editSourceRef = useRef<'visual' | 'code'>('visual');
+  const parseTimerRef = useRef<number | null>(null);
+
+  React.useEffect(() => {
+    if (editSourceRef.current === 'visual') {
+      setRawTex(generatedLatex);
+    }
+    editSourceRef.current = 'visual';
+  }, [generatedLatex, activeTabId]);
+
+  const handleRawTexChange = (nextTex: string) => {
+    editSourceRef.current = 'code';
+    setRawTex(nextTex);
+    if (parseTimerRef.current) window.clearTimeout(parseTimerRef.current);
+    parseTimerRef.current = window.setTimeout(() => {
+      editSourceRef.current = 'code';
+      setTabs((prev) =>
+        prev.map((tb) =>
+          tb.id === activeTabId
+            ? { ...tb, dirty: true, snapshot: parseBeamerLatexToSnapshot(nextTex, tb.snapshot) }
+            : tb
+        )
+      );
+    }, 260);
+  };
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(latexCode);
+    await navigator.clipboard.writeText(rawTex);
     setStatusPdfPath(null);
     setStatusMsg('Código Beamer copiado para a área de transferência!');
   };
@@ -258,7 +286,7 @@ export default function App() {
     });
     if (!target) return;
     try {
-      await invoke('save_text_file', { path: target, content: latexCode });
+      await invoke('save_text_file', { path: target, content: rawTex });
       setStatusPdfPath(null);
       setStatusMsg(`Arquivo .tex salvo em: ${target}`);
     } catch (e) {
@@ -275,7 +303,7 @@ export default function App() {
     const fileStamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
     try {
       const res = await invoke<{ message: string; pdf_path: string }>('compile_beamer_pdf', {
-        texFull: latexCode,
+        texFull: rawTex,
         fileStamp,
       });
       setStatusMsg(res.message);
@@ -414,6 +442,28 @@ export default function App() {
         </div>
 
         <div className="fb-actions">
+          <button
+            type="button"
+            className="fb-btn"
+            onClick={async () => {
+              const isPt = (navigator.language || '').toLowerCase().startsWith('pt');
+              const url = isPt ? '/manuals/manual-pt-BR.pdf' : '/manuals/manual-en-US.pdf';
+              const fileName = isPt ? 'manual-forjabeam-pt-BR.pdf' : 'manual-forjabeam-en-US.pdf';
+              try {
+                const resp = await fetch(url);
+                const buf = await resp.arrayBuffer();
+                await invoke('open_manual_pdf', {
+                  fileName,
+                  bytes: Array.from(new Uint8Array(buf)),
+                });
+              } catch {
+                window.open(url, '_blank');
+              }
+            }}
+            title="Abrir Manual do Usuário (PDF)"
+          >
+            Manual (PDF)
+          </button>
           <button type="button" className="fb-btn" onClick={handleCompilePdf}>
             <CheckCircle2 size={14} /> Compilar PDF
           </button>
@@ -560,8 +610,38 @@ export default function App() {
                       onClick={() => updateSnap((p) => ({ ...p, theme: th }))}
                     >
                       <div className="fb-theme-mini">
-                        <div className="fb-theme-mini-bar" style={{ background: palette.primary }} />
+                        {th === 'Berlin' && (
+                          <div style={{ height: 5, background: '#0f172a', display: 'flex', gap: 2, alignItems: 'center', padding: '0 3px' }}>
+                            <span style={{ width: 3, height: 3, borderRadius: '50%', background: '#38bdf8' }} />
+                            <span style={{ width: 3, height: 3, borderRadius: '50%', background: '#94a3b8' }} />
+                          </div>
+                        )}
+                        {th === 'Warsaw' && (
+                          <div style={{ height: 6, display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+                            <div style={{ background: '#0f172a' }} />
+                            <div style={{ background: palette.primary }} />
+                          </div>
+                        )}
+                        <div
+                          className="fb-theme-mini-bar"
+                          style={{
+                            background:
+                              th === 'metropolis'
+                                ? '#23373b'
+                                : th === 'Singapore'
+                                ? `linear-gradient(180deg, ${palette.primary}, #f8fafc)`
+                                : palette.primary,
+                            borderBottom: th === 'metropolis' ? '2px solid #eb811b' : 'none',
+                          }}
+                        />
                         <div style={{ flex: 1, padding: 3, fontSize: 6, color: '#334155' }}>Aa</div>
+                        {(th === 'Madrid' || th === 'Boadilla' || th === 'Warsaw') && (
+                          <div style={{ height: 4, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr' }}>
+                            <div style={{ background: palette.primary, opacity: th === 'Boadilla' ? 0.35 : 0.9 }} />
+                            <div style={{ background: palette.secondary, opacity: th === 'Boadilla' ? 0.2 : 0.7 }} />
+                            <div style={{ background: palette.primary, opacity: th === 'Boadilla' ? 0.35 : 0.9 }} />
+                          </div>
+                        )}
                       </div>
                       <span>{th}</span>
                     </button>
@@ -965,13 +1045,55 @@ export default function App() {
                   </div>
                 ) : (
                   <>
+                    {snap.theme === 'Berlin' && (
+                      <div
+                        style={{
+                          background: '#0f172a',
+                          color: '#cbd5e1',
+                          padding: '4px 16px',
+                          fontSize: 10,
+                          display: 'flex',
+                          gap: 12,
+                          alignItems: 'center',
+                        }}
+                      >
+                        <span>○ Introdução</span>
+                        <span style={{ color: '#fff', fontWeight: 700 }}>● {activeSlide.title}</span>
+                        <span>○ Conclusão</span>
+                      </div>
+                    )}
+                    {snap.theme === 'Warsaw' && (
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: '1fr 1fr',
+                          fontSize: 10,
+                          color: '#fff',
+                        }}
+                      >
+                        <div style={{ background: '#0f172a', padding: '4px 12px' }}>{snap.docTitle}</div>
+                        <div style={{ background: palette.primary, padding: '4px 12px', textAlign: 'right' }}>
+                          {activeSlide.title}
+                        </div>
+                      </div>
+                    )}
                     <div
                       style={{
-                        background: palette.primary,
-                        color: '#fff',
-                        padding: '10px 18px',
+                        background:
+                          snap.theme === 'metropolis'
+                            ? '#23373b'
+                            : snap.theme === 'Singapore'
+                            ? `linear-gradient(180deg, ${palette.primary}33 0%, #ffffff 100%)`
+                            : snap.theme === 'Warsaw'
+                            ? `linear-gradient(90deg, ${palette.primary}, ${palette.secondary})`
+                            : palette.primary,
+                        color: snap.theme === 'Singapore' ? '#0f172a' : '#fff',
+                        padding: snap.theme === 'metropolis' ? '12px 20px' : '10px 18px',
                         fontWeight: 700,
                         fontSize: 16,
+                        textAlign: snap.theme === 'Singapore' ? 'center' : 'left',
+                        borderBottom: snap.theme === 'metropolis' ? '2px solid #eb811b' : 'none',
+                        boxShadow: snap.theme === 'Madrid' || snap.theme === 'Warsaw' ? '0 2px 6px rgba(0,0,0,0.18)' : 'none',
                       }}
                     >
                       {activeSlide.title}
@@ -1065,22 +1187,53 @@ export default function App() {
                         <div style={{ whiteSpace: 'pre-wrap' }}>{activeSlide.body}</div>
                       )}
                     </div>
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        padding: '5px 14px',
-                        background: '#e2e8f0',
-                        fontSize: 10,
-                        color: '#334155',
-                      }}
-                    >
-                      <span>{snap.author}</span>
-                      <span>{snap.docTitle}</span>
-                      <span>
-                        {activeSlideIdx + 1} / {snap.slides.length}
-                      </span>
-                    </div>
+                    {snap.theme === 'Madrid' || snap.theme === 'Warsaw' ? (
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: '1fr 1.6fr 0.7fr',
+                          fontSize: 10,
+                          color: '#fff',
+                        }}
+                      >
+                        <div style={{ background: palette.primary, padding: '5px 10px' }}>{snap.author}</div>
+                        <div style={{ background: palette.secondary, padding: '5px 10px', textAlign: 'center' }}>
+                          {snap.docTitle}
+                        </div>
+                        <div style={{ background: palette.primary, padding: '5px 10px', textAlign: 'right' }}>
+                          {activeSlideIdx + 1} / {snap.slides.length}
+                        </div>
+                      </div>
+                    ) : snap.theme === 'metropolis' ? (
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'flex-end',
+                          padding: '5px 14px',
+                          fontSize: 10,
+                          color: '#64748b',
+                        }}
+                      >
+                        {activeSlideIdx + 1}
+                      </div>
+                    ) : (
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          padding: '5px 14px',
+                          background: snap.theme === 'Singapore' ? 'transparent' : '#e2e8f0',
+                          fontSize: 10,
+                          color: '#334155',
+                        }}
+                      >
+                        <span>{snap.author}</span>
+                        <span>{snap.docTitle}</span>
+                        <span>
+                          {activeSlideIdx + 1} / {snap.slides.length}
+                        </span>
+                      </div>
+                    )}
                   </>
                 )}
               </div>
@@ -1121,11 +1274,17 @@ export default function App() {
 
         <aside className="fb-code-pane">
           <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase' }}>
-            Código LaTeX Beamer Gerado
+            Código LaTeX Beamer (Editável)
           </div>
-          <pre className="fb-code">{latexCode}</pre>
+          <textarea
+            className="fb-code-editor"
+            spellCheck={false}
+            value={rawTex}
+            onChange={(e) => handleRawTexChange(e.target.value)}
+            title="Edite o código LaTeX diretamente — alterações compatíveis sincronizam com o painel esquerdo"
+          />
           <div className="fb-hint">
-            Dica: Ative "Notas em 2ª tela" para gerar PDF compatível diretamente com o ForjaSlide.
+            Sincronização bidirecional: edite aqui ou na esquerda. Ative "Notas em 2ª tela" para usar no ForjaSlide.
           </div>
         </aside>
       </main>

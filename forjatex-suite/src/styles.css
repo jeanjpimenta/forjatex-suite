@@ -334,12 +334,26 @@ body {
   display: flex;
   flex-direction: column;
   height: 245px;
-  transition: background-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+  cursor: grab;
+  transition: background-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease, opacity 0.16s ease;
+}
+
+.ac-card:active {
+  cursor: grabbing;
 }
 
 .ac-card:hover {
-  background: var(--surface-hover);
-  box-shadow: inset 0 0 0 1px var(--accent);
+  background: color-mix(in srgb, var(--card-accent, var(--accent)) 12%, var(--surface));
+  box-shadow: inset 0 0 0 1.5px var(--card-accent, var(--accent));
+}
+
+.ac-card.dragging {
+  opacity: 0.45;
+  transform: scale(0.98);
+}
+
+.ac-card.drag-over {
+  box-shadow: inset 0 0 0 2px var(--card-accent, var(--accent)), 0 0 14px color-mix(in srgb, var(--card-accent, var(--accent)) 35%, transparent);
 }
 
 .ac-card:hover .ac-app-icon {
@@ -347,8 +361,8 @@ body {
 }
 
 .ac-card.installed {
-  background: var(--surface-tint);
-  border-top: 2px solid #16a34a;
+  background: color-mix(in srgb, var(--card-accent, #16a34a) 6%, var(--surface));
+  border-top: 2px solid var(--card-accent, #16a34a);
 }
 
 .ac-card.soon {
