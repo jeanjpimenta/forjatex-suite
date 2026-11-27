@@ -359,7 +359,7 @@ export default function App() {
   });
   const [locale, setLocale] = useState<SuiteLocale>(() => detectSuiteLocale());
   const t = (key: string) => SUITE_DICT[locale][key] ?? SUITE_DICT['pt-BR'][key] ?? key;
-  const [suiteVersion, setSuiteVersion] = useState('1.2.6');
+  const [suiteVersion, setSuiteVersion] = useState('1.2.7');
   const [suiteRemote, setSuiteRemote] = useState<SuiteSelfInfo | null>(null);
   const [apps, setApps] = useState<SuiteAppEntry[]>(DEFAULT_APPS);
   const [installedMap, setInstalledMap] = useState<Record<string, InstalledAppInfo>>({});
