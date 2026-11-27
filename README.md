@@ -33,6 +33,8 @@ O **ForjaTeX App Suite** reúne aplicativos desktop rápidos, offline-first e de
 | **ForjaTeX App Suite** | Hub central para abrir, instalar e atualizar todos os aplicativos da suíte via GitHub Releases. | Disponível |
 | **ForjaTeX IDE** | Editor LaTeX completo com Monaco Editor, PDF Preview + SyncTeX, Assistentes visuais (Tabelas, Matrizes, Fontes, Imagens, Bibliografia), Corretor LaTeX-Aware, Git integrado e IA (BYOK). | Disponível |
 | **ForjaTikZ** | Studio visual interativo para criar diagramas **TikZ** (`tikzpicture`) e gráficos matemáticos **PGFPlots** com exportação `.tex` e validação via `pdflatex`. | Disponível |
+| **ForjaBeam** | Construtor visual de apresentações **LaTeX Beamer** com galeria de temas, 2 colunas, blocos semânticos, overlays, notas `pgfpages` e edição bidirecional `.tex`. | Disponível |
+| **ForjaSlide** | Apresentador ao vivo de PDFs e slides **Beamer** em duas telas (visão do apresentador + janela do público), suporte nativo a `pgfpages`, laser, caneta e cronômetro. | Disponível |
 | **ForjaSnap** | OCR de equações e tabelas (captura de tela/PDF → LaTeX). | Em breve |
 | **ForjaBib** | Gerenciador visual de bibliografias `.bib` por DOI, ISBN e arXiv. | Em breve |
 | **ForjaDiff** | Comparador visual de revisões com `latexdiff`. | Em breve |
@@ -63,6 +65,8 @@ Quer ajudar a traduzir o **ForjaTeX** para Espanhol, Francês, Alemão ou outro 
 | **ForjaTeX App Suite** | Central launcher and updater for installing, launching, and updating all suite apps via GitHub Releases. | Available |
 | **ForjaTeX IDE** | Full-featured LaTeX IDE with Monaco Editor, PDF Preview + SyncTeX, Visual Wizards (Tables, Matrices, Fonts, Images, Bibliography), LaTeX-Aware Spell & Grammar Checker, built-in Git, and BYOK AI assistant. | Available |
 | **ForjaTikZ** | Interactive visual studio for **TikZ** diagrams and **PGFPlots** math graphs with live LaTeX code generation, `.tex` export, and `pdflatex` validation. | Available |
+| **ForjaBeam** | Visual **LaTeX Beamer** presentation builder with theme gallery, 2-column layouts, semantic blocks, overlays, `pgfpages` notes, and bidirectional `.tex` editing. | Available |
+| **ForjaSlide** | Dual-screen live PDF & **Beamer** presenter (presenter view + fullscreen audience window) with native `pgfpages` notes, laser pointer, pen ink, and timer. | Available |
 | **ForjaSnap** | Equation & table OCR (screenshot/PDF → LaTeX). | Coming soon |
 | **ForjaBib** | Visual `.bib` bibliography manager with DOI, ISBN, and arXiv lookup. | Coming soon |
 | **ForjaDiff** | Visual revision comparator powered by `latexdiff`. | Coming soon |
@@ -81,6 +85,8 @@ Grab the latest **Windows** (`.exe` / `.msi`) and **Linux** (`.deb` / `.AppImage
 | `src/` & `src-tauri/` | **ForjaTeX IDE** — Desktop LaTeX IDE (React + TypeScript + Tauri v2 / Rust). |
 | `forjatex-suite/` | **ForjaTeX App Suite** — Cross-platform launcher, installer & updater (Windows `.msi`/`.exe` & Linux `.deb`/`.AppImage`). |
 | `forjatikz/` | **ForjaTikZ** — Visual TikZ & PGFPlots diagram studio (Windows & Linux). |
+| `forjabeam/` | **ForjaBeam** — Visual LaTeX Beamer presentation builder (Windows & Linux). |
+| `forjaslide/` | **ForjaSlide** — Dual-screen PDF & Beamer live presenter (Windows & Linux). |
 | `docs/manuals/` | Official bilingual user manuals (`PT-BR` & `EN-US`) in Markdown and PDF, bundled inside each app. |
 | `docs/GUIA-GITHUB-RELEASES.md` | Maintainer guide for versioning, tags, and automated GitHub Releases. |
 | `.github/workflows/` | `ci-verify.yml` (cross-platform build check on every push) & `release-suite.yml` (Windows + Linux release builds). |
