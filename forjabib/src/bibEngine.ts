@@ -103,7 +103,7 @@ export const BIB_TYPE_GROUPS: Array<{ label: string; types: Array<{ id: BibEntry
   },
 ];
 
-export type BibEngineMode = 'biblatex' | 'natbib';
+export type BibEngineMode = 'biblatex' | 'natbib' | 'csl';
 
 export type CitationStyle =
   | 'abnt'

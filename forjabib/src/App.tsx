@@ -53,6 +53,14 @@ import {
   type CustomBibStyleConfig,
 } from './styleEngine';
 import {
+  DEFAULT_ABNT_CSL,
+  extractBiblatexHintsFromCsl,
+  generateCslLatexPreamble,
+  parseCslTitle,
+  POPULAR_CSL_STYLES,
+  renderWithCiteproc,
+} from './cslEngine';
+import {
   generatePixQrDataUrl,
   getPayPalDonateUrl,
   PAYPAL_EMAIL,
@@ -97,6 +105,8 @@ interface BibTab {
   bibEngine?: BibEngineMode;
   tabView?: 'entries' | 'style';
   styleConfig?: CustomBibStyleConfig;
+  cslName?: string;
+  cslXml?: string;
   texAudit: {
     fileName: string;
     citedCount: number;
@@ -178,9 +188,17 @@ export default function App() {
   const activeTabView: 'entries' | 'style' = activeTab.tabView || 'entries';
   const activeStyleCfg: CustomBibStyleConfig =
     activeTab.styleConfig || createDefaultStyleConfig(activeEngine);
+  const activeCslName = activeTab.cslName || 'abnt-local';
+  const activeCslXml = activeTab.cslXml || DEFAULT_ABNT_CSL;
+  const [cslSlugInput, setCslSlugInput] = useState('associacao-brasileira-de-normas-tecnicas');
+  const [cslBusy, setCslBusy] = useState(false);
+
   const styleLatexCode = useMemo(
-    () => generateStyleLatex(activeStyleCfg, activeTab.title, true),
-    [activeStyleCfg, activeTab.title]
+    () =>
+      activeStyleCfg.engine === 'csl'
+        ? generateCslLatexPreamble(activeCslName, activeTab.title)
+        : generateStyleLatex(activeStyleCfg, activeTab.title, true),
+    [activeStyleCfg, activeCslName, activeTab.title]
   );
 
   const updateStyleCfg = (patch: Partial<CustomBibStyleConfig>) => {
@@ -190,16 +208,91 @@ export default function App() {
     }));
   };
 
+  const handleLoadLocalCsl = async (applyToBiblatex = false) => {
+    const selected = await open({
+      filters: [{ name: 'Citation Style Language', extensions: ['csl'] }],
+      multiple: false,
+    });
+    if (!selected || Array.isArray(selected)) return;
+    try {
+      const xml = await invoke<string>('read_text_file', { path: selected });
+      const fileName = selected.split(/[\\/]/).pop()?.replace(/\.csl$/i, '') || 'custom';
+      if (applyToBiblatex) {
+        const nextCfg = extractBiblatexHintsFromCsl(xml, activeStyleCfg);
+        updateActiveTab((tb) => ({
+          ...tb,
+          bibEngine: 'biblatex',
+          cslName: fileName,
+          cslXml: xml,
+          styleConfig: nextCfg,
+        }));
+        setStatusMsg(`Pistas extraídas de "${parseCslTitle(xml)}" para BibLaTeX!`);
+      } else {
+        updateActiveTab((tb) => ({
+          ...tb,
+          bibEngine: 'csl',
+          cslName: fileName,
+          cslXml: xml,
+          styleConfig: { ...(tb.styleConfig || createDefaultStyleConfig('csl')), engine: 'csl' },
+        }));
+        setStatusMsg(`Estilo CSL carregado: ${parseCslTitle(xml)}`);
+      }
+    } catch (e) {
+      setStatusMsg(String(e));
+    }
+  };
+
+  const handleFetchZoteroCsl = async (slug: string) => {
+    const clean = slug.trim().replace(/\.csl$/i, '');
+    if (!clean) return;
+    setCslBusy(true);
+    setStatusMsg(`Baixando ${clean}.csl do repositório oficial CSL/Zotero...`);
+    try {
+      const xml = await invoke<string>('fetch_url_text', {
+        url: `https://raw.githubusercontent.com/citation-style-language/styles/master/${encodeURIComponent(clean)}.csl`,
+      });
+      if (!xml.includes('<style')) throw new Error('Arquivo CSL inválido.');
+      updateActiveTab((tb) => ({
+        ...tb,
+        bibEngine: 'csl',
+        cslName: clean,
+        cslXml: xml,
+        styleConfig: { ...(tb.styleConfig || createDefaultStyleConfig('csl')), engine: 'csl' },
+      }));
+      setStatusMsg(`Estilo CSL "${parseCslTitle(xml)}" carregado!`);
+    } catch (e) {
+      setStatusMsg(String(e));
+    } finally {
+      setCslBusy(false);
+    }
+  };
+
+  const handleSaveCslFile = async () => {
+    const target = await save({
+      filters: [{ name: 'Citation Style Language', extensions: ['csl'] }],
+      defaultPath: `${activeCslName}.csl`,
+    });
+    if (!target) return;
+    try {
+      await invoke('save_text_file', { path: target, content: activeCslXml });
+      setStatusMsg(`Arquivo .csl salvo em: ${target}`);
+    } catch (e) {
+      setStatusMsg(String(e));
+    }
+  };
+
   const handleCompileStyleTest = async () => {
     setStatusPdfPath(null);
-    setStatusMsg('Compilando PDF de teste do estilo (pdflatex + biber/bibtex)...');
+    setStatusMsg('Compilando PDF de teste do estilo...');
     const preambleNoResource = generateStyleLatex(activeStyleCfg, activeTab.title, false);
     try {
       const res = await invoke<{ message: string; pdf_path: string }>('compile_bib_style_test', {
-        bibContent: rawBib || serializeBibEntries(library.slice(0, 2), activeStyleCfg.engine),
+        bibContent: rawBib || serializeBibEntries(library.slice(0, 2), 'biblatex'),
         stylePreamble: preambleNoResource,
         useBiber: activeStyleCfg.engine === 'biblatex',
         bibStyleName: activeStyleCfg.baseStyle,
+        cslContent: activeStyleCfg.engine === 'csl' ? activeCslXml : null,
+        cslName: activeStyleCfg.engine === 'csl' ? activeCslName : null,
       });
       setStatusMsg(res.message);
       setStatusPdfPath(res.pdf_path);
@@ -884,6 +977,7 @@ export default function App() {
           >
             <option value="biblatex">BibLaTeX (Biber)</option>
             <option value="natbib">natbib (BibTeX Clássico)</option>
+            <option value="csl">CSL (citation-style-language)</option>
           </select>
         </div>
       </div>
@@ -930,41 +1024,118 @@ export default function App() {
                   >
                     <option value="biblatex">BibLaTeX (Biber)</option>
                     <option value="natbib">natbib (BibTeX)</option>
+                    <option value="csl">CSL (citation-style-language)</option>
                   </select>
                 </label>
-                <label className="fbib-field">
-                  Estilo Base
-                  <select
-                    value={activeStyleCfg.baseStyle}
-                    onChange={(e) =>
-                      updateStyleCfg({
-                        baseStyle: e.target.value as CustomBibStyleConfig['baseStyle'],
-                      })
-                    }
-                  >
-                    {activeStyleCfg.engine === 'biblatex' ? (
-                      <>
-                        <option value="authoryear">authoryear</option>
-                        <option value="numeric">numeric</option>
-                        <option value="alphabetic">alphabetic</option>
-                        <option value="abnt">abnt</option>
-                        <option value="ieee">ieee</option>
-                        <option value="apa">apa</option>
-                      </>
-                    ) : (
-                      <>
-                        <option value="plainnat">plainnat</option>
-                        <option value="abbrvnat">abbrvnat</option>
-                        <option value="unsrtnat">unsrtnat</option>
-                        <option value="abntex2-alf">abntex2-alf</option>
-                      </>
-                    )}
-                  </select>
-                </label>
+                {activeStyleCfg.engine !== 'csl' && (
+                  <label className="fbib-field">
+                    Estilo Base
+                    <select
+                      value={activeStyleCfg.baseStyle}
+                      onChange={(e) =>
+                        updateStyleCfg({
+                          baseStyle: e.target.value as CustomBibStyleConfig['baseStyle'],
+                        })
+                      }
+                    >
+                      {activeStyleCfg.engine === 'biblatex' ? (
+                        <>
+                          <option value="authoryear">authoryear</option>
+                          <option value="numeric">numeric</option>
+                          <option value="alphabetic">alphabetic</option>
+                          <option value="abnt">abnt</option>
+                          <option value="ieee">ieee</option>
+                          <option value="apa">apa</option>
+                        </>
+                      ) : (
+                        <>
+                          <option value="plainnat">plainnat</option>
+                          <option value="abbrvnat">abbrvnat</option>
+                          <option value="unsrtnat">unsrtnat</option>
+                          <option value="abntex2-alf">abntex2-alf</option>
+                        </>
+                      )}
+                    </select>
+                  </label>
+                )}
               </div>
+              {activeStyleCfg.engine === 'biblatex' && (
+                <button
+                  type="button"
+                  className="fbib-chip"
+                  onClick={() => void handleLoadLocalCsl(true)}
+                  title="Lê um arquivo .csl e pré-preenche as opções do BibLaTeX"
+                >
+                  Puxar pistas de um arquivo .csl para BibLaTeX
+                </button>
+              )}
             </div>
 
-            {activeStyleCfg.engine === 'biblatex' ? (
+            {activeStyleCfg.engine === 'csl' ? (
+              <div className="fbib-card">
+                <div className="fbib-sec-title">
+                  <span>2. Estilo CSL (Zotero / Universidade)</span>
+                </div>
+                <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>
+                  Ativo: <strong style={{ color: 'var(--text)' }}>{parseCslTitle(activeCslXml)}</strong> (<code>{activeCslName}.csl</code>)
+                </div>
+                <button
+                  type="button"
+                  className="fbib-btn primary"
+                  onClick={() => void handleLoadLocalCsl(false)}
+                >
+                  <FolderOpen size={13} /> Importar .csl do computador
+                </button>
+                <div className="fbib-field">
+                  Baixar do repositório oficial CSL (Zotero)
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <input
+                      value={cslSlugInput}
+                      onChange={(e) => setCslSlugInput(e.target.value)}
+                      placeholder="Ex: ieee, apa, associacao-brasileira..."
+                    />
+                    <button
+                      type="button"
+                      className="fbib-btn"
+                      disabled={cslBusy}
+                      onClick={() => void handleFetchZoteroCsl(cslSlugInput)}
+                    >
+                      {cslBusy ? '...' : 'Baixar'}
+                    </button>
+                  </div>
+                </div>
+                <div className="fbib-chip-row">
+                  {POPULAR_CSL_STYLES.slice(0, 6).map((p) => (
+                    <button
+                      key={p.slug}
+                      type="button"
+                      className="fbib-chip"
+                      onClick={() => {
+                        setCslSlugInput(p.slug);
+                        void handleFetchZoteroCsl(p.slug);
+                      }}
+                    >
+                      {p.label.split(' ')[0]}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  className="fbib-chip"
+                  onClick={() => {
+                    const nextCfg = extractBiblatexHintsFromCsl(activeCslXml, activeStyleCfg);
+                    updateActiveTab((tb) => ({
+                      ...tb,
+                      bibEngine: 'biblatex',
+                      styleConfig: nextCfg,
+                    }));
+                    setStatusMsg('Regras básicas do CSL aplicadas no Criador BibLaTeX!');
+                  }}
+                >
+                  Converter pistas deste CSL → BibLaTeX
+                </button>
+              </div>
+            ) : activeStyleCfg.engine === 'biblatex' ? (
               <div className="fbib-card">
                 <div className="fbib-sec-title">
                   <span>2. Opções do Pacote (TeX.SX #12806)</span>
@@ -1068,6 +1239,7 @@ export default function App() {
               </div>
             )}
 
+            {activeStyleCfg.engine !== 'csl' && (
             <div className="fbib-card">
               <div className="fbib-sec-title">
                 <span>3. Tipografia & Pontuação</span>
@@ -1153,6 +1325,7 @@ export default function App() {
                 </label>
               </div>
             </div>
+            )}
           </aside>
 
           <div className="fbib-resizer" onMouseDown={(e) => startResize('left', e)} />
@@ -1173,6 +1346,31 @@ export default function App() {
 
               {(() => {
                 const sample = (tabEntries.length > 0 ? tabEntries : library).slice(0, 3);
+                if (activeStyleCfg.engine === 'csl') {
+                  const cslRes = renderWithCiteproc(sample, activeCslXml);
+                  return cslRes.error ? (
+                    <div style={{ color: '#e11d48', fontSize: 12 }}>Erro no CSL: {cslRes.error}</div>
+                  ) : (
+                    <>
+                      <div style={{ fontSize: 13, lineHeight: 1.65 }}>
+                        <strong>No texto (citeproc):</strong> Conforme demonstrado{' '}
+                        <span style={{ color: '#0369a1', fontWeight: 600 }}>{cslRes.inText[0] || ''}</span>{' '}
+                        e validado em{' '}
+                        <span style={{ color: '#0369a1', fontWeight: 600 }}>{cslRes.inText[1] || cslRes.inText[0] || ''}</span>.
+                      </div>
+                      <div style={{ borderTop: '1px dashed #cbd5e1', paddingTop: 10 }}>
+                        <strong style={{ fontSize: 13, display: 'block', marginBottom: 8 }}>
+                          Referências ({parseCslTitle(activeCslXml)})
+                        </strong>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12.5, lineHeight: 1.55 }}>
+                          {cslRes.bibHtml.map((html, idx) => (
+                            <div key={idx} dangerouslySetInnerHTML={{ __html: html }} />
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  );
+                }
                 const previews = sample.map((item, idx) => buildStyledPreview(item, activeStyleCfg, idx + 1));
                 return (
                   <>
@@ -1264,6 +1462,15 @@ export default function App() {
                   onClick={handleExportBiblatexCfg}
                 >
                   <Save size={12} /> Exportar biblatex.cfg
+                </button>
+              )}
+              {activeStyleCfg.engine === 'csl' && (
+                <button
+                  type="button"
+                  className="fbib-btn"
+                  onClick={handleSaveCslFile}
+                >
+                  <Save size={12} /> Salvar .csl
                 </button>
               )}
             </div>

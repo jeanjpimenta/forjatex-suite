@@ -11,3 +11,4 @@ A licença **GPL v3** garante liberdade para estudar, modificar e redistribuir o
 No entanto, a licença de código **não concede direitos sobre a marca ou identidade visual**:
 - Os nomes **ForjaTeX**, **ForjaTeX IDE**, **ForjaTeX App Suite**, **ForjaTikZ** e **Arkhé Code**, bem como seus respectivos logotipos e ícones oficiais, são de uso exclusivo dos lançamentos oficiais mantidos por **Jean Pimenta** e **Arkhé Code**.
 - Versões modificadas (forks) distribuídas por terceiros devem usar nome e logotipo próprios para evitar confusão aos usuários.
+

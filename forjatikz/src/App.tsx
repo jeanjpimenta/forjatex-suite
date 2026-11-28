@@ -613,7 +613,7 @@ export default function App() {
         setPixBrCode(brCode);
         setPixQrUrl(qrUrl);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const parsedScatter = useMemo(() => parsePoints(scatterRaw), [scatterRaw]);
@@ -646,10 +646,10 @@ export default function App() {
           n.shape === 'circle'
             ? `circle, draw=${n.color}!80!black, fill=${n.color}!12`
             : n.shape === 'diamond'
-            ? `diamond, aspect=1.6, draw=${n.color}!80!black, fill=${n.color}!12`
-            : n.shape === 'ellipse'
-            ? `ellipse, draw=${n.color}!80!black, fill=${n.color}!12`
-            : `rectangle, rounded corners, draw=${n.color}!80!black, fill=${n.color}!12`;
+              ? `diamond, aspect=1.6, draw=${n.color}!80!black, fill=${n.color}!12`
+              : n.shape === 'ellipse'
+                ? `ellipse, draw=${n.color}!80!black, fill=${n.color}!12`
+                : `rectangle, rounded corners, draw=${n.color}!80!black, fill=${n.color}!12`;
         return `  \\node[${shapeStyle}, minimum size=0.9cm${extraStr}] (${n.id}) at (${n.x.toFixed(1)}, ${n.y.toFixed(1)}) {${n.label}};`;
       });
       const fitLines = fitGroups
@@ -690,10 +690,10 @@ export default function App() {
       axisScale === 'semilogx'
         ? 'semilogxaxis'
         : axisScale === 'semilogy'
-        ? 'semilogyaxis'
-        : axisScale === 'loglog'
-        ? 'loglogaxis'
-        : 'axis';
+          ? 'semilogyaxis'
+          : axisScale === 'loglog'
+            ? 'loglogaxis'
+            : 'axis';
 
     const axisLinesLine = axisLines !== 'box' ? `,\n    axis lines=${axisLines}` : '';
     const legendColsLine = legendColumns > 1 ? `,\n    legend columns=${legendColumns}` : '';
@@ -1713,64 +1713,64 @@ export default function App() {
                 open={openSec.plotType}
                 onToggle={() => toggleSec('plotType')}
               >
-              <div className="ft-btn-row">
-                <button
-                  type="button"
-                  className={`ft-btn ${plotKind === 'function' ? 'primary' : ''}`}
-                  onClick={() => setPlotKind('function')}
-                >
-                  <LineChart size={13} /> {t('kindFunc')}
-                </button>
-                <button
-                  type="button"
-                  className={`ft-btn ${plotKind === 'scatter' ? 'primary' : ''}`}
-                  onClick={() => setPlotKind('scatter')}
-                >
-                  <ScatterChart size={13} /> {t('kindScatter')}
-                </button>
-                <button
-                  type="button"
-                  className={`ft-btn ${plotKind === 'bars' ? 'primary' : ''}`}
-                  onClick={() => setPlotKind('bars')}
-                >
-                  <BarChart3 size={13} /> {t('kindBars')}
-                </button>
-                <button
-                  type="button"
-                  className={`ft-btn ${plotKind === 'histogram' ? 'primary' : ''}`}
-                  onClick={() => setPlotKind('histogram')}
-                >
-                  <BarChart3 size={13} /> Histograma
-                </button>
-                <button
-                  type="button"
-                  className={`ft-btn ${plotKind === 'surface3d' ? 'primary' : ''}`}
-                  onClick={() => setPlotKind('surface3d')}
-                >
-                  {t('kind3d')}
-                </button>
-              </div>
-              <label className="ft-props" style={{ padding: 8 }}>
-                <span>Sistemas Especiais & Avançados</span>
-                <select
-                  value={
-                    ['polar', 'ternary', 'smith', 'groupplot', 'contour', 'quiver'].includes(plotKind)
-                      ? plotKind
-                      : ''
-                  }
-                  onChange={(e) => {
-                    if (e.target.value) setPlotKind(e.target.value as PlotKind);
-                  }}
-                >
-                  <option value="">-- Escolher modo avançado --</option>
-                  <option value="groupplot">Subgráficos em Grade (groupplots)</option>
-                  <option value="polar">Coordenadas Polares (polaraxis)</option>
-                  <option value="ternary">Diagrama Ternário (ternaryaxis)</option>
-                  <option value="smith">Carta de Smith (smithchart)</option>
-                  <option value="contour">Curvas de Nível 2D (contour)</option>
-                  <option value="quiver">Campo Vetorial (quiver)</option>
-                </select>
-              </label>
+                <div className="ft-btn-row">
+                  <button
+                    type="button"
+                    className={`ft-btn ${plotKind === 'function' ? 'primary' : ''}`}
+                    onClick={() => setPlotKind('function')}
+                  >
+                    <LineChart size={13} /> {t('kindFunc')}
+                  </button>
+                  <button
+                    type="button"
+                    className={`ft-btn ${plotKind === 'scatter' ? 'primary' : ''}`}
+                    onClick={() => setPlotKind('scatter')}
+                  >
+                    <ScatterChart size={13} /> {t('kindScatter')}
+                  </button>
+                  <button
+                    type="button"
+                    className={`ft-btn ${plotKind === 'bars' ? 'primary' : ''}`}
+                    onClick={() => setPlotKind('bars')}
+                  >
+                    <BarChart3 size={13} /> {t('kindBars')}
+                  </button>
+                  <button
+                    type="button"
+                    className={`ft-btn ${plotKind === 'histogram' ? 'primary' : ''}`}
+                    onClick={() => setPlotKind('histogram')}
+                  >
+                    <BarChart3 size={13} /> Histograma
+                  </button>
+                  <button
+                    type="button"
+                    className={`ft-btn ${plotKind === 'surface3d' ? 'primary' : ''}`}
+                    onClick={() => setPlotKind('surface3d')}
+                  >
+                    {t('kind3d')}
+                  </button>
+                </div>
+                <label className="ft-props" style={{ padding: 8 }}>
+                  <span>Sistemas Especiais & Avançados</span>
+                  <select
+                    value={
+                      ['polar', 'ternary', 'smith', 'groupplot', 'contour', 'quiver'].includes(plotKind)
+                        ? plotKind
+                        : ''
+                    }
+                    onChange={(e) => {
+                      if (e.target.value) setPlotKind(e.target.value as PlotKind);
+                    }}
+                  >
+                    <option value="">-- Escolher modo avançado --</option>
+                    <option value="groupplot">Subgráficos em Grade (groupplots)</option>
+                    <option value="polar">Coordenadas Polares (polaraxis)</option>
+                    <option value="ternary">Diagrama Ternário (ternaryaxis)</option>
+                    <option value="smith">Carta de Smith (smithchart)</option>
+                    <option value="contour">Curvas de Nível 2D (contour)</option>
+                    <option value="quiver">Campo Vetorial (quiver)</option>
+                  </select>
+                </label>
               </CollapsibleSection>
 
               <CollapsibleSection
@@ -1778,189 +1778,189 @@ export default function App() {
                 open={openSec.axis}
                 onToggle={() => toggleSec('axis')}
               >
-              <div className="ft-props" style={{ border: 'none', padding: 0, background: 'transparent' }}>
-                <label>
-                  <span>{t('chartTitle')}</span>
-                  <input value={plotTitle} onChange={(e) => setPlotTitle(e.target.value)} />
-                </label>
-                <div className="ft-grid2">
+                <div className="ft-props" style={{ border: 'none', padding: 0, background: 'transparent' }}>
                   <label>
-                    <span>{t('xLabel')}</span>
-                    <input value={xLabel} onChange={(e) => setXLabel(e.target.value)} />
+                    <span>{t('chartTitle')}</span>
+                    <input value={plotTitle} onChange={(e) => setPlotTitle(e.target.value)} />
                   </label>
-                  <label>
-                    <span>{t('yLabel')}</span>
-                    <input value={yLabel} onChange={(e) => setYLabel(e.target.value)} />
-                  </label>
-                </div>
-                {plotKind !== 'bars' && (
                   <div className="ft-grid2">
                     <label>
-                      <span>X Mínimo</span>
-                      <input
-                        type="number"
-                        value={xMin}
-                        onChange={(e) => setXMin(Number(e.target.value))}
-                      />
+                      <span>{t('xLabel')}</span>
+                      <input value={xLabel} onChange={(e) => setXLabel(e.target.value)} />
                     </label>
                     <label>
-                      <span>X Máximo</span>
-                      <input
-                        type="number"
-                        value={xMax}
-                        onChange={(e) => setXMax(Number(e.target.value))}
-                      />
-                    </label>
-                    <label>
-                      <span>Y Mínimo</span>
-                      <input
-                        type="number"
-                        value={yMin}
-                        onChange={(e) => setYMin(Number(e.target.value))}
-                      />
-                    </label>
-                    <label>
-                      <span>Y Máximo</span>
-                      <input
-                        type="number"
-                        value={yMax}
-                        onChange={(e) => setYMax(Number(e.target.value))}
-                      />
+                      <span>{t('yLabel')}</span>
+                      <input value={yLabel} onChange={(e) => setYLabel(e.target.value)} />
                     </label>
                   </div>
-                )}
-                <div className="ft-grid2">
-                  <label>
-                    <span>Escala</span>
-                    <select
-                      value={axisScale}
-                      onChange={(e) => setAxisScale(e.target.value as AxisScaleType)}
-                    >
-                      <option value="linear">Linear</option>
-                      <option value="semilogx">Semilog X</option>
-                      <option value="semilogy">Semilog Y</option>
-                      <option value="loglog">Log-Log</option>
-                    </select>
-                  </label>
-                  <label>
-                    <span>Grade</span>
-                    <select
-                      value={gridMode}
-                      onChange={(e) => setGridMode(e.target.value as 'both' | 'major' | 'none')}
-                    >
-                      <option value="both">Completa</option>
-                      <option value="major">Principal</option>
-                      <option value="none">Sem grade</option>
-                    </select>
-                  </label>
-                </div>
-
-                <div className="ft-grid2">
-                  <label>
-                    <span>Eixos (axis lines)</span>
-                    <select
-                      value={axisLines}
-                      onChange={(e) => setAxisLines(e.target.value as AxisLinesMode)}
-                    >
-                      <option value="box">Caixa (box)</option>
-                      <option value="middle">Cruzado (middle)</option>
-                      <option value="left">Em L (left)</option>
-                      <option value="none">Ocultar (none)</option>
-                    </select>
-                  </label>
-
-                  {(plotKind === 'function' || plotKind === 'scatter') && (
+                  {plotKind !== 'bars' && (
+                    <div className="ft-grid2">
+                      <label>
+                        <span>X Mínimo</span>
+                        <input
+                          type="number"
+                          value={xMin}
+                          onChange={(e) => setXMin(Number(e.target.value))}
+                        />
+                      </label>
+                      <label>
+                        <span>X Máximo</span>
+                        <input
+                          type="number"
+                          value={xMax}
+                          onChange={(e) => setXMax(Number(e.target.value))}
+                        />
+                      </label>
+                      <label>
+                        <span>Y Mínimo</span>
+                        <input
+                          type="number"
+                          value={yMin}
+                          onChange={(e) => setYMin(Number(e.target.value))}
+                        />
+                      </label>
+                      <label>
+                        <span>Y Máximo</span>
+                        <input
+                          type="number"
+                          value={yMax}
+                          onChange={(e) => setYMax(Number(e.target.value))}
+                        />
+                      </label>
+                    </div>
+                  )}
+                  <div className="ft-grid2">
                     <label>
-                      <span>Colunas Legenda</span>
+                      <span>Escala</span>
                       <select
-                        value={legendColumns}
-                        onChange={(e) => setLegendColumns(Number(e.target.value))}
+                        value={axisScale}
+                        onChange={(e) => setAxisScale(e.target.value as AxisScaleType)}
                       >
-                        <option value={1}>1 coluna</option>
-                        <option value={2}>2 colunas</option>
-                        <option value={3}>3 colunas</option>
+                        <option value="linear">Linear</option>
+                        <option value="semilogx">Semilog X</option>
+                        <option value="semilogy">Semilog Y</option>
+                        <option value="loglog">Log-Log</option>
                       </select>
                     </label>
-                  )}
-                </div>
-
-                {plotKind === 'function' && (
-                  <label className="ft-check">
-                    <input
-                      type="checkbox"
-                      checked={usePiTicks}
-                      onChange={(e) => setUsePiTicks(e.target.checked)}
-                    />
-                    <span>Ticks em múltiplos de π (xtick)</span>
-                  </label>
-                )}
-
-                {(plotKind === 'function' || plotKind === 'scatter') && (
-                  <div>
-                    <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>
-                      Posição da Legenda ({legendPos})
-                    </div>
-                    <div className="ft-legend-grid">
-                      {(
-                        [
-                          'north west',
-                          'north',
-                          'north east',
-                          'west',
-                          'center',
-                          'east',
-                          'south west',
-                          'south',
-                          'south east',
-                        ] as LegendPos[]
-                      ).map((pos) => (
-                        <button
-                          key={pos}
-                          type="button"
-                          className={`ft-legend-cell ${legendPos === pos ? 'active' : ''}`}
-                          onClick={() => setLegendPos(pos)}
-                          title={pos}
-                        >
-                          ●
-                        </button>
-                      ))}
-                    </div>
+                    <label>
+                      <span>Grade</span>
+                      <select
+                        value={gridMode}
+                        onChange={(e) => setGridMode(e.target.value as 'both' | 'major' | 'none')}
+                      >
+                        <option value="both">Completa</option>
+                        <option value="major">Principal</option>
+                        <option value="none">Sem grade</option>
+                      </select>
+                    </label>
                   </div>
-                )}
 
-                {plotKind === 'surface3d' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <div style={{ fontSize: 11, color: 'var(--muted)' }}>
-                      Colormap ({colormapName})
-                    </div>
-                    <div className="ft-colormap-list">
-                      {(Object.keys(COLORMAP_GRADIENTS) as ColormapName[]).map((cm) => (
-                        <button
-                          key={cm}
-                          type="button"
-                          className={`ft-colormap-btn ${colormapName === cm ? 'active' : ''}`}
-                          onClick={() => setColormapName(cm)}
-                          title={cm}
+                  <div className="ft-grid2">
+                    <label>
+                      <span>Eixos (axis lines)</span>
+                      <select
+                        value={axisLines}
+                        onChange={(e) => setAxisLines(e.target.value as AxisLinesMode)}
+                      >
+                        <option value="box">Caixa (box)</option>
+                        <option value="middle">Cruzado (middle)</option>
+                        <option value="left">Em L (left)</option>
+                        <option value="none">Ocultar (none)</option>
+                      </select>
+                    </label>
+
+                    {(plotKind === 'function' || plotKind === 'scatter') && (
+                      <label>
+                        <span>Colunas Legenda</span>
+                        <select
+                          value={legendColumns}
+                          onChange={(e) => setLegendColumns(Number(e.target.value))}
                         >
-                          <span
-                            className="ft-colormap-swatch"
-                            style={{ background: COLORMAP_GRADIENTS[cm] }}
-                          />
-                          <span>{cm}</span>
-                        </button>
-                      ))}
-                    </div>
+                          <option value={1}>1 coluna</option>
+                          <option value={2}>2 colunas</option>
+                          <option value={3}>3 colunas</option>
+                        </select>
+                      </label>
+                    )}
+                  </div>
+
+                  {plotKind === 'function' && (
                     <label className="ft-check">
                       <input
                         type="checkbox"
-                        checked={showColorbar}
-                        onChange={(e) => setShowColorbar(e.target.checked)}
+                        checked={usePiTicks}
+                        onChange={(e) => setUsePiTicks(e.target.checked)}
                       />
-                      <span>Exibir barra de cores (colorbar)</span>
+                      <span>Ticks em múltiplos de π (xtick)</span>
                     </label>
-                  </div>
-                )}
-              </div>
+                  )}
+
+                  {(plotKind === 'function' || plotKind === 'scatter') && (
+                    <div>
+                      <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>
+                        Posição da Legenda ({legendPos})
+                      </div>
+                      <div className="ft-legend-grid">
+                        {(
+                          [
+                            'north west',
+                            'north',
+                            'north east',
+                            'west',
+                            'center',
+                            'east',
+                            'south west',
+                            'south',
+                            'south east',
+                          ] as LegendPos[]
+                        ).map((pos) => (
+                          <button
+                            key={pos}
+                            type="button"
+                            className={`ft-legend-cell ${legendPos === pos ? 'active' : ''}`}
+                            onClick={() => setLegendPos(pos)}
+                            title={pos}
+                          >
+                            ●
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {plotKind === 'surface3d' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <div style={{ fontSize: 11, color: 'var(--muted)' }}>
+                        Colormap ({colormapName})
+                      </div>
+                      <div className="ft-colormap-list">
+                        {(Object.keys(COLORMAP_GRADIENTS) as ColormapName[]).map((cm) => (
+                          <button
+                            key={cm}
+                            type="button"
+                            className={`ft-colormap-btn ${colormapName === cm ? 'active' : ''}`}
+                            onClick={() => setColormapName(cm)}
+                            title={cm}
+                          >
+                            <span
+                              className="ft-colormap-swatch"
+                              style={{ background: COLORMAP_GRADIENTS[cm] }}
+                            />
+                            <span>{cm}</span>
+                          </button>
+                        ))}
+                      </div>
+                      <label className="ft-check">
+                        <input
+                          type="checkbox"
+                          checked={showColorbar}
+                          onChange={(e) => setShowColorbar(e.target.checked)}
+                        />
+                        <span>Exibir barra de cores (colorbar)</span>
+                      </label>
+                    </div>
+                  )}
+                </div>
               </CollapsibleSection>
 
               {plotKind === 'function' && (
@@ -2503,597 +2503,597 @@ export default function App() {
               </div>
             ) : (
               <>
-              <div className="ft-ctx-bar">
-                <button
-                  type="button"
-                  className="ft-ctx-chip"
-                  disabled={historyPast.length === 0}
-                  onClick={handleUndo}
-                  title="Desfazer (Ctrl+Z)"
-                >
-                  ↶ Undo
-                </button>
-                <button
-                  type="button"
-                  className="ft-ctx-chip"
-                  disabled={historyFuture.length === 0}
-                  onClick={handleRedo}
-                  title="Refazer (Ctrl+Y)"
-                >
-                  ↷ Redo
-                </button>
-                <div className="ft-ctx-sep" />
-                <button
-                  type="button"
-                  className={`ft-ctx-chip ${snapToGrid ? 'active' : ''}`}
-                  onClick={() => setSnapToGrid((v) => !v)}
-                  title="Ajustar coordenadas à grade (0.5cm)"
-                >
-                  Grade
-                </button>
-                <button
-                  type="button"
-                  className={`ft-ctx-chip ${snapToShapes ? 'active' : ''}`}
-                  onClick={() => setSnapToShapes((v) => !v)}
-                  title="Guias magnéticas de alinhamento entre formas"
-                >
-                  Guias
-                </button>
+                <div className="ft-ctx-bar">
+                  <button
+                    type="button"
+                    className="ft-ctx-chip"
+                    disabled={historyPast.length === 0}
+                    onClick={handleUndo}
+                    title="Desfazer (Ctrl+Z)"
+                  >
+                    ↶ Undo
+                  </button>
+                  <button
+                    type="button"
+                    className="ft-ctx-chip"
+                    disabled={historyFuture.length === 0}
+                    onClick={handleRedo}
+                    title="Refazer (Ctrl+Y)"
+                  >
+                    ↷ Redo
+                  </button>
+                  <div className="ft-ctx-sep" />
+                  <button
+                    type="button"
+                    className={`ft-ctx-chip ${snapToGrid ? 'active' : ''}`}
+                    onClick={() => setSnapToGrid((v) => !v)}
+                    title="Ajustar coordenadas à grade (0.5cm)"
+                  >
+                    Grade
+                  </button>
+                  <button
+                    type="button"
+                    className={`ft-ctx-chip ${snapToShapes ? 'active' : ''}`}
+                    onClick={() => setSnapToShapes((v) => !v)}
+                    title="Guias magnéticas de alinhamento entre formas"
+                  >
+                    Guias
+                  </button>
 
-                {selectedIds.length === 1 && selectedNode && (
-                  <>
-                    <div className="ft-ctx-sep" />
-                    <input
-                      className="ft-ctx-input"
-                      style={{ width: 92 }}
-                      value={selectedNode.label}
-                      onChange={(e) =>
-                        setNodes((p) =>
-                          p.map((n) => (n.id === selectedNode.id ? { ...n, label: e.target.value } : n))
-                        )
-                      }
-                      title="Texto / fórmula do nó"
-                    />
-                    <select
-                      className="ft-ctx-input"
-                      value={selectedNode.color}
-                      onChange={(e) => {
-                        pushHistory();
-                        setNodes((p) =>
-                          p.map((n) => (n.id === selectedNode.id ? { ...n, color: e.target.value } : n))
-                        );
-                      }}
-                      title="Cor"
-                    >
-                      <option value="blue">Azul</option>
-                      <option value="teal">Verde</option>
-                      <option value="orange">Laranja</option>
-                      <option value="purple">Roxo</option>
-                      <option value="red">Vermelho</option>
-                    </select>
-                    <select
-                      className="ft-ctx-input"
-                      value={selectedNode.dashStyle || 'solid'}
-                      onChange={(e) => {
-                        pushHistory();
-                        setNodes((p) =>
-                          p.map((n) =>
-                            n.id === selectedNode.id
-                              ? { ...n, dashStyle: e.target.value as EdgeLineStyle }
-                              : n
-                          )
-                        );
-                      }}
-                      title="Tipo de traço"
-                    >
-                      <option value="solid">Sólido</option>
-                      <option value="dashed">Tracejado</option>
-                      <option value="dotted">Pontilhado</option>
-                    </select>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <span>Op:</span>
+                  {selectedIds.length === 1 && selectedNode && (
+                    <>
+                      <div className="ft-ctx-sep" />
                       <input
-                        type="range"
-                        min={15}
-                        max={100}
-                        style={{ width: 54 }}
-                        value={selectedNode.opacity ?? 100}
-                        onChange={(e) =>
-                          setNodes((p) =>
-                            p.map((n) =>
-                              n.id === selectedNode.id ? { ...n, opacity: Number(e.target.value) } : n
-                            )
-                          )
-                        }
-                      />
-                    </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                      <span>Rot:</span>
-                      <input
-                        type="number"
                         className="ft-ctx-input"
-                        style={{ width: 48 }}
-                        step={15}
-                        min={-180}
-                        max={180}
-                        value={selectedNode.rotation ?? 0}
+                        style={{ width: 92 }}
+                        value={selectedNode.label}
                         onChange={(e) =>
                           setNodes((p) =>
-                            p.map((n) =>
-                              n.id === selectedNode.id ? { ...n, rotation: Number(e.target.value) } : n
-                            )
+                            p.map((n) => (n.id === selectedNode.id ? { ...n, label: e.target.value } : n))
                           )
                         }
+                        title="Texto / fórmula do nó"
                       />
-                      <span>°</span>
-                    </label>
-                  </>
-                )}
-
-                {selectedIds.length >= 2 && (
-                  <>
-                    <div className="ft-ctx-sep" />
-                    <button type="button" className="ft-ctx-chip" onClick={() => alignSelected('left')}>
-                      Alinhar Esq
-                    </button>
-                    <button type="button" className="ft-ctx-chip" onClick={() => alignSelected('centerX')}>
-                      Centro H
-                    </button>
-                    <button type="button" className="ft-ctx-chip" onClick={() => alignSelected('top')}>
-                      Alinhar Topo
-                    </button>
-                    <button type="button" className="ft-ctx-chip" onClick={() => alignSelected('centerY')}>
-                      Centro V
-                    </button>
-                    <button type="button" className="ft-ctx-chip active" onClick={createFitGroup}>
-                      Agrupar (fit)
-                    </button>
-                  </>
-                )}
-              </div>
-
-              <div className="ft-diagram-stage">
-                <div className="ft-diagram-palette">
-                  <button
-                    type="button"
-                    className="ft-pal-btn"
-                    onClick={() => addNode('text')}
-                    title="Inserir Matemática (fx) / Texto"
-                  >
-                    fx
-                  </button>
-                  <button
-                    type="button"
-                    className={`ft-pal-btn ${paletteMenu === 'shapes' ? 'active' : ''}`}
-                    onClick={() => setPaletteMenu((m) => (m === 'shapes' ? null : 'shapes'))}
-                    title="Formas Geométricas"
-                  >
-                    <Square size={15} />
-                  </button>
-                  <button
-                    type="button"
-                    className={`ft-pal-btn ${connectFrom ? 'active' : ''}`}
-                    disabled={!selectedNodeId}
-                    onClick={() => setConnectFrom((p) => (p ? null : selectedNodeId))}
-                    title="Conectar Nó Selecionado"
-                  >
-                    <ArrowRight size={15} />
-                  </button>
-                  <button
-                    type="button"
-                    className="ft-pal-btn"
-                    onClick={() => {
-                      setCustomTikzTemplate(null);
-                      const id = `bz${Date.now().toString().slice(-4)}`;
-                      setBeziers((p) => [
-                        ...p,
-                        {
-                          id,
-                          x1: -2.5,
-                          y1: -1,
-                          cx1: -1,
-                          cy1: 1.5,
-                          cx2: 1,
-                          cy2: -2.5,
-                          x2: 2.5,
-                          y2: 0,
-                          color: 'blue',
-                          arrow: '->',
-                        },
-                      ]);
-                      setSelectedBezierId(id);
-                      setPaletteMenu(null);
-                    }}
-                    title="Adicionar Curva Bézier Interativa"
-                  >
-                    ~
-                  </button>
-                  <button
-                    type="button"
-                    className={`ft-pal-btn ${paletteMenu === 'sci' ? 'active' : ''}`}
-                    onClick={() => setPaletteMenu((m) => (m === 'sci' ? null : 'sci'))}
-                    title="Primitivas Científicas (Chave, Mola, Onda, Arco)"
-                  >
-                    Ω
-                  </button>
-                  <button
-                    type="button"
-                    className="ft-pal-btn"
-                    onClick={() => {
-                      setPaletteMenu(null);
-                      setSciModalOpen(true);
-                    }}
-                    title="Biblioteca Paramétrica de Figuras Científicas"
-                  >
-                    <Sparkles size={14} />
-                  </button>
-
-                  {paletteMenu === 'shapes' && (
-                    <div className="ft-pal-popover">
-                      <button type="button" className="ft-ctx-chip" onClick={() => addNode('rect')}>
-                        Caixa
-                      </button>
-                      <button type="button" className="ft-ctx-chip" onClick={() => addNode('circle')}>
-                        Círculo
-                      </button>
-                      <button type="button" className="ft-ctx-chip" onClick={() => addNode('diamond')}>
-                        Losango
-                      </button>
-                      <button type="button" className="ft-ctx-chip" onClick={() => addNode('ellipse')}>
-                        Elipse
-                      </button>
-                    </div>
+                      <select
+                        className="ft-ctx-input"
+                        value={selectedNode.color}
+                        onChange={(e) => {
+                          pushHistory();
+                          setNodes((p) =>
+                            p.map((n) => (n.id === selectedNode.id ? { ...n, color: e.target.value } : n))
+                          );
+                        }}
+                        title="Cor"
+                      >
+                        <option value="blue">Azul</option>
+                        <option value="teal">Verde</option>
+                        <option value="orange">Laranja</option>
+                        <option value="purple">Roxo</option>
+                        <option value="red">Vermelho</option>
+                      </select>
+                      <select
+                        className="ft-ctx-input"
+                        value={selectedNode.dashStyle || 'solid'}
+                        onChange={(e) => {
+                          pushHistory();
+                          setNodes((p) =>
+                            p.map((n) =>
+                              n.id === selectedNode.id
+                                ? { ...n, dashStyle: e.target.value as EdgeLineStyle }
+                                : n
+                            )
+                          );
+                        }}
+                        title="Tipo de traço"
+                      >
+                        <option value="solid">Sólido</option>
+                        <option value="dashed">Tracejado</option>
+                        <option value="dotted">Pontilhado</option>
+                      </select>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <span>Op:</span>
+                        <input
+                          type="range"
+                          min={15}
+                          max={100}
+                          style={{ width: 54 }}
+                          value={selectedNode.opacity ?? 100}
+                          onChange={(e) =>
+                            setNodes((p) =>
+                              p.map((n) =>
+                                n.id === selectedNode.id ? { ...n, opacity: Number(e.target.value) } : n
+                              )
+                            )
+                          }
+                        />
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                        <span>Rot:</span>
+                        <input
+                          type="number"
+                          className="ft-ctx-input"
+                          style={{ width: 48 }}
+                          step={15}
+                          min={-180}
+                          max={180}
+                          value={selectedNode.rotation ?? 0}
+                          onChange={(e) =>
+                            setNodes((p) =>
+                              p.map((n) =>
+                                n.id === selectedNode.id ? { ...n, rotation: Number(e.target.value) } : n
+                              )
+                            )
+                          }
+                        />
+                        <span>°</span>
+                      </label>
+                    </>
                   )}
 
-                  {paletteMenu === 'sci' && (
-                    <div className="ft-pal-popover" style={{ top: 145 }}>
-                      {(
-                        [
-                          { kind: 'brace', label: 'Chave (brace)' },
-                          { kind: 'coil', label: 'Mola (coil)' },
-                          { kind: 'snake', label: 'Onda (snake)' },
-                          { kind: 'arc', label: 'Arco (α)' },
-                        ] as const
-                      ).map((item) => (
-                        <button
-                          key={item.kind}
-                          type="button"
-                          className="ft-ctx-chip"
-                          onClick={() => {
-                            setCustomTikzTemplate(null);
-                            setSciPrims((p) => [
-                              ...p,
-                              {
-                                id: `sp${Date.now().toString().slice(-4)}`,
-                                kind: item.kind,
-                                x: -1.5,
-                                y: -1.5,
-                                label: item.kind === 'arc' ? '$\\alpha$' : '$L$',
-                                color: 'teal',
-                              },
-                            ]);
-                            setPaletteMenu(null);
-                          }}
-                        >
-                          {item.label}
-                        </button>
-                      ))}
-                    </div>
+                  {selectedIds.length >= 2 && (
+                    <>
+                      <div className="ft-ctx-sep" />
+                      <button type="button" className="ft-ctx-chip" onClick={() => alignSelected('left')}>
+                        Alinhar Esq
+                      </button>
+                      <button type="button" className="ft-ctx-chip" onClick={() => alignSelected('centerX')}>
+                        Centro H
+                      </button>
+                      <button type="button" className="ft-ctx-chip" onClick={() => alignSelected('top')}>
+                        Alinhar Topo
+                      </button>
+                      <button type="button" className="ft-ctx-chip" onClick={() => alignSelected('centerY')}>
+                        Centro V
+                      </button>
+                      <button type="button" className="ft-ctx-chip active" onClick={createFitGroup}>
+                        Agrupar (fit)
+                      </button>
+                    </>
                   )}
                 </div>
 
-                <div className="ft-svg-viewport" onWheel={handleCanvasWheel}>
-                  <svg
-                    className="ft-svg"
-                    viewBox="0 0 620 420"
-                    style={{ width: `${Math.round(620 * canvasZoom)}px`, height: 'auto' }}
-                    onMouseDown={(e) => {
-                    if (e.target === e.currentTarget) {
-                      setSelectedIds([]);
-                      setSelectedNodeId(null);
-                      setPaletteMenu(null);
-                    }
-                  }}
-                  onMouseMove={handleSvgMouseMove}
-                  onMouseUp={() => {
-                    draggingRef.current = null;
-                    bezierDragRef.current = null;
-                    dragSnapshotTakenRef.current = false;
-                    setAlignGuides({});
-                  }}
-                >
-                <defs>
-                  <marker
-                    id="arrowHead"
-                    markerWidth="10"
-                    markerHeight="7"
-                    refX="9"
-                    refY="3.5"
-                    orient="auto"
-                  >
-                    <polygon points="0 0, 10 3.5, 0 7" fill="#38bdf8" />
-                  </marker>
-                </defs>
-                {Array.from({ length: 13 }, (_, i) => i - 6).map((gx) => (
-                  <line
-                    key={`vx-${gx}`}
-                    x1={CX + gx * SCALE}
-                    y1={0}
-                    x2={CX + gx * SCALE}
-                    y2={420}
-                    stroke={gx === 0 ? '#475569' : '#1e293b'}
-                    strokeWidth={gx === 0 ? 1.4 : 0.8}
-                  />
-                ))}
-                {Array.from({ length: 9 }, (_, i) => i - 4).map((gy) => (
-                  <line
-                    key={`hy-${gy}`}
-                    x1={0}
-                    y1={CY - gy * SCALE}
-                    x2={620}
-                    y2={CY - gy * SCALE}
-                    stroke={gy === 0 ? '#475569' : '#1e293b'}
-                    strokeWidth={gy === 0 ? 1.4 : 0.8}
-                  />
-                ))}
+                <div className="ft-diagram-stage">
+                  <div className="ft-diagram-palette">
+                    <button
+                      type="button"
+                      className="ft-pal-btn"
+                      onClick={() => addNode('text')}
+                      title="Inserir Matemática (fx) / Texto"
+                    >
+                      fx
+                    </button>
+                    <button
+                      type="button"
+                      className={`ft-pal-btn ${paletteMenu === 'shapes' ? 'active' : ''}`}
+                      onClick={() => setPaletteMenu((m) => (m === 'shapes' ? null : 'shapes'))}
+                      title="Formas Geométricas"
+                    >
+                      <Square size={15} />
+                    </button>
+                    <button
+                      type="button"
+                      className={`ft-pal-btn ${connectFrom ? 'active' : ''}`}
+                      disabled={!selectedNodeId}
+                      onClick={() => setConnectFrom((p) => (p ? null : selectedNodeId))}
+                      title="Conectar Nó Selecionado"
+                    >
+                      <ArrowRight size={15} />
+                    </button>
+                    <button
+                      type="button"
+                      className="ft-pal-btn"
+                      onClick={() => {
+                        setCustomTikzTemplate(null);
+                        const id = `bz${Date.now().toString().slice(-4)}`;
+                        setBeziers((p) => [
+                          ...p,
+                          {
+                            id,
+                            x1: -2.5,
+                            y1: -1,
+                            cx1: -1,
+                            cy1: 1.5,
+                            cx2: 1,
+                            cy2: -2.5,
+                            x2: 2.5,
+                            y2: 0,
+                            color: 'blue',
+                            arrow: '->',
+                          },
+                        ]);
+                        setSelectedBezierId(id);
+                        setPaletteMenu(null);
+                      }}
+                      title="Adicionar Curva Bézier Interativa"
+                    >
+                      ~
+                    </button>
+                    <button
+                      type="button"
+                      className={`ft-pal-btn ${paletteMenu === 'sci' ? 'active' : ''}`}
+                      onClick={() => setPaletteMenu((m) => (m === 'sci' ? null : 'sci'))}
+                      title="Primitivas Científicas (Chave, Mola, Onda, Arco)"
+                    >
+                      Ω
+                    </button>
+                    <button
+                      type="button"
+                      className="ft-pal-btn"
+                      onClick={() => {
+                        setPaletteMenu(null);
+                        setSciModalOpen(true);
+                      }}
+                      title="Biblioteca Paramétrica de Figuras Científicas"
+                    >
+                      <Sparkles size={14} />
+                    </button>
 
-                {edges.map((ed) => {
-                  const a = nodes.find((n) => n.id === ed.from);
-                  const b = nodes.find((n) => n.id === ed.to);
-                  if (!a || !b) return null;
-                  const x1 = CX + a.x * SCALE;
-                  const y1 = CY - a.y * SCALE;
-                  const x2 = CX + b.x * SCALE;
-                  const y2 = CY - b.y * SCALE;
-                  return (
-                    <g key={ed.id}>
-                      <line
-                        x1={x1}
-                        y1={y1}
-                        x2={x2}
-                        y2={y2}
-                        stroke="#38bdf8"
-                        strokeWidth={2}
-                        strokeDasharray={ed.lineStyle === 'dashed' ? '6 4' : undefined}
-                        markerEnd={ed.arrow !== '--' ? 'url(#arrowHead)' : undefined}
-                      />
-                      {ed.label && (
-                        <text
-                          x={(x1 + x2) / 2}
-                          y={(y1 + y2) / 2 - 8}
-                          fill="#f59e0b"
-                          fontSize="12"
-                          textAnchor="middle"
+                    {paletteMenu === 'shapes' && (
+                      <div className="ft-pal-popover">
+                        <button type="button" className="ft-ctx-chip" onClick={() => addNode('rect')}>
+                          Caixa
+                        </button>
+                        <button type="button" className="ft-ctx-chip" onClick={() => addNode('circle')}>
+                          Círculo
+                        </button>
+                        <button type="button" className="ft-ctx-chip" onClick={() => addNode('diamond')}>
+                          Losango
+                        </button>
+                        <button type="button" className="ft-ctx-chip" onClick={() => addNode('ellipse')}>
+                          Elipse
+                        </button>
+                      </div>
+                    )}
+
+                    {paletteMenu === 'sci' && (
+                      <div className="ft-pal-popover" style={{ top: 145 }}>
+                        {(
+                          [
+                            { kind: 'brace', label: 'Chave (brace)' },
+                            { kind: 'coil', label: 'Mola (coil)' },
+                            { kind: 'snake', label: 'Onda (snake)' },
+                            { kind: 'arc', label: 'Arco (α)' },
+                          ] as const
+                        ).map((item) => (
+                          <button
+                            key={item.kind}
+                            type="button"
+                            className="ft-ctx-chip"
+                            onClick={() => {
+                              setCustomTikzTemplate(null);
+                              setSciPrims((p) => [
+                                ...p,
+                                {
+                                  id: `sp${Date.now().toString().slice(-4)}`,
+                                  kind: item.kind,
+                                  x: -1.5,
+                                  y: -1.5,
+                                  label: item.kind === 'arc' ? '$\\alpha$' : '$L$',
+                                  color: 'teal',
+                                },
+                              ]);
+                              setPaletteMenu(null);
+                            }}
+                          >
+                            {item.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="ft-svg-viewport" onWheel={handleCanvasWheel}>
+                    <svg
+                      className="ft-svg"
+                      viewBox="0 0 620 420"
+                      style={{ width: `${Math.round(620 * canvasZoom)}px`, height: 'auto' }}
+                      onMouseDown={(e) => {
+                        if (e.target === e.currentTarget) {
+                          setSelectedIds([]);
+                          setSelectedNodeId(null);
+                          setPaletteMenu(null);
+                        }
+                      }}
+                      onMouseMove={handleSvgMouseMove}
+                      onMouseUp={() => {
+                        draggingRef.current = null;
+                        bezierDragRef.current = null;
+                        dragSnapshotTakenRef.current = false;
+                        setAlignGuides({});
+                      }}
+                    >
+                      <defs>
+                        <marker
+                          id="arrowHead"
+                          markerWidth="10"
+                          markerHeight="7"
+                          refX="9"
+                          refY="3.5"
+                          orient="auto"
                         >
-                          {ed.label}
-                        </text>
+                          <polygon points="0 0, 10 3.5, 0 7" fill="#38bdf8" />
+                        </marker>
+                      </defs>
+                      {Array.from({ length: 13 }, (_, i) => i - 6).map((gx) => (
+                        <line
+                          key={`vx-${gx}`}
+                          x1={CX + gx * SCALE}
+                          y1={0}
+                          x2={CX + gx * SCALE}
+                          y2={420}
+                          stroke={gx === 0 ? '#475569' : '#1e293b'}
+                          strokeWidth={gx === 0 ? 1.4 : 0.8}
+                        />
+                      ))}
+                      {Array.from({ length: 9 }, (_, i) => i - 4).map((gy) => (
+                        <line
+                          key={`hy-${gy}`}
+                          x1={0}
+                          y1={CY - gy * SCALE}
+                          x2={620}
+                          y2={CY - gy * SCALE}
+                          stroke={gy === 0 ? '#475569' : '#1e293b'}
+                          strokeWidth={gy === 0 ? 1.4 : 0.8}
+                        />
+                      ))}
+
+                      {edges.map((ed) => {
+                        const a = nodes.find((n) => n.id === ed.from);
+                        const b = nodes.find((n) => n.id === ed.to);
+                        if (!a || !b) return null;
+                        const x1 = CX + a.x * SCALE;
+                        const y1 = CY - a.y * SCALE;
+                        const x2 = CX + b.x * SCALE;
+                        const y2 = CY - b.y * SCALE;
+                        return (
+                          <g key={ed.id}>
+                            <line
+                              x1={x1}
+                              y1={y1}
+                              x2={x2}
+                              y2={y2}
+                              stroke="#38bdf8"
+                              strokeWidth={2}
+                              strokeDasharray={ed.lineStyle === 'dashed' ? '6 4' : undefined}
+                              markerEnd={ed.arrow !== '--' ? 'url(#arrowHead)' : undefined}
+                            />
+                            {ed.label && (
+                              <text
+                                x={(x1 + x2) / 2}
+                                y={(y1 + y2) / 2 - 8}
+                                fill="#f59e0b"
+                                fontSize="12"
+                                textAnchor="middle"
+                              >
+                                {ed.label}
+                              </text>
+                            )}
+                          </g>
+                        );
+                      })}
+
+                      {alignGuides.x !== undefined && (
+                        <line
+                          x1={CX + alignGuides.x * SCALE}
+                          y1={0}
+                          x2={CX + alignGuides.x * SCALE}
+                          y2={420}
+                          stroke="#38bdf8"
+                          strokeWidth={1.2}
+                          strokeDasharray="4 4"
+                        />
                       )}
-                    </g>
-                  );
-                })}
+                      {alignGuides.y !== undefined && (
+                        <line
+                          x1={0}
+                          y1={CY - alignGuides.y * SCALE}
+                          x2={620}
+                          y2={CY - alignGuides.y * SCALE}
+                          stroke="#38bdf8"
+                          strokeWidth={1.2}
+                          strokeDasharray="4 4"
+                        />
+                      )}
 
-                {alignGuides.x !== undefined && (
-                  <line
-                    x1={CX + alignGuides.x * SCALE}
-                    y1={0}
-                    x2={CX + alignGuides.x * SCALE}
-                    y2={420}
-                    stroke="#38bdf8"
-                    strokeWidth={1.2}
-                    strokeDasharray="4 4"
-                  />
-                )}
-                {alignGuides.y !== undefined && (
-                  <line
-                    x1={0}
-                    y1={CY - alignGuides.y * SCALE}
-                    x2={620}
-                    y2={CY - alignGuides.y * SCALE}
-                    stroke="#38bdf8"
-                    strokeWidth={1.2}
-                    strokeDasharray="4 4"
-                  />
-                )}
+                      {fitGroups.map((fg) => {
+                        const members = nodes.filter((n) => fg.nodeIds.includes(n.id));
+                        if (members.length < 2) return null;
+                        const xs = members.map((m) => CX + m.x * SCALE);
+                        const ys = members.map((m) => CY - m.y * SCALE);
+                        const minX = Math.min(...xs) - 42;
+                        const maxX = Math.max(...xs) + 42;
+                        const minY = Math.min(...ys) - 32;
+                        const maxY = Math.max(...ys) + 32;
+                        return (
+                          <g key={fg.id}>
+                            <rect
+                              x={minX}
+                              y={minY}
+                              width={maxX - minX}
+                              height={maxY - minY}
+                              rx={8}
+                              fill="none"
+                              stroke="#38bdf8"
+                              strokeDasharray="5 4"
+                              strokeWidth={1.4}
+                            />
+                            <text x={minX + 6} y={minY - 5} fill="#38bdf8" fontSize="10.5">
+                              {fg.label}
+                            </text>
+                          </g>
+                        );
+                      })}
 
-                {fitGroups.map((fg) => {
-                  const members = nodes.filter((n) => fg.nodeIds.includes(n.id));
-                  if (members.length < 2) return null;
-                  const xs = members.map((m) => CX + m.x * SCALE);
-                  const ys = members.map((m) => CY - m.y * SCALE);
-                  const minX = Math.min(...xs) - 42;
-                  const maxX = Math.max(...xs) + 42;
-                  const minY = Math.min(...ys) - 32;
-                  const maxY = Math.max(...ys) + 32;
-                  return (
-                    <g key={fg.id}>
-                      <rect
-                        x={minX}
-                        y={minY}
-                        width={maxX - minX}
-                        height={maxY - minY}
-                        rx={8}
-                        fill="none"
-                        stroke="#38bdf8"
-                        strokeDasharray="5 4"
-                        strokeWidth={1.4}
-                      />
-                      <text x={minX + 6} y={minY - 5} fill="#38bdf8" fontSize="10.5">
-                        {fg.label}
-                      </text>
-                    </g>
-                  );
-                })}
-
-                {beziers.map((bz) => {
-                  const x1 = CX + bz.x1 * SCALE;
-                  const y1 = CY - bz.y1 * SCALE;
-                  const cx1 = CX + bz.cx1 * SCALE;
-                  const cy1 = CY - bz.cy1 * SCALE;
-                  const cx2 = CX + bz.cx2 * SCALE;
-                  const cy2 = CY - bz.cy2 * SCALE;
-                  const x2 = CX + bz.x2 * SCALE;
-                  const y2 = CY - bz.y2 * SCALE;
-                  const isSel = selectedBezierId === bz.id;
-                  return (
-                    <g key={bz.id}>
-                      <path
-                        d={`M ${x1} ${y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x2} ${y2}`}
-                        fill="none"
-                        stroke={COLOR_HEX[bz.color] || '#38bdf8'}
-                        strokeWidth={isSel ? 2.8 : 2.2}
-                        markerEnd={bz.arrow === '->' ? 'url(#arrowHead)' : undefined}
-                        style={{ cursor: 'pointer' }}
-                        onMouseDown={(e) => {
-                          e.stopPropagation();
-                          setSelectedBezierId(bz.id);
-                        }}
-                      />
-                      {isSel && (
-                        <>
-                          <line x1={x1} y1={y1} x2={cx1} y2={cy1} stroke="#64748b" strokeDasharray="3 3" />
-                          <line x1={x2} y1={y2} x2={cx2} y2={cy2} stroke="#64748b" strokeDasharray="3 3" />
-                          {(
-                            [
-                              { pt: 'p1', x: x1, y: y1, fill: '#38bdf8' },
-                              { pt: 'c1', x: cx1, y: cy1, fill: '#f59e0b' },
-                              { pt: 'c2', x: cx2, y: cy2, fill: '#f59e0b' },
-                              { pt: 'p2', x: x2, y: y2, fill: '#38bdf8' },
-                            ] as const
-                          ).map((h) => (
-                            <circle
-                              key={h.pt}
-                              cx={h.x}
-                              cy={h.y}
-                              r={5}
-                              fill={h.fill}
-                              style={{ cursor: 'move' }}
+                      {beziers.map((bz) => {
+                        const x1 = CX + bz.x1 * SCALE;
+                        const y1 = CY - bz.y1 * SCALE;
+                        const cx1 = CX + bz.cx1 * SCALE;
+                        const cy1 = CY - bz.cy1 * SCALE;
+                        const cx2 = CX + bz.cx2 * SCALE;
+                        const cy2 = CY - bz.cy2 * SCALE;
+                        const x2 = CX + bz.x2 * SCALE;
+                        const y2 = CY - bz.y2 * SCALE;
+                        const isSel = selectedBezierId === bz.id;
+                        return (
+                          <g key={bz.id}>
+                            <path
+                              d={`M ${x1} ${y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x2} ${y2}`}
+                              fill="none"
+                              stroke={COLOR_HEX[bz.color] || '#38bdf8'}
+                              strokeWidth={isSel ? 2.8 : 2.2}
+                              markerEnd={bz.arrow === '->' ? 'url(#arrowHead)' : undefined}
+                              style={{ cursor: 'pointer' }}
                               onMouseDown={(e) => {
                                 e.stopPropagation();
-                                bezierDragRef.current = { id: bz.id, point: h.pt };
+                                setSelectedBezierId(bz.id);
                               }}
                             />
-                          ))}
-                        </>
-                      )}
-                    </g>
-                  );
-                })}
+                            {isSel && (
+                              <>
+                                <line x1={x1} y1={y1} x2={cx1} y2={cy1} stroke="#64748b" strokeDasharray="3 3" />
+                                <line x1={x2} y1={y2} x2={cx2} y2={cy2} stroke="#64748b" strokeDasharray="3 3" />
+                                {(
+                                  [
+                                    { pt: 'p1', x: x1, y: y1, fill: '#38bdf8' },
+                                    { pt: 'c1', x: cx1, y: cy1, fill: '#f59e0b' },
+                                    { pt: 'c2', x: cx2, y: cy2, fill: '#f59e0b' },
+                                    { pt: 'p2', x: x2, y: y2, fill: '#38bdf8' },
+                                  ] as const
+                                ).map((h) => (
+                                  <circle
+                                    key={h.pt}
+                                    cx={h.x}
+                                    cy={h.y}
+                                    r={5}
+                                    fill={h.fill}
+                                    style={{ cursor: 'move' }}
+                                    onMouseDown={(e) => {
+                                      e.stopPropagation();
+                                      bezierDragRef.current = { id: bz.id, point: h.pt };
+                                    }}
+                                  />
+                                ))}
+                              </>
+                            )}
+                          </g>
+                        );
+                      })}
 
-                {sciPrims.map((sp) => {
-                  const sx = CX + sp.x * SCALE;
-                  const sy = CY - sp.y * SCALE;
-                  return (
-                    <g key={sp.id}>
-                      <line
-                        x1={sx}
-                        y1={sy}
-                        x2={sx + 120}
-                        y2={sy}
-                        stroke={COLOR_HEX[sp.color] || '#14b8a6'}
-                        strokeWidth={2}
-                        strokeDasharray={sp.kind === 'coil' || sp.kind === 'snake' ? '4 2' : undefined}
-                      />
-                      <text x={sx + 60} y={sy - 8} fill="#e2e8f0" fontSize="11" textAnchor="middle">
-                        {sp.kind} ({sp.label})
-                      </text>
-                    </g>
-                  );
-                })}
+                      {sciPrims.map((sp) => {
+                        const sx = CX + sp.x * SCALE;
+                        const sy = CY - sp.y * SCALE;
+                        return (
+                          <g key={sp.id}>
+                            <line
+                              x1={sx}
+                              y1={sy}
+                              x2={sx + 120}
+                              y2={sy}
+                              stroke={COLOR_HEX[sp.color] || '#14b8a6'}
+                              strokeWidth={2}
+                              strokeDasharray={sp.kind === 'coil' || sp.kind === 'snake' ? '4 2' : undefined}
+                            />
+                            <text x={sx + 60} y={sy - 8} fill="#e2e8f0" fontSize="11" textAnchor="middle">
+                              {sp.kind} ({sp.label})
+                            </text>
+                          </g>
+                        );
+                      })}
 
-                {nodes.map((n) => {
-                  const px = CX + n.x * SCALE;
-                  const py = CY - n.y * SCALE;
-                  const isSel = selectedIds.includes(n.id) || n.id === selectedNodeId;
-                  const stroke = isSel ? '#f59e0b' : COLOR_HEX[n.color] || '#38bdf8';
-                  const dash =
-                    n.dashStyle === 'dashed'
-                      ? '6 4'
-                      : n.dashStyle === 'dotted'
-                      ? '2 3'
-                      : undefined;
-                  const nodeOpacity = (n.opacity ?? 100) / 100;
-                  const rot = n.rotation ?? 0;
-                  return (
-                    <g
-                      key={n.id}
-                      style={{ cursor: 'grab' }}
-                      opacity={nodeOpacity}
-                      transform={rot ? `rotate(${-rot} ${px} ${py})` : undefined}
-                      onMouseDown={(e) => {
-                        e.stopPropagation();
-                        if (connectFrom && connectFrom !== n.id) {
-                          pushHistory();
-                          setEdges((p) => [
-                            ...p,
-                            {
-                              id: `e${Date.now()}`,
-                              from: connectFrom,
-                              to: n.id,
-                              label: '',
-                              arrow: '->',
-                              lineStyle: 'solid',
-                              bend: 'straight',
-                            },
-                          ]);
-                          setConnectFrom(null);
-                        } else if (e.shiftKey) {
-                          setSelectedIds((prev) =>
-                            prev.includes(n.id) ? prev.filter((id) => id !== n.id) : [...prev, n.id]
-                          );
-                          setSelectedNodeId(n.id);
-                        } else {
-                          setSelectedNodeId(n.id);
-                          setSelectedIds([n.id]);
-                          draggingRef.current = n.id;
-                          dragSnapshotTakenRef.current = false;
-                        }
-                      }}
-                    >
-                      {n.shape === 'text' ? (
-                        <rect
-                          x={px - 32}
-                          y={py - 14}
-                          width={64}
-                          height={28}
-                          rx={4}
-                          fill="rgba(56,189,248,0.08)"
-                          stroke={isSel ? '#f59e0b' : 'transparent'}
-                          strokeDasharray="3 3"
-                        />
-                      ) : n.shape === 'circle' ? (
-                        <circle cx={px} cy={py} r={24} fill="#162238" stroke={stroke} strokeWidth={isSel ? 3 : 2} strokeDasharray={dash} />
-                      ) : n.shape === 'diamond' ? (
-                        <polygon
-                          points={`${px},${py - 24} ${px + 34},${py} ${px},${py + 24} ${px - 34},${py}`}
-                          fill="#162238"
-                          stroke={stroke}
-                          strokeWidth={isSel ? 3 : 2}
-                          strokeDasharray={dash}
-                        />
-                      ) : n.shape === 'ellipse' ? (
-                        <ellipse cx={px} cy={py} rx={32} ry={20} fill="#162238" stroke={stroke} strokeWidth={isSel ? 3 : 2} strokeDasharray={dash} />
-                      ) : (
-                        <rect
-                          x={px - 30}
-                          y={py - 18}
-                          width={60}
-                          height={36}
-                          rx={7}
-                          fill="#162238"
-                          stroke={stroke}
-                          strokeWidth={isSel ? 3 : 2}
-                          strokeDasharray={dash}
-                        />
-                      )}
-                      <text x={px} y={py + 4} fill="#e2e8f0" fontSize="12" fontWeight="600" textAnchor="middle">
-                        {n.label}
-                      </text>
-                    </g>
-                  );
-                })}
-              </svg>
+                      {nodes.map((n) => {
+                        const px = CX + n.x * SCALE;
+                        const py = CY - n.y * SCALE;
+                        const isSel = selectedIds.includes(n.id) || n.id === selectedNodeId;
+                        const stroke = isSel ? '#f59e0b' : COLOR_HEX[n.color] || '#38bdf8';
+                        const dash =
+                          n.dashStyle === 'dashed'
+                            ? '6 4'
+                            : n.dashStyle === 'dotted'
+                              ? '2 3'
+                              : undefined;
+                        const nodeOpacity = (n.opacity ?? 100) / 100;
+                        const rot = n.rotation ?? 0;
+                        return (
+                          <g
+                            key={n.id}
+                            style={{ cursor: 'grab' }}
+                            opacity={nodeOpacity}
+                            transform={rot ? `rotate(${-rot} ${px} ${py})` : undefined}
+                            onMouseDown={(e) => {
+                              e.stopPropagation();
+                              if (connectFrom && connectFrom !== n.id) {
+                                pushHistory();
+                                setEdges((p) => [
+                                  ...p,
+                                  {
+                                    id: `e${Date.now()}`,
+                                    from: connectFrom,
+                                    to: n.id,
+                                    label: '',
+                                    arrow: '->',
+                                    lineStyle: 'solid',
+                                    bend: 'straight',
+                                  },
+                                ]);
+                                setConnectFrom(null);
+                              } else if (e.shiftKey) {
+                                setSelectedIds((prev) =>
+                                  prev.includes(n.id) ? prev.filter((id) => id !== n.id) : [...prev, n.id]
+                                );
+                                setSelectedNodeId(n.id);
+                              } else {
+                                setSelectedNodeId(n.id);
+                                setSelectedIds([n.id]);
+                                draggingRef.current = n.id;
+                                dragSnapshotTakenRef.current = false;
+                              }
+                            }}
+                          >
+                            {n.shape === 'text' ? (
+                              <rect
+                                x={px - 32}
+                                y={py - 14}
+                                width={64}
+                                height={28}
+                                rx={4}
+                                fill="rgba(56,189,248,0.08)"
+                                stroke={isSel ? '#f59e0b' : 'transparent'}
+                                strokeDasharray="3 3"
+                              />
+                            ) : n.shape === 'circle' ? (
+                              <circle cx={px} cy={py} r={24} fill="#162238" stroke={stroke} strokeWidth={isSel ? 3 : 2} strokeDasharray={dash} />
+                            ) : n.shape === 'diamond' ? (
+                              <polygon
+                                points={`${px},${py - 24} ${px + 34},${py} ${px},${py + 24} ${px - 34},${py}`}
+                                fill="#162238"
+                                stroke={stroke}
+                                strokeWidth={isSel ? 3 : 2}
+                                strokeDasharray={dash}
+                              />
+                            ) : n.shape === 'ellipse' ? (
+                              <ellipse cx={px} cy={py} rx={32} ry={20} fill="#162238" stroke={stroke} strokeWidth={isSel ? 3 : 2} strokeDasharray={dash} />
+                            ) : (
+                              <rect
+                                x={px - 30}
+                                y={py - 18}
+                                width={60}
+                                height={36}
+                                rx={7}
+                                fill="#162238"
+                                stroke={stroke}
+                                strokeWidth={isSel ? 3 : 2}
+                                strokeDasharray={dash}
+                              />
+                            )}
+                            <text x={px} y={py + 4} fill="#e2e8f0" fontSize="12" fontWeight="600" textAnchor="middle">
+                              {n.label}
+                            </text>
+                          </g>
+                        );
+                      })}
+                    </svg>
+                  </div>
                 </div>
-              </div>
               </>
             )
           ) : (
@@ -3103,371 +3103,371 @@ export default function App() {
                 viewBox="0 0 620 420"
                 style={{ width: `${Math.round(620 * canvasZoom)}px`, height: 'auto' }}
               >
-              <text x={310} y={24} fill="#e2e8f0" fontSize="14" fontWeight="600" textAnchor="middle">
-                {plotTitle}
-              </text>
-              {/* Plot Frame according to axisLines */}
-              {axisLines === 'box' && (
-                <rect x={68} y={42} width={492} height={312} fill="none" stroke="#475569" strokeWidth={1.2} />
-              )}
-              {axisLines === 'left' && (
-                <polyline points="68,42 68,354 560,354" fill="none" stroke="#64748b" strokeWidth={1.4} />
-              )}
-              {axisLines === 'middle' && (
-                <>
-                  <line x1={68} y1={198} x2={560} y2={198} stroke="#64748b" strokeWidth={1.3} />
-                  <line x1={314} y1={42} x2={314} y2={354} stroke="#64748b" strokeWidth={1.3} />
-                </>
-              )}
-              {/* Grid + Ticks */}
-              {gridMode !== 'none' &&
-                Array.from({ length: 5 }, (_, i) => i).map((step) => {
-                  const gx = 68 + (step * 492) / 4;
-                  const gy = 42 + (step * 312) / 4;
-                  const xv = xMin + (step * (xMax - xMin)) / 4;
-                  const yv = yMax - (step * (yMax - yMin)) / 4;
-                  return (
-                    <g key={step}>
-                      <line x1={gx} y1={42} x2={gx} y2={354} stroke="#1e293b" strokeWidth={0.9} />
-                      <line x1={68} y1={gy} x2={560} y2={gy} stroke="#1e293b" strokeWidth={0.9} />
-                      {plotKind !== 'bars' && plotKind !== 'histogram' && (
-                        <>
-                          {!usePiTicks && (
-                            <text x={gx} y={372} fill="#94a3b8" fontSize="10" textAnchor="middle">
-                              {xv.toFixed(1)}
-                            </text>
-                          )}
-                          <text x={58} y={gy + 3} fill="#94a3b8" fontSize="10" textAnchor="end">
-                            {yv.toFixed(1)}
-                          </text>
-                        </>
-                      )}
-                    </g>
-                  );
-                })}
-
-              {usePiTicks &&
-                plotKind === 'function' &&
-                piTicks.map((pt) => {
-                  const px = 68 + ((pt.val - xMin) / Math.max(0.001, xMax - xMin)) * 492;
-                  return (
-                    <text key={pt.label} x={px} y={372} fill="#38bdf8" fontSize="10" textAnchor="middle">
-                      {pt.label}
-                    </text>
-                  );
-                })}
-
-              {plotKind === 'function' &&
-                curves.map((c) => {
-                  const pts: string[] = [];
-                  const steps = 140;
-                  for (let i = 0; i <= steps; i++) {
-                    const xv = xMin + ((xMax - xMin) * i) / steps;
-                    const yv = evalSafeExpr(c.expr, xv);
-                    if (yv === null) continue;
-                    const sx = 68 + ((xv - xMin) / Math.max(0.001, xMax - xMin)) * 492;
-                    const sy = 354 - ((yv - yMin) / Math.max(0.001, yMax - yMin)) * 312;
-                    if (sy >= 38 && sy <= 358) pts.push(`${sx.toFixed(1)},${sy.toFixed(1)}`);
-                  }
-                  const strokeColor = COLOR_HEX[c.color] || '#38bdf8';
-                  return (
-                    <polyline
-                      key={c.id}
-                      fill="none"
-                      stroke={strokeColor}
-                      strokeWidth={2.5}
-                      strokeDasharray={
-                        c.lineStyle === 'dashed' ? '6 4' : c.lineStyle === 'dotted' ? '2 4' : undefined
-                      }
-                      points={pts.join(' ')}
-                    />
-                  );
-                })}
-
-              {plotKind === 'scatter' && (
-                <>
-                  {parsedScatter.map((p, idx) => {
-                    const sx = 68 + ((p.x - xMin) / Math.max(0.001, xMax - xMin)) * 492;
-                    const sy = 354 - ((p.y - yMin) / Math.max(0.001, yMax - yMin)) * 312;
-                    return <circle key={idx} cx={sx} cy={sy} r={4.5} fill="#38bdf8" />;
-                  })}
-                  {showRegression && regression && (
-                    <>
-                      <line
-                        x1={68}
-                        y1={
-                          354 -
-                          ((regression.slope * xMin + regression.intercept - yMin) /
-                            Math.max(0.001, yMax - yMin)) *
-                            312
-                        }
-                        x2={560}
-                        y2={
-                          354 -
-                          ((regression.slope * xMax + regression.intercept - yMin) /
-                            Math.max(0.001, yMax - yMin)) *
-                            312
-                        }
-                        stroke="#f43f5e"
-                        strokeWidth={2}
-                        strokeDasharray="6 4"
-                      />
-                      <text x={552} y={58} fill="#f43f5e" fontSize="10.5" textAnchor="end">
-                        y = {regression.slope.toFixed(2)}x {regression.intercept >= 0 ? '+' : ''}{' '}
-                        {regression.intercept.toFixed(2)} (R² = {regression.r2.toFixed(3)})
-                      </text>
-                    </>
-                  )}
-                </>
-              )}
-
-              {plotKind === 'histogram' &&
-                histBinsData.map((b, idx) => {
-                  const maxC = Math.max(1, ...histBinsData.map((x) => x.count));
-                  const bw = 492 / Math.max(1, histBinsData.length);
-                  const bx = 68 + idx * bw;
-                  const bh = (b.count / maxC) * 280;
-                  const by = 354 - bh;
-                  return (
-                    <g key={idx}>
-                      <rect
-                        x={bx + 1}
-                        y={by}
-                        width={Math.max(2, bw - 2)}
-                        height={bh}
-                        fill="#38bdf8"
-                        fillOpacity={0.65}
-                        stroke="#0284c7"
-                      />
-                      {b.count > 0 && (
-                        <text x={bx + bw / 2} y={by - 4} fill="#e2e8f0" fontSize="9.5" textAnchor="middle">
-                          {b.count}
-                        </text>
-                      )}
-                    </g>
-                  );
-                })}
-
-              {plotKind === 'bars' &&
-                parsedBars.map((b, idx) => {
-                  const maxV = Math.max(1, ...parsedBars.map((x) => x.val));
-                  const bw = Math.min(54, 420 / Math.max(1, parsedBars.length) - 14);
-                  const bx = 95 + idx * (460 / Math.max(1, parsedBars.length));
-                  const bh = (b.val / maxV) * 260;
-                  const by = 354 - bh;
-                  return (
-                    <g key={b.cat}>
-                      <rect x={bx} y={by} width={bw} height={bh} fill="#38bdf8" fillOpacity={0.75} />
-                      <text x={bx + bw / 2} y={by - 6} fill="#e2e8f0" fontSize="11" textAnchor="middle">
-                        {b.val}
-                      </text>
-                      <text x={bx + bw / 2} y={372} fill="#94a3b8" fontSize="11" textAnchor="middle">
-                        {b.cat}
-                      </text>
-                    </g>
-                  );
-                })}
-
-              {plotKind === 'surface3d' && (
-                <text x={310} y={200} fill="#94a3b8" fontSize="12" textAnchor="middle">
-                  Preview 3D disponível via botão "Testar LaTeX" (pdflatex)
+                <text x={310} y={24} fill="#e2e8f0" fontSize="14" fontWeight="600" textAnchor="middle">
+                  {plotTitle}
                 </text>
-              )}
-
-              {plotKind === 'polar' && (() => {
-                const pts: string[] = [];
-                for (let deg = 0; deg <= 360; deg += 4) {
-                  const rad = (deg * Math.PI) / 180;
-                  const rVal = evalSafeExpr(polarExpr, rad);
-                  if (rVal === null) continue;
-                  const rr = Math.min(130, Math.abs(rVal) * 55);
-                  const px = 314 + rr * Math.cos(rad);
-                  const py = 198 - rr * Math.sin(rad);
-                  pts.push(`${px.toFixed(1)},${py.toFixed(1)}`);
-                }
-                return (
-                  <g>
-                    {[40, 80, 120].map((r) => (
-                      <circle key={r} cx={314} cy={198} r={r} fill="none" stroke="#334155" strokeDasharray="3 3" />
-                    ))}
-                    <polyline fill="none" stroke="#38bdf8" strokeWidth={2.2} points={pts.join(' ')} />
-                  </g>
-                );
-              })()}
-
-              {plotKind === 'ternary' && (
-                <g>
-                  <polygon points="314,68 184,310 444,310" fill="none" stroke="#64748b" strokeWidth={1.6} />
-                  {ternaryCoords
-                    .split(/\r?\n/)
-                    .map((l, idx) => {
-                      const [a, b, c] = l.split(',').map((v) => Number(v.trim()));
-                      if (!Number.isFinite(a) || !Number.isFinite(b) || !Number.isFinite(c)) return null;
-                      const sum = Math.max(0.001, a + b + c);
-                      const na = a / sum;
-                      const nb = b / sum;
-                      const nc = c / sum;
-                      const px = na * 314 + nb * 184 + nc * 444;
-                      const py = na * 68 + nb * 310 + nc * 310;
-                      return <circle key={idx} cx={px} cy={py} r={4.5} fill="#38bdf8" />;
-                    })}
-                </g>
-              )}
-
-              {plotKind === 'smith' && (
-                <g>
-                  <circle cx={314} cy={198} r={128} fill="none" stroke="#64748b" strokeWidth={1.5} />
-                  <circle cx={378} cy={198} r={64} fill="none" stroke="#334155" strokeDasharray="3 3" />
-                  <line x1={186} y1={198} x2={442} y2={198} stroke="#334155" />
-                  {smithCoords.split(/\r?\n/).map((l, idx) => {
-                    const [r, x] = l.split(',').map((v) => Number(v.trim()));
-                    if (!Number.isFinite(r) || !Number.isFinite(x)) return null;
-                    const den = (r + 1) * (r + 1) + x * x;
-                    const gx = (r * r - 1 + x * x) / den;
-                    const gy = (2 * x) / den;
-                    return <circle key={idx} cx={314 + gx * 128} cy={198 - gy * 128} r={4.5} fill="#f59e0b" />;
+                {/* Plot Frame according to axisLines */}
+                {axisLines === 'box' && (
+                  <rect x={68} y={42} width={492} height={312} fill="none" stroke="#475569" strokeWidth={1.2} />
+                )}
+                {axisLines === 'left' && (
+                  <polyline points="68,42 68,354 560,354" fill="none" stroke="#64748b" strokeWidth={1.4} />
+                )}
+                {axisLines === 'middle' && (
+                  <>
+                    <line x1={68} y1={198} x2={560} y2={198} stroke="#64748b" strokeWidth={1.3} />
+                    <line x1={314} y1={42} x2={314} y2={354} stroke="#64748b" strokeWidth={1.3} />
+                  </>
+                )}
+                {/* Grid + Ticks */}
+                {gridMode !== 'none' &&
+                  Array.from({ length: 5 }, (_, i) => i).map((step) => {
+                    const gx = 68 + (step * 492) / 4;
+                    const gy = 42 + (step * 312) / 4;
+                    const xv = xMin + (step * (xMax - xMin)) / 4;
+                    const yv = yMax - (step * (yMax - yMin)) / 4;
+                    return (
+                      <g key={step}>
+                        <line x1={gx} y1={42} x2={gx} y2={354} stroke="#1e293b" strokeWidth={0.9} />
+                        <line x1={68} y1={gy} x2={560} y2={gy} stroke="#1e293b" strokeWidth={0.9} />
+                        {plotKind !== 'bars' && plotKind !== 'histogram' && (
+                          <>
+                            {!usePiTicks && (
+                              <text x={gx} y={372} fill="#94a3b8" fontSize="10" textAnchor="middle">
+                                {xv.toFixed(1)}
+                              </text>
+                            )}
+                            <text x={58} y={gy + 3} fill="#94a3b8" fontSize="10" textAnchor="end">
+                              {yv.toFixed(1)}
+                            </text>
+                          </>
+                        )}
+                      </g>
+                    );
                   })}
-                </g>
-              )}
 
-              {plotKind === 'groupplot' && (
-                <g>
-                  {Array.from({ length: groupConfig.rows * groupConfig.cols }, (_, idx) => {
-                    const r = Math.floor(idx / groupConfig.cols);
-                    const c = idx % groupConfig.cols;
-                    const cw = 480 / groupConfig.cols;
-                    const ch = 290 / groupConfig.rows;
-                    const ox = 74 + c * cw;
-                    const oy = 50 + r * ch;
+                {usePiTicks &&
+                  plotKind === 'function' &&
+                  piTicks.map((pt) => {
+                    const px = 68 + ((pt.val - xMin) / Math.max(0.001, xMax - xMin)) * 492;
+                    return (
+                      <text key={pt.label} x={px} y={372} fill="#38bdf8" fontSize="10" textAnchor="middle">
+                        {pt.label}
+                      </text>
+                    );
+                  })}
+
+                {plotKind === 'function' &&
+                  curves.map((c) => {
+                    const pts: string[] = [];
+                    const steps = 140;
+                    for (let i = 0; i <= steps; i++) {
+                      const xv = xMin + ((xMax - xMin) * i) / steps;
+                      const yv = evalSafeExpr(c.expr, xv);
+                      if (yv === null) continue;
+                      const sx = 68 + ((xv - xMin) / Math.max(0.001, xMax - xMin)) * 492;
+                      const sy = 354 - ((yv - yMin) / Math.max(0.001, yMax - yMin)) * 312;
+                      if (sy >= 38 && sy <= 358) pts.push(`${sx.toFixed(1)},${sy.toFixed(1)}`);
+                    }
+                    const strokeColor = COLOR_HEX[c.color] || '#38bdf8';
+                    return (
+                      <polyline
+                        key={c.id}
+                        fill="none"
+                        stroke={strokeColor}
+                        strokeWidth={2.5}
+                        strokeDasharray={
+                          c.lineStyle === 'dashed' ? '6 4' : c.lineStyle === 'dotted' ? '2 4' : undefined
+                        }
+                        points={pts.join(' ')}
+                      />
+                    );
+                  })}
+
+                {plotKind === 'scatter' && (
+                  <>
+                    {parsedScatter.map((p, idx) => {
+                      const sx = 68 + ((p.x - xMin) / Math.max(0.001, xMax - xMin)) * 492;
+                      const sy = 354 - ((p.y - yMin) / Math.max(0.001, yMax - yMin)) * 312;
+                      return <circle key={idx} cx={sx} cy={sy} r={4.5} fill="#38bdf8" />;
+                    })}
+                    {showRegression && regression && (
+                      <>
+                        <line
+                          x1={68}
+                          y1={
+                            354 -
+                            ((regression.slope * xMin + regression.intercept - yMin) /
+                              Math.max(0.001, yMax - yMin)) *
+                            312
+                          }
+                          x2={560}
+                          y2={
+                            354 -
+                            ((regression.slope * xMax + regression.intercept - yMin) /
+                              Math.max(0.001, yMax - yMin)) *
+                            312
+                          }
+                          stroke="#f43f5e"
+                          strokeWidth={2}
+                          strokeDasharray="6 4"
+                        />
+                        <text x={552} y={58} fill="#f43f5e" fontSize="10.5" textAnchor="end">
+                          y = {regression.slope.toFixed(2)}x {regression.intercept >= 0 ? '+' : ''}{' '}
+                          {regression.intercept.toFixed(2)} (R² = {regression.r2.toFixed(3)})
+                        </text>
+                      </>
+                    )}
+                  </>
+                )}
+
+                {plotKind === 'histogram' &&
+                  histBinsData.map((b, idx) => {
+                    const maxC = Math.max(1, ...histBinsData.map((x) => x.count));
+                    const bw = 492 / Math.max(1, histBinsData.length);
+                    const bx = 68 + idx * bw;
+                    const bh = (b.count / maxC) * 280;
+                    const by = 354 - bh;
                     return (
                       <g key={idx}>
-                        <rect x={ox} y={oy} width={cw - 12} height={ch - 14} fill="none" stroke="#475569" />
-                        <text x={ox + (cw - 12) / 2} y={oy + 14} fill="#94a3b8" fontSize="9.5" textAnchor="middle">
-                          {groupConfig.exprs[idx] || 'sin(x)'}
+                        <rect
+                          x={bx + 1}
+                          y={by}
+                          width={Math.max(2, bw - 2)}
+                          height={bh}
+                          fill="#38bdf8"
+                          fillOpacity={0.65}
+                          stroke="#0284c7"
+                        />
+                        {b.count > 0 && (
+                          <text x={bx + bw / 2} y={by - 4} fill="#e2e8f0" fontSize="9.5" textAnchor="middle">
+                            {b.count}
+                          </text>
+                        )}
+                      </g>
+                    );
+                  })}
+
+                {plotKind === 'bars' &&
+                  parsedBars.map((b, idx) => {
+                    const maxV = Math.max(1, ...parsedBars.map((x) => x.val));
+                    const bw = Math.min(54, 420 / Math.max(1, parsedBars.length) - 14);
+                    const bx = 95 + idx * (460 / Math.max(1, parsedBars.length));
+                    const bh = (b.val / maxV) * 260;
+                    const by = 354 - bh;
+                    return (
+                      <g key={b.cat}>
+                        <rect x={bx} y={by} width={bw} height={bh} fill="#38bdf8" fillOpacity={0.75} />
+                        <text x={bx + bw / 2} y={by - 6} fill="#e2e8f0" fontSize="11" textAnchor="middle">
+                          {b.val}
+                        </text>
+                        <text x={bx + bw / 2} y={372} fill="#94a3b8" fontSize="11" textAnchor="middle">
+                          {b.cat}
                         </text>
                       </g>
                     );
                   })}
-                </g>
-              )}
 
-              {plotKind === 'contour' && (
-                <g>
-                  {Array.from({ length: 12 }, (_, ix) =>
-                    Array.from({ length: 10 }, (__, iy) => {
-                      const xv = xMin + ((ix + 0.5) / 12) * (xMax - xMin);
-                      const yv = yMax - ((iy + 0.5) / 10) * (yMax - yMin);
-                      const val = evalExprXY(contourExpr, xv, yv) ?? 0;
-                      const norm = Math.max(0, Math.min(1, (val + 1) / 2));
-                      const hue = Math.round((1 - norm) * 240);
+                {plotKind === 'surface3d' && (
+                  <text x={310} y={200} fill="#94a3b8" fontSize="12" textAnchor="middle">
+                    Preview 3D disponível via botão "Testar LaTeX" (pdflatex)
+                  </text>
+                )}
+
+                {plotKind === 'polar' && (() => {
+                  const pts: string[] = [];
+                  for (let deg = 0; deg <= 360; deg += 4) {
+                    const rad = (deg * Math.PI) / 180;
+                    const rVal = evalSafeExpr(polarExpr, rad);
+                    if (rVal === null) continue;
+                    const rr = Math.min(130, Math.abs(rVal) * 55);
+                    const px = 314 + rr * Math.cos(rad);
+                    const py = 198 - rr * Math.sin(rad);
+                    pts.push(`${px.toFixed(1)},${py.toFixed(1)}`);
+                  }
+                  return (
+                    <g>
+                      {[40, 80, 120].map((r) => (
+                        <circle key={r} cx={314} cy={198} r={r} fill="none" stroke="#334155" strokeDasharray="3 3" />
+                      ))}
+                      <polyline fill="none" stroke="#38bdf8" strokeWidth={2.2} points={pts.join(' ')} />
+                    </g>
+                  );
+                })()}
+
+                {plotKind === 'ternary' && (
+                  <g>
+                    <polygon points="314,68 184,310 444,310" fill="none" stroke="#64748b" strokeWidth={1.6} />
+                    {ternaryCoords
+                      .split(/\r?\n/)
+                      .map((l, idx) => {
+                        const [a, b, c] = l.split(',').map((v) => Number(v.trim()));
+                        if (!Number.isFinite(a) || !Number.isFinite(b) || !Number.isFinite(c)) return null;
+                        const sum = Math.max(0.001, a + b + c);
+                        const na = a / sum;
+                        const nb = b / sum;
+                        const nc = c / sum;
+                        const px = na * 314 + nb * 184 + nc * 444;
+                        const py = na * 68 + nb * 310 + nc * 310;
+                        return <circle key={idx} cx={px} cy={py} r={4.5} fill="#38bdf8" />;
+                      })}
+                  </g>
+                )}
+
+                {plotKind === 'smith' && (
+                  <g>
+                    <circle cx={314} cy={198} r={128} fill="none" stroke="#64748b" strokeWidth={1.5} />
+                    <circle cx={378} cy={198} r={64} fill="none" stroke="#334155" strokeDasharray="3 3" />
+                    <line x1={186} y1={198} x2={442} y2={198} stroke="#334155" />
+                    {smithCoords.split(/\r?\n/).map((l, idx) => {
+                      const [r, x] = l.split(',').map((v) => Number(v.trim()));
+                      if (!Number.isFinite(r) || !Number.isFinite(x)) return null;
+                      const den = (r + 1) * (r + 1) + x * x;
+                      const gx = (r * r - 1 + x * x) / den;
+                      const gy = (2 * x) / den;
+                      return <circle key={idx} cx={314 + gx * 128} cy={198 - gy * 128} r={4.5} fill="#f59e0b" />;
+                    })}
+                  </g>
+                )}
+
+                {plotKind === 'groupplot' && (
+                  <g>
+                    {Array.from({ length: groupConfig.rows * groupConfig.cols }, (_, idx) => {
+                      const r = Math.floor(idx / groupConfig.cols);
+                      const c = idx % groupConfig.cols;
+                      const cw = 480 / groupConfig.cols;
+                      const ch = 290 / groupConfig.rows;
+                      const ox = 74 + c * cw;
+                      const oy = 50 + r * ch;
                       return (
-                        <rect
-                          key={`${ix}-${iy}`}
-                          x={68 + ix * (492 / 12)}
-                          y={42 + iy * (312 / 10)}
-                          width={492 / 12 + 0.5}
-                          height={312 / 10 + 0.5}
-                          fill={`hsla(${hue}, 75%, 50%, 0.45)`}
-                        />
+                        <g key={idx}>
+                          <rect x={ox} y={oy} width={cw - 12} height={ch - 14} fill="none" stroke="#475569" />
+                          <text x={ox + (cw - 12) / 2} y={oy + 14} fill="#94a3b8" fontSize="9.5" textAnchor="middle">
+                            {groupConfig.exprs[idx] || 'sin(x)'}
+                          </text>
+                        </g>
                       );
-                    })
-                  )}
-                </g>
-              )}
+                    })}
+                  </g>
+                )}
 
-              {plotKind === 'quiver' && (
-                <g>
-                  {Array.from({ length: 7 }, (_, ix) =>
-                    Array.from({ length: 5 }, (__, iy) => {
-                      const xv = xMin + ((ix + 0.5) / 7) * (xMax - xMin);
-                      const yv = yMax - ((iy + 0.5) / 5) * (yMax - yMin);
-                      const u = evalExprXY(quiverU, xv, yv) ?? 0;
-                      const v = evalExprXY(quiverV, xv, yv) ?? 0;
-                      const mag = Math.max(0.001, Math.hypot(u, v));
-                      const sx = 68 + ((xv - xMin) / Math.max(0.001, xMax - xMin)) * 492;
-                      const sy = 354 - ((yv - yMin) / Math.max(0.001, yMax - yMin)) * 312;
-                      const dx = (u / mag) * 18;
-                      const dy = -(v / mag) * 18;
-                      return (
-                        <line
-                          key={`${ix}-${iy}`}
-                          x1={sx}
-                          y1={sy}
-                          x2={sx + dx}
-                          y2={sy + dy}
-                          stroke="#38bdf8"
-                          strokeWidth={1.6}
-                          markerEnd="url(#arrowHead)"
-                        />
-                      );
-                    })
-                  )}
-                </g>
-              )}
+                {plotKind === 'contour' && (
+                  <g>
+                    {Array.from({ length: 12 }, (_, ix) =>
+                      Array.from({ length: 10 }, (__, iy) => {
+                        const xv = xMin + ((ix + 0.5) / 12) * (xMax - xMin);
+                        const yv = yMax - ((iy + 0.5) / 10) * (yMax - yMin);
+                        const val = evalExprXY(contourExpr, xv, yv) ?? 0;
+                        const norm = Math.max(0, Math.min(1, (val + 1) / 2));
+                        const hue = Math.round((1 - norm) * 240);
+                        return (
+                          <rect
+                            key={`${ix}-${iy}`}
+                            x={68 + ix * (492 / 12)}
+                            y={42 + iy * (312 / 10)}
+                            width={492 / 12 + 0.5}
+                            height={312 / 10 + 0.5}
+                            fill={`hsla(${hue}, 75%, 50%, 0.45)`}
+                          />
+                        );
+                      })
+                    )}
+                  </g>
+                )}
 
-              {/* Live Legend Overlay in Central SVG */}
-              {(plotKind === 'function' || (plotKind === 'scatter' && showRegression)) && (() => {
-                const items =
-                  plotKind === 'function'
-                    ? curves.map((c) => ({
+                {plotKind === 'quiver' && (
+                  <g>
+                    {Array.from({ length: 7 }, (_, ix) =>
+                      Array.from({ length: 5 }, (__, iy) => {
+                        const xv = xMin + ((ix + 0.5) / 7) * (xMax - xMin);
+                        const yv = yMax - ((iy + 0.5) / 5) * (yMax - yMin);
+                        const u = evalExprXY(quiverU, xv, yv) ?? 0;
+                        const v = evalExprXY(quiverV, xv, yv) ?? 0;
+                        const mag = Math.max(0.001, Math.hypot(u, v));
+                        const sx = 68 + ((xv - xMin) / Math.max(0.001, xMax - xMin)) * 492;
+                        const sy = 354 - ((yv - yMin) / Math.max(0.001, yMax - yMin)) * 312;
+                        const dx = (u / mag) * 18;
+                        const dy = -(v / mag) * 18;
+                        return (
+                          <line
+                            key={`${ix}-${iy}`}
+                            x1={sx}
+                            y1={sy}
+                            x2={sx + dx}
+                            y2={sy + dy}
+                            stroke="#38bdf8"
+                            strokeWidth={1.6}
+                            markerEnd="url(#arrowHead)"
+                          />
+                        );
+                      })
+                    )}
+                  </g>
+                )}
+
+                {/* Live Legend Overlay in Central SVG */}
+                {(plotKind === 'function' || (plotKind === 'scatter' && showRegression)) && (() => {
+                  const items =
+                    plotKind === 'function'
+                      ? curves.map((c) => ({
                         label: c.label || c.expr,
                         color: COLOR_HEX[c.color] || '#38bdf8',
                       }))
-                    : [
+                      : [
                         { label: 'Dados', color: '#38bdf8' },
                         { label: 'Ajuste Linear', color: '#f43f5e' },
                       ];
-                const boxW = 112;
-                const boxH = 10 + items.length * 16;
-                const xMap = {
-                  west: 76,
-                  center: 314 - boxW / 2,
-                  east: 552 - boxW,
-                };
-                const yMap = {
-                  north: 50,
-                  center: 198 - boxH / 2,
-                  south: 346 - boxH,
-                };
-                const lx = legendPos.includes('west')
-                  ? xMap.west
-                  : legendPos.includes('east')
-                  ? xMap.east
-                  : xMap.center;
-                const ly = legendPos.includes('north')
-                  ? yMap.north
-                  : legendPos.includes('south')
-                  ? yMap.south
-                  : yMap.center;
-                return (
-                  <g>
-                    <rect
-                      x={lx}
-                      y={ly}
-                      width={boxW}
-                      height={boxH}
-                      rx={4}
-                      fill="#0f172a"
-                      fillOpacity={0.86}
-                      stroke="#475569"
-                      strokeWidth={1}
-                    />
-                    {items.map((it, idx) => (
-                      <g key={idx} transform={`translate(${lx + 8}, ${ly + 14 + idx * 16})`}>
-                        <line x1={0} y1={-3} x2={16} y2={-3} stroke={it.color} strokeWidth={2.2} />
-                        <text x={22} y={0} fill="#e2e8f0" fontSize="10">
-                          {it.label.replace(/\\/g, '').slice(0, 14)}
-                        </text>
-                      </g>
-                    ))}
-                  </g>
-                );
-              })()}
+                  const boxW = 112;
+                  const boxH = 10 + items.length * 16;
+                  const xMap = {
+                    west: 76,
+                    center: 314 - boxW / 2,
+                    east: 552 - boxW,
+                  };
+                  const yMap = {
+                    north: 50,
+                    center: 198 - boxH / 2,
+                    south: 346 - boxH,
+                  };
+                  const lx = legendPos.includes('west')
+                    ? xMap.west
+                    : legendPos.includes('east')
+                      ? xMap.east
+                      : xMap.center;
+                  const ly = legendPos.includes('north')
+                    ? yMap.north
+                    : legendPos.includes('south')
+                      ? yMap.south
+                      : yMap.center;
+                  return (
+                    <g>
+                      <rect
+                        x={lx}
+                        y={ly}
+                        width={boxW}
+                        height={boxH}
+                        rx={4}
+                        fill="#0f172a"
+                        fillOpacity={0.86}
+                        stroke="#475569"
+                        strokeWidth={1}
+                      />
+                      {items.map((it, idx) => (
+                        <g key={idx} transform={`translate(${lx + 8}, ${ly + 14 + idx * 16})`}>
+                          <line x1={0} y1={-3} x2={16} y2={-3} stroke={it.color} strokeWidth={2.2} />
+                          <text x={22} y={0} fill="#e2e8f0" fontSize="10">
+                            {it.label.replace(/\\/g, '').slice(0, 14)}
+                          </text>
+                        </g>
+                      ))}
+                    </g>
+                  );
+                })()}
 
-              <text x={314} y={396} fill="#cbd5e1" fontSize="11" textAnchor="middle">
-                {xLabel}
-              </text>
-            </svg>
+                <text x={314} y={396} fill="#cbd5e1" fontSize="11" textAnchor="middle">
+                  {xLabel}
+                </text>
+              </svg>
             </div>
           )}
 
@@ -3533,8 +3533,8 @@ export default function App() {
                   {plotKind === 'groupplot'
                     ? 'groupplots'
                     : plotKind === 'smith'
-                    ? 'smithchart'
-                    : plotKind}
+                      ? 'smithchart'
+                      : plotKind}
                   {'}'}
                 </code>
               </>
@@ -3576,93 +3576,93 @@ export default function App() {
             </div>
             {donateTab === 'donate' ? (
               <>
-              <div className="ft-donate-grid">
-                <div className="ft-donate-box">
-                  <strong>Pix (Chave Aleatória)</strong>
-                  {pixQrUrl && <img src={pixQrUrl} alt="QR Code Pix" className="ft-qr" />}
-                  <code>{PIX_KEY}</code>
-                  <span>Descrição: DoacaoFjTeXTikZ</span>
-                  <div className="ft-btn-row">
-                    <button
-                      type="button"
-                      className="ft-btn"
-                      onClick={async () => {
-                        await navigator.clipboard.writeText(PIX_KEY);
-                        setCopyTag('key');
-                        setTimeout(() => setCopyTag(null), 2000);
-                      }}
-                    >
-                      {copyTag === 'key' ? <Check size={12} /> : <Copy size={12} />} Chave
-                    </button>
-                    {pixBrCode && (
+                <div className="ft-donate-grid">
+                  <div className="ft-donate-box">
+                    <strong>Pix (Chave Aleatória)</strong>
+                    {pixQrUrl && <img src={pixQrUrl} alt="QR Code Pix" className="ft-qr" />}
+                    <code>{PIX_KEY}</code>
+                    <span>Descrição: DoacaoFjTeXTikZ</span>
+                    <div className="ft-btn-row">
                       <button
                         type="button"
-                        className="ft-btn primary"
+                        className="ft-btn"
                         onClick={async () => {
-                          await navigator.clipboard.writeText(pixBrCode);
-                          setCopyTag('code');
+                          await navigator.clipboard.writeText(PIX_KEY);
+                          setCopyTag('key');
                           setTimeout(() => setCopyTag(null), 2000);
                         }}
                       >
-                        {copyTag === 'code' ? 'Copiado!' : 'Copia e Cola'}
+                        {copyTag === 'key' ? <Check size={12} /> : <Copy size={12} />} Chave
                       </button>
-                    )}
+                      {pixBrCode && (
+                        <button
+                          type="button"
+                          className="ft-btn primary"
+                          onClick={async () => {
+                            await navigator.clipboard.writeText(pixBrCode);
+                            setCopyTag('code');
+                            setTimeout(() => setCopyTag(null), 2000);
+                          }}
+                        >
+                          {copyTag === 'code' ? 'Copiado!' : 'Copia e Cola'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="ft-donate-box">
+                    <strong>PayPal</strong>
+                    <code>{PAYPAL_EMAIL}</code>
+                    <span>Descrição: DoacaoFjTeXTikZ</span>
+                    <div className="ft-btn-row">
+                      <button
+                        type="button"
+                        className="ft-btn"
+                        onClick={async () => {
+                          await navigator.clipboard.writeText(PAYPAL_EMAIL);
+                          setCopyTag('pp');
+                          setTimeout(() => setCopyTag(null), 2000);
+                        }}
+                      >
+                        {copyTag === 'pp' ? 'Copiado!' : 'Copiar E-mail'}
+                      </button>
+                      <button
+                        type="button"
+                        className="ft-btn primary"
+                        onClick={() => openExternal(getPayPalDonateUrl('DoacaoFjTeXTikZ'))}
+                      >
+                        Abrir PayPal
+                      </button>
+                    </div>
                   </div>
                 </div>
-                <div className="ft-donate-box">
-                  <strong>PayPal</strong>
-                  <code>{PAYPAL_EMAIL}</code>
-                  <span>Descrição: DoacaoFjTeXTikZ</span>
-                  <div className="ft-btn-row">
-                    <button
-                      type="button"
-                      className="ft-btn"
-                      onClick={async () => {
-                        await navigator.clipboard.writeText(PAYPAL_EMAIL);
-                        setCopyTag('pp');
-                        setTimeout(() => setCopyTag(null), 2000);
-                      }}
-                    >
-                      {copyTag === 'pp' ? 'Copiado!' : 'Copiar E-mail'}
-                    </button>
-                    <button
-                      type="button"
-                      className="ft-btn primary"
-                      onClick={() => openExternal(getPayPalDonateUrl('DoacaoFjTeXTikZ'))}
-                    >
-                      Abrir PayPal
-                    </button>
-                  </div>
+                <div className="ft-hint" style={{ textAlign: 'center', marginTop: 8 }}>
+                  <button
+                    type="button"
+                    className="ft-btn"
+                    style={{ padding: '2px 6px', fontSize: 11 }}
+                    onClick={() => openExternal('https://forjatex.com.br')}
+                  >
+                    forjatex.com.br
+                  </button>{' '}
+                  · Por{' '}
+                  <button
+                    type="button"
+                    className="ft-btn"
+                    style={{ padding: '2px 6px', fontSize: 11 }}
+                    onClick={() => openExternal('https://jeanpimenta.com.br')}
+                  >
+                    Jean Pimenta
+                  </button>{' '}
+                  ·{' '}
+                  <button
+                    type="button"
+                    className="ft-btn"
+                    style={{ padding: '2px 6px', fontSize: 11 }}
+                    onClick={() => openExternal('https://arkhecode.com.br')}
+                  >
+                    Arkhé Code
+                  </button>
                 </div>
-              </div>
-              <div className="ft-hint" style={{ textAlign: 'center', marginTop: 8 }}>
-                <button
-                  type="button"
-                  className="ft-btn"
-                  style={{ padding: '2px 6px', fontSize: 11 }}
-                  onClick={() => openExternal('https://forjatex.com.br')}
-                >
-                  forjatex.com.br
-                </button>{' '}
-                · Por{' '}
-                <button
-                  type="button"
-                  className="ft-btn"
-                  style={{ padding: '2px 6px', fontSize: 11 }}
-                  onClick={() => openExternal('https://jeanpimenta.com.br')}
-                >
-                  Jean Pimenta
-                </button>{' '}
-                ·{' '}
-                <button
-                  type="button"
-                  className="ft-btn"
-                  style={{ padding: '2px 6px', fontSize: 11 }}
-                  onClick={() => openExternal('https://arkhecode.com.br')}
-                >
-                  Arkhé Code
-                </button>
-              </div>
               </>
             ) : (
               <div className="ft-props">

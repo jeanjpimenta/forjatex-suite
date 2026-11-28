@@ -74,12 +74,23 @@ fn compile_bib_style_test(
     style_preamble: String,
     use_biber: bool,
     bib_style_name: Option<String>,
+    csl_content: Option<String>,
+    csl_name: Option<String>,
 ) -> Result<CompileStyleResult, String> {
     let dir = std::env::temp_dir().join("forjabib-style-test");
     fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     fs::write(dir.join("ref_test.bib"), &bib_content).map_err(|e| e.to_string())?;
 
-    let body = if use_biber {
+    let body = if let Some(csl_xml) = csl_content {
+        let slug = csl_name
+            .unwrap_or_else(|| "custom_style".to_string())
+            .replace(".csl", "");
+        fs::write(dir.join(format!("{}.csl", slug)), csl_xml).map_err(|e| e.to_string())?;
+        format!(
+            "\\documentclass[11pt,a4paper]{{article}}\n\\usepackage[utf8]{{inputenc}}\n\\usepackage[T1]{{fontenc}}\n\\usepackage{{citation-style-language}}\n\\cslsetup{{style = {}}}\n\\addbibresource{{ref_test.bib}}\n\\begin{{document}}\n\\section*{{Teste de Estilo CSL ({})}}\n\\nocite{{*}}\n\\printbibliography\n\\end{{document}}\n",
+            slug, slug
+        )
+    } else if use_biber {
         format!(
             "\\documentclass[11pt,a4paper]{{article}}\n\\usepackage[utf8]{{inputenc}}\n\\usepackage[T1]{{fontenc}}\n{}\n\\addbibresource{{ref_test.bib}}\n\\begin{{document}}\n\\section*{{Teste de Estilo Bibliográfico}}\nExemplo de citação no texto: \\cite{{*}}\\nocite{{*}}\n\\printbibliography\n\\end{{document}}\n",
             style_preamble
@@ -103,11 +114,20 @@ fn compile_bib_style_test(
             .map_err(|e| format!("{} não encontrado: {}", prog, e))
     };
 
-    let _ = run_cmd("pdflatex", &["-interaction=nonstopmode", "style_test.tex"])?;
-    let backend = if use_biber { "biber" } else { "bibtex" };
-    let _ = run_cmd(backend, &["style_test"])?;
-    let _ = run_cmd("pdflatex", &["-interaction=nonstopmode", "style_test.tex"])?;
-    let out = run_cmd("pdflatex", &["-interaction=nonstopmode", "style_test.tex"])?;
+    let out = if dir.join("style_test.tex").exists()
+        && fs::read_to_string(dir.join("style_test.tex"))
+            .unwrap_or_default()
+            .contains("citation-style-language")
+    {
+        let _ = run_cmd("pdflatex", &["-interaction=nonstopmode", "style_test.tex"])?;
+        run_cmd("pdflatex", &["-interaction=nonstopmode", "style_test.tex"])?
+    } else {
+        let _ = run_cmd("pdflatex", &["-interaction=nonstopmode", "style_test.tex"])?;
+        let backend = if use_biber { "biber" } else { "bibtex" };
+        let _ = run_cmd(backend, &["style_test"])?;
+        let _ = run_cmd("pdflatex", &["-interaction=nonstopmode", "style_test.tex"])?;
+        run_cmd("pdflatex", &["-interaction=nonstopmode", "style_test.tex"])?
+    };
 
     let pdf_path = dir.join("style_test.pdf");
     if out.status.success() && pdf_path.exists() {
