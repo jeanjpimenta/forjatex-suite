@@ -103,6 +103,80 @@ fn read_text_file(path: String) -> Result<String, String> {
     fs::read_to_string(&path).map_err(|e| format!("Falha ao ler arquivo: {}", e))
 }
 
+fn decode_text_bytes(bytes: &[u8]) -> String {
+    if let Some(b) = bytes.strip_prefix(&[0xEF, 0xBB, 0xBF]) {
+        return String::from_utf8_lossy(b).into_owned();
+    }
+    if let Some(b) = bytes.strip_prefix(&[0xFF, 0xFE]) {
+        let units: Vec<u16> = b
+            .chunks_exact(2)
+            .map(|p| u16::from_le_bytes([p[0], p[1]]))
+            .collect();
+        return String::from_utf16_lossy(&units);
+    }
+    if let Some(b) = bytes.strip_prefix(&[0xFE, 0xFF]) {
+        let units: Vec<u16> = b
+            .chunks_exact(2)
+            .map(|p| u16::from_be_bytes([p[0], p[1]]))
+            .collect();
+        return String::from_utf16_lossy(&units);
+    }
+    match std::str::from_utf8(bytes) {
+        Ok(s) => s.to_string(),
+        Err(_) => bytes.iter().map(|&b| b as char).collect(),
+    }
+}
+
+#[tauri::command]
+fn load_sidecar_notes(pdf_path: String) -> Result<Option<String>, String> {
+    let p = Path::new(&pdf_path);
+    let note_md = p.with_extension("note.md");
+    let notes_md = p.with_extension("notes.md");
+    let target = if note_md.exists() {
+        note_md
+    } else if notes_md.exists() {
+        notes_md
+    } else {
+        return Ok(None);
+    };
+    let bytes = fs::read(&target).map_err(|e| format!("Falha ao ler notas: {}", e))?;
+    Ok(Some(decode_text_bytes(&bytes)))
+}
+
+#[tauri::command]
+fn save_sidecar_notes(pdf_path: String, content: String) -> Result<String, String> {
+    let p = Path::new(&pdf_path);
+    let note_md = p.with_extension("note.md");
+    fs::write(&note_md, content).map_err(|e| format!("Falha ao salvar .note.md: {}", e))?;
+    Ok(note_md.to_string_lossy().into_owned())
+}
+
+#[tauri::command]
+fn load_pdfpc_notes(pdf_path: String) -> Result<Option<String>, String> {
+    let pdfpc = Path::new(&pdf_path).with_extension("pdfpc");
+    if !pdfpc.exists() {
+        return Ok(None);
+    }
+    let bytes = fs::read(&pdfpc).map_err(|e| format!("Falha ao ler .pdfpc: {}", e))?;
+    Ok(Some(decode_text_bytes(&bytes)))
+}
+
+#[tauri::command]
+fn load_session_analytics(pdf_path: String) -> Result<Option<String>, String> {
+    let sess = Path::new(&pdf_path).with_extension("session.json");
+    if !sess.exists() {
+        return Ok(None);
+    }
+    let text = fs::read_to_string(&sess).map_err(|e| format!("Falha ao ler sessão: {}", e))?;
+    Ok(Some(text))
+}
+
+#[tauri::command]
+fn save_session_analytics(pdf_path: String, json: String) -> Result<(), String> {
+    let sess = Path::new(&pdf_path).with_extension("session.json");
+    fs::write(&sess, json).map_err(|e| format!("Falha ao salvar sessão: {}", e))
+}
+
 #[tauri::command]
 fn get_initial_pdf_arg() -> Option<String> {
     std::env::args().skip(1).find(|a| {
@@ -157,6 +231,11 @@ fn main() {
             read_pdf_bytes,
             save_text_file,
             read_text_file,
+            load_sidecar_notes,
+            save_sidecar_notes,
+            load_pdfpc_notes,
+            load_session_analytics,
+            save_session_analytics,
             get_initial_pdf_arg,
             open_manual_pdf
         ])
